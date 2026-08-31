@@ -72,21 +72,48 @@ everything else. Same store as the ledger, or separately durable?
 
 Measured in `bench/dedup.py`: byte-level content-defined chunking gives 15.8x
 dedup on localised edits and **1.0x on a whole-file re-export**, which is the
-common case whenever an artist exports from a DCC rather than saving
-incrementally.
+common case whenever someone exports from a DCC rather than saving
+incrementally. So the unit of content addressing cannot be the file.
 
-So the unit of content addressing probably cannot be the file. Options:
+An earlier draft of this question asked whether to decompose assets into
+per-prim, per-attribute pieces. That was the wrong question: **USD already is
+that decomposition.** An `SdfLayer` is a sparse map from `(path, field)` to
+value, and `SdfAbstractData` exposes exactly that. The question is only at what
+granularity to hash the decomposition USD already provides.
 
-- **Per-prim, per-attribute blobs.** A re-export perturbing one mesh leaves
-  every other prim hashing identically. Strongest dedup, and it makes the
-  Merkle hierarchy load-bearing rather than a diff optimisation — but it means
-  decomposing and recomposing USD layers on every save and checkout.
-- **Semantic chunking.** Keep whole-file blobs but cut chunk boundaries at
-  prim or array boundaries rather than at gear-hash boundaries. Cheaper to
-  build, and it survives float noise but not reordering.
-- **Canonicalise on ingest.** Normalise prim and array ordering before hashing,
-  so a re-export that only reorders produces identical bytes. Complements
-  either of the above; risks being lossy.
+### The shape it actually has
 
-This decides whether the store operates on files or on decomposed layers, which
-is close to the foundation, so it wants settling before the resolver is built.
+**USD layers — hash per `(path, field)`.** A re-export perturbing float noise
+on one mesh leaves every other prim's fields hashing identically, which is the
+property byte chunking demonstrably cannot deliver. Crate's own intra-file
+value dedup becomes irrelevant, because fields are stored individually anyway.
+
+**Opaque payloads — keep the chunker.** Textures, VDB volumes, point caches,
+Alembic, video. USD's data model gives nothing here; they are bytes behind an
+asset path, and content-defined chunking is the only tool. The re-export
+problem is milder for these: a texture that was not re-authored usually
+produces identical bytes.
+
+### Hash values, not bytes
+
+USD does **not** guarantee that semantically identical data serialises to
+identical bytes. Crate output varies with writer version and value-table
+ordering. So hash the typed value in a canonical encoding rather than its
+serialisation.
+
+This is an improvement, not a tax: a `float3[]` then hashes the same whether it
+came from `.usda` or `.usdc`, and whether it was written by one USD version or
+another. Byte hashing would have failed silently and late.
+
+### What it costs
+
+- **Small-object explosion.** Millions of prims times several fields each. Hash
+  individually, store in packs, as git does. Design it in now rather than
+  discovering it at scale.
+- **A pxr dependency in the write path.** Rung 1 deliberately has none. Store
+  granularity and the USD dependency therefore arrive together — a decision
+  point, not a free upgrade.
+
+Still open: whether canonicalisation should also normalise prim and array
+ordering (defeating re-exports that only reorder, at the risk of being lossy),
+and what the pack format is.

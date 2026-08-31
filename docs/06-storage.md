@@ -169,11 +169,19 @@ float noise in the low bits, regenerated metadata — and no chunker can see
 through it. An artist who re-exports rather than saving incrementally gets zero
 dedup.
 
-The answer is not a better chunker but to stop treating an asset as one opaque
-file: **content-address per prim and per attribute array**, so a re-export
-perturbing one mesh leaves every other mesh, material and texture reference
-hashing identically. That makes the Merkle hierarchy below load-bearing for
-deduplication, not only for fast diffs.
+The answer is not a better chunker. It is to hash at the granularity USD
+already uses: an `SdfLayer` is a sparse map from `(path, field)` to value, so
+**hash per field** and a re-export perturbing one mesh leaves every other
+prim's fields hashing identically. That makes the Merkle hierarchy below
+load-bearing for deduplication, not only for fast diffs.
+
+Two consequences. Crate's intra-file value dedup stops mattering, because
+fields are stored individually anyway — but the byte chunker keeps its job for
+opaque payloads (textures, volumes, caches) where USD's data model gives
+nothing. And because USD does not guarantee byte-identical serialisation for
+identical data, the hash must be taken over the **canonicalised typed value**
+rather than its bytes — which is the stronger property anyway, stable across
+`.usda` / `.usdc` and across USD versions. See open question 9.
 
 ## Garbage collection
 
