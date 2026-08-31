@@ -23,5 +23,12 @@ jitsd = "jitsd.cli:main"
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+# Declared explicitly: this is a flat layout with several top-level directories
+# (jitsd, bench, specs, docs, examples, tests), and setuptools auto-discovery
+# refuses to guess between them -- `pip install -e .` fails outright without
+# this. Caught by simulating the CI job from a clean clone.
+[tool.setuptools]
+packages = ["jitsd", "jitsd.generators"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
