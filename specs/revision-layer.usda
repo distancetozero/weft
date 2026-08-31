@@ -1,0 +1,123 @@
+#usda 1.0
+#
+# DRAFT SPEC — a JIT-SD revision layer.
+#
+# A revision is a RECIPE, not geometry. This file is ~3 KB. The gigabytes live
+# once in the content-addressed object store, shared by every revision that did
+# not change them.
+#
+# It is a real USD layer: openable in usdview, diffable, reviewable.
+#
+(
+    customLayerData = {
+        # --- identity -------------------------------------------------------
+        # revision number is monotonic, assigned by the sequencer (rung 4+).
+        # Solo (rung 1) it is assigned by the local ledger.
+        string jitsd__revision  = "v037"
+        string jitsd__asset     = "hero_car"
+        string jitsd__parent    = "v036"
+        string jitsd__author    = "ashraf"
+        string jitsd__created   = "2026-08-31T14:22:07Z"
+
+        # the live session this was crystallised from, if any.
+        # Live is viewable, never citable — this is provenance only.
+        string jitsd__checkpointOf = "session:8c1f2a"
+
+        # --- contract surface -----------------------------------------------
+        # Coupling is by contract, never by prim path.
+        string[] jitsd__providesContracts = ["JitsdMountProviderAPI@2"]
+        string[] jitsd__requiresContracts = ["JitsdSurfaceFieldAPI@1"]
+
+        # --- compatibility ---------------------------------------------------
+        # Set by the promotion check, NEVER authored by hand.
+        # "compatible" here means: all downstream exemplars re-evaluated and
+        # matched. Compatibility is measured, not asserted.
+        string jitsd__compatibility      = "compatible-with:v036"
+        string jitsd__compatibilityProof = "sha256:1c77ab"
+
+        # --- exemplars: the generator's test suite ---------------------------
+        string[] jitsd__exemplars = [
+            "exemplars/base",
+            "exemplars/longWheelbase",
+            "exemplars/rhd"
+        ]
+
+        # --- merkle root over this revision's namespace subtree ---------------
+        # Subtree equality is one comparison; diffs cost O(changes).
+        string jitsd__merkleRoot = "sha256:4d90ff"
+    }
+)
+
+def Xform "hero_car" (
+    prepend apiSchemas = ["JitsdGeneratorAPI", "JitsdMountProviderAPI"]
+)
+{
+    # --- the generator ------------------------------------------------------
+    # A constant is a valid generator: a hand-sculpted asset is a generator
+    # with no parameters. Everything is ADDRESSED as a function; not
+    # everything must be procedural.
+    uniform asset  jitsd:generator        = @jitsd:obj/sha256:aa12cc90@
+    uniform string jitsd:generatorVersion = "chassis-gen 4.2.0"
+    uniform token  jitsd:costClass        = "moderate"   # bounds recursion
+
+    # --- parameters ----------------------------------------------------------
+    # The DOMAIN (type, unit, range, constraints) is declared on the schema.
+    # Only the pinned point in that space lives here.
+    # This is not a variantSet: domains describe a space, variants enumerate.
+    uniform float jitsd:param:wheelbase = 2.84      # metres, per schema
+    uniform token jitsd:param:driveSide = "LHD"
+
+    # --- cheap conservative bounds -------------------------------------------
+    # MUST be computable from parameters alone, in microseconds, WITHOUT
+    # generating geometry. Never wrong in the direction that hides something.
+    # This is what makes spatial queries possible in a JIT system.
+    uniform float3 jitsd:bounds:min          = (-2.35, -0.05, -0.98)
+    uniform float3 jitsd:bounds:max          = ( 2.35,  1.42,  0.98)
+    uniform bool   jitsd:bounds:conservative = true
+
+    # --- declared variation points -------------------------------------------
+    # The ONLY places context may change what is produced. Everything else is
+    # context-invariant, which is what makes shared subgraphs hash identically
+    # across contexts — consistency and cache sharing from one constraint.
+    uniform token[] jitsd:variationPoints = ["shellOnly", "lodLadder", "internals"]
+
+    # --- effectivity ---------------------------------------------------------
+    # Manufacturing calls this effectivity; film calls it pinning. Subject-side,
+    # not the evaluation coordinate — do not confuse the two clocks.
+    uniform string jitsd:effectiveFrom = "2026-09-01"
+
+    # --- the heavy data, deferred --------------------------------------------
+    # USD's payload mechanism IS the manifest/blob split.
+    prepend payload = @jitsd:obj/sha256:8f2c9a1b@
+
+    # --- the contract surface, as prims --------------------------------------
+    def Scope "mounts"
+    {
+        def Xform "hubFL" (prepend apiSchemas = ["JitsdMountAPI"])
+        {
+            uniform token jitsd:mount:role            = "wheelHub"
+            uniform token jitsd:mount:contractVersion = "2"
+
+            # A port is a transform PLUS an admissible envelope. The envelope
+            # is what actually makes teams independent: consumers iterate
+            # freely inside it without re-resolving the provider.
+            uniform float jitsd:mount:tolerance:radial  = 0.0005   # m
+            uniform float jitsd:mount:tolerance:angular = 0.0017   # rad
+            uniform float jitsd:mount:loadLimit        = 6200.0    # N
+
+            matrix4d xformOp:transform = ( (1,0,0,0), (0,1,0,0), (0,0,1,0), (1.42,0.31,0.78,1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+    }
+
+    # --- override handles ----------------------------------------------------
+    # Shot/instance overrides bind HERE, never to an arbitrary prim path.
+    # An override on /hero_car/geo/mesh.points silently detonates when topology
+    # changes; an override on a declared handle fails loudly at resolution and
+    # names its owner.
+    def Scope "handles"
+    {
+        def "paintFinish"  (prepend apiSchemas = ["JitsdOverrideHandleAPI"]) {}
+        def "wearAmount"   (prepend apiSchemas = ["JitsdOverrideHandleAPI"]) {}
+    }
+}

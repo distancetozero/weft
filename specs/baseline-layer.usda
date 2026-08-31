@@ -1,0 +1,70 @@
+#usda 1.0
+#
+# DRAFT SPEC — a JIT-SD baseline layer.
+#
+# A baseline is the evaluation coordinate: a named, immutable, complete
+# resolution map. NOT a timestamp. It exists because someone (or CI) decided it
+# should. Wall-clock survives only as an index for looking baselines up.
+#
+# This is the lockfile. You never ASK for one — resolving against floating
+# channels mints one and hands it back, the way `npm install` writes a lockfile
+# unasked. Reproducibility is a byproduct of working normally.
+#
+(
+    customLayerData = {
+        # --- identity -------------------------------------------------------
+        # Monotonic, assigned by the sequencer. The LABEL is what people say
+        # out loud ("pull up the client review"); the number is the fallback
+        # for auto-cut baselines nobody named.
+        string jitsd__baseline = "000118"
+        string jitsd__label    = "client_review"
+        string jitsd__parent   = "000117"
+
+        string jitsd__cut   = "2026-08-30T09:14:00Z"
+        string jitsd__cutBy = "ci"                    # or a person
+        string jitsd__cutReason = "approved-channel-moved"
+
+        # --- merkle root over the whole pinned world -------------------------
+        # "Has anything drifted since sign-off?" is a comparison of this value.
+        # Kilobyte-scale and instant, for a question that currently takes a
+        # person a day and is usually answered wrong.
+        string jitsd__merkleRoot = "sha256:4d90ff21"
+
+        # --- exemplar gate ----------------------------------------------------
+        string jitsd__exemplarStatus = "pass"
+        int    jitsd__exemplarsRun   = 412
+    }
+)
+
+over "World" (
+    customData = {
+        # --- the pin table ---------------------------------------------------
+        # SPARSE, with tile collapse (the OpenVDB lesson): an entire subtree
+        # can resolve to one entry rather than enumerating every prim under it.
+        # A 200,000-prim plant should not need a 200,000-row table.
+        dictionary jitsd__pins = {
+            string "hero_car"   = "v037"
+            string "env_desert" = "v012"
+            string "rig_key"    = "v004"
+
+            # tile: everything under this subtree at its channel-resolved
+            # default. One entry, whole subtree.
+            string "/World/Set/CityBlock_04/*" = "@approved"
+        }
+
+        # --- contract resolution ---------------------------------------------
+        # Which provider satisfied which requirement, and why. This is the
+        # provenance that makes "why is this different?" answerable.
+        dictionary jitsd__resolutions = {
+            string "hero_car:requires:JitsdSurfaceFieldAPI@1" = "env_desert v012 provides:terrainField"
+        }
+
+        # --- approvals ---------------------------------------------------------
+        # An approval is a signature over a derivation, not over a file.
+        # Dailies sign-off, engineering change approval,
+        # issued-for-construction, and cert are all this.
+        dictionary jitsd__approvals = {
+            string "lookdev" = "sig:9a71cc by:dana at:2026-08-30T11:02:00Z"
+        }
+    }
+)

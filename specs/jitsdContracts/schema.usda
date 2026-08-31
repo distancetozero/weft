@@ -1,0 +1,143 @@
+#usda 1.0
+#
+# DRAFT SPEC — JIT-SD contract schemas.
+#
+# CODELESS applied API schemas (USD 21.08+): pure plugin data, no C++ build.
+# Teams agree on SCHEMAS, not on prim paths — so the namespace becomes an
+# OUTPUT of composition rather than a precondition for it.
+#
+# The neutral core understands only ARCHETYPES. Industry vocabulary arrives as
+# domain schema packs layered on top:
+#   Mount/Socket · Field/Domain · Envelope/Clearance · Kinematic chain
+#
+(
+    subLayers = [ @usd/schema.usda@ ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName        = "jitsdContracts"
+        string libraryPrefix      = "Jitsd"
+        bool   skipCodeGeneration = true     # codeless: nobody compiles anything
+    }
+) {}
+
+# ---------------------------------------------------------------------------
+# ARCHETYPE: Mount / Socket
+#   film: rig attachment, prop socket      games: weapon socket, decal anchor
+#   mfg:  fastener pattern                 AEC:   façade grid receiving panels
+#   robotics: sensor mount
+# ---------------------------------------------------------------------------
+class "JitsdMountAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """A placement frame plus a fitment spec and an admissible envelope.
+             The envelope is what makes teams independent: a consumer may
+             iterate freely while staying inside it."""
+)
+{
+    uniform token jitsd:mount:role (
+        allowedTokens = ["wheelHub", "fastener", "panelClip", "sensorMount", "propSocket"]
+    )
+    uniform token jitsd:mount:contractVersion = "2"
+
+    # units are part of the type. mm-vs-inch across a team boundary is the
+    # empirical failure mode in this domain, and is cheap to make
+    # unrepresentable.
+    uniform token jitsd:mount:lengthUnit = "m"
+    uniform token jitsd:mount:forceUnit  = "N"
+
+    uniform float jitsd:mount:tolerance:radial  = 0.0
+    uniform float jitsd:mount:tolerance:angular = 0.0
+    uniform float jitsd:mount:loadLimit         = 0.0
+}
+
+# ---------------------------------------------------------------------------
+# ARCHETYPE: Field / Domain
+#   film: scatter density over terrain     games: foliage/spawn distribution
+#   mfg:  pressure or thermal field        AEC:   daylight, occupancy
+# ---------------------------------------------------------------------------
+class "JitsdSurfaceFieldAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """A sampleable domain emitted by a provider and sampled by a
+             consumer. This is the 'props must sit on the terrain after FX
+             re-sculpts it' case — and the airflow-over-a-panel case."""
+)
+{
+    uniform token jitsd:field:quantity (
+        allowedTokens = ["scatterDensity", "pressure", "temperature", "illuminance", "occupancy"]
+    )
+    uniform token jitsd:field:contractVersion = "1"
+    uniform token jitsd:field:domain = "surface"      # surface | volume
+    uniform bool  jitsd:field:timeVarying = false
+}
+
+# ---------------------------------------------------------------------------
+# ARCHETYPE: Envelope / Clearance
+#   film: FX sim bounds, camera frustum    mfg:  swept volume, service access
+#   AEC:  egress path, ceiling plenum      games: navmesh clearance
+# Violations are checkable RELATIONALLY, before any geometry is built.
+# ---------------------------------------------------------------------------
+class "JitsdClearanceAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+)
+{
+    uniform token  jitsd:clearance:kind (
+        allowedTokens = ["sweptVolume", "serviceAccess", "egress", "simBounds", "frustum"]
+    )
+    uniform token  jitsd:clearance:contractVersion = "1"
+    uniform float3 jitsd:clearance:min = (0, 0, 0)
+    uniform float3 jitsd:clearance:max = (0, 0, 0)
+}
+
+# ---------------------------------------------------------------------------
+# Generator surface — what every JIT-SD generator declares.
+# ---------------------------------------------------------------------------
+class "JitsdGeneratorAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """Applied to any prim that is generated on demand — including
+             constants (a hand-sculpted asset is a generator with no
+             parameters). Everything is addressed as a function; not
+             everything must be procedural."""
+)
+{
+    uniform asset  jitsd:generator
+    uniform string jitsd:generatorVersion
+    uniform token  jitsd:costClass = "moderate" (
+        allowedTokens = ["trivial", "moderate", "heavy", "offline"]
+    )
+
+    # Conservative bounds computable WITHOUT generating geometry. You cannot
+    # spatially index something you have not generated yet — this is the
+    # obligation that makes spatial queries possible in a JIT system.
+    uniform float3 jitsd:bounds:min
+    uniform float3 jitsd:bounds:max
+    uniform bool   jitsd:bounds:conservative = true
+
+    # The only places context may change output. Everything else is
+    # context-invariant.
+    uniform token[] jitsd:variationPoints
+
+    # Per-dependency failure policy — declared, not exceptional.
+    uniform token jitsd:failurePolicy = "required" (
+        allowedTokens = ["required", "substitutable", "omittable"]
+    )
+}
+
+# ---------------------------------------------------------------------------
+# Override handle — shot/instance overrides bind here, never to a prim path.
+# ---------------------------------------------------------------------------
+class "JitsdOverrideHandleAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """A declared handle an assembly may override. An override on an
+             arbitrary path silently detonates when the generator regenerates;
+             an override on a handle fails loudly and names its owner."""
+)
+{
+    uniform token jitsd:handle:kind = "scalar"
+    uniform bool  jitsd:handle:required = false
+}
