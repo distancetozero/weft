@@ -67,3 +67,26 @@ Valuable, but it puts relational evaluation on the interactive path.
 
 Append-only and kilobyte-scale, but it is the one thing that must survive
 everything else. Same store as the ledger, or separately durable?
+
+## 9. Granularity of content addressing
+
+Measured in `bench/dedup.py`: byte-level content-defined chunking gives 15.8x
+dedup on localised edits and **1.0x on a whole-file re-export**, which is the
+common case whenever an artist exports from a DCC rather than saving
+incrementally.
+
+So the unit of content addressing probably cannot be the file. Options:
+
+- **Per-prim, per-attribute blobs.** A re-export perturbing one mesh leaves
+  every other prim hashing identically. Strongest dedup, and it makes the
+  Merkle hierarchy load-bearing rather than a diff optimisation — but it means
+  decomposing and recomposing USD layers on every save and checkout.
+- **Semantic chunking.** Keep whole-file blobs but cut chunk boundaries at
+  prim or array boundaries rather than at gear-hash boundaries. Cheaper to
+  build, and it survives float noise but not reordering.
+- **Canonicalise on ingest.** Normalise prim and array ordering before hashing,
+  so a re-export that only reorders produces identical bytes. Complements
+  either of the above; risks being lossy.
+
+This decides whether the store operates on files or on decomposed layers, which
+is close to the foundation, so it wants settling before the resolver is built.

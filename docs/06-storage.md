@@ -144,6 +144,37 @@ addressing already gives dedup; implementing VDB-style tiles *and* Merkle
 hashing on the same data does the job twice. Take the Merkle version — it
 generalises further and gives the diff for free.
 
+## Measured, not assumed
+
+`bench/dedup.py` tests the claim above. 64 MiB asset, 30 saves, 0.5% edited per
+save:
+
+| edit pattern | as separate files | on disk | dedup |
+|---|---|---|---|
+| localised rework | 1.9 GiB | 121.8 MiB | 15.8x |
+| several scattered edits | 1.9 GiB | 341.1 MiB | 5.6x |
+| global re-export | 1.9 GiB | 1.9 GiB | **1.0x** |
+
+Two corrections to what this document originally claimed:
+
+**Whole-file content addressing deduplicates nothing.** One changed byte
+changes the file hash. The claim only holds with content-defined chunk
+boundaries (`jitsd/chunker.py`), which is a hard requirement rather than an
+optimisation. Dedup granularity is then the chunk size, so a 50 KB edit costs
+the chunks it touches — one to two megabytes at ~1 MiB average — not 50 KB.
+
+**Byte-level chunking cannot survive a re-export.** The third row is not
+contrived: re-exporting from a DCC rewrites the whole file — vertex ordering,
+float noise in the low bits, regenerated metadata — and no chunker can see
+through it. An artist who re-exports rather than saving incrementally gets zero
+dedup.
+
+The answer is not a better chunker but to stop treating an asset as one opaque
+file: **content-address per prim and per attribute array**, so a re-export
+perturbing one mesh leaves every other mesh, material and texture reference
+hashing identically. That makes the Merkle hierarchy below load-bearing for
+deduplication, not only for fast diffs.
+
 ## Garbage collection
 
 Anything reachable from a baseline carrying an approval is kept permanently.

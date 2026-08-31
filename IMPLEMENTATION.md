@@ -73,5 +73,30 @@ python bench/dedup.py --size-mb 64 --saves 30
 
 Measures three edit patterns, because they do not behave alike: a localised
 rework, several scattered edits, and a global re-export that perturbs every
-value. The third is the worst case for any chunker and is reported rather than
-hidden.
+value.
+
+Measured — 64 MiB asset, 30 saves, 0.5% of the asset edited per save:
+
+| pattern | as separate files | on disk | dedup | vs. one copy |
+|---|---|---|---|---|
+| local | 1.9 GiB | 121.8 MiB | 15.8x | 1.90x |
+| scattered | 1.9 GiB | 341.1 MiB | 5.6x | 5.33x |
+| global | 1.9 GiB | 1.9 GiB | **1.0x** | **30.00x** |
+
+Per additional save: 2.0 MiB local, 9.6 MiB scattered, 64.0 MiB global.
+
+**The storage claim holds for localised editing and fails completely for
+re-export.** Thirty versions of an asset costing 1.9x one copy is the claim in
+`docs/06-storage.md`, and it is real. But the third row is not a contrived
+worst case — it is what happens when an artist re-exports from a DCC instead of
+saving incrementally, and a re-export routinely rewrites the whole file:
+different vertex ordering, different float noise in the low bits, regenerated
+metadata. Byte-level chunking cannot see through any of that.
+
+The fix is not a better chunker. It is to **stop treating an asset as one
+opaque file**: content-address per prim and per attribute array, so a re-export
+that perturbs one mesh leaves every other mesh, material and texture reference
+hashing identically. That makes the Merkle hierarchy in `docs/06-storage.md`
+load-bearing for deduplication, not only for fast diffs — which is a stronger
+reason to build it than the one the design docs give. Tracked as open question
+9.
