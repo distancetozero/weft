@@ -30,10 +30,17 @@ codecs. Not procedural-only: constants are functions.
 Design phase. No implementation yet. These documents capture the architecture
 decisions; `docs/08-open-questions.md` lists what is still undecided.
 
+## Read the brief
+
+[`docs/index.html`](docs/index.html) is a single-page design brief covering the
+whole architecture — the shareable version. It lives in `docs/`, so enabling
+GitHub Pages on that folder serves it directly.
+
 ## Documents
 
 | | |
 |---|---|
+| [`docs/index.html`](docs/index.html) | single-page design brief — the whole architecture, shareable |
 | [`docs/01-overview.md`](docs/01-overview.md) | thesis, positioning, the two phases, cross-industry mapping |
 | [`docs/02-architecture.md`](docs/02-architecture.md) | layer stack, the two planes, USD integration points, the two clocks, protocol |
 | [`docs/03-versioning.md`](docs/03-versioning.md) | revisions / channels / baselines, naming, live WIP |

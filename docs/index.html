@@ -1,0 +1,628 @@
+<title>Just-In-Time Scene Description</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  /* ---- tokens: light (bare :root defines the complete palette) ---- */
+  :root {
+    --paper:      #F0EEEC;
+    --surface:    #FBFAF9;
+    --surface-2:  #E7E4E1;
+    --ink:        #1A1917;
+    --ink-2:      #4C4945;
+    --ink-3:      #827E78;
+    --rule:       #D6D2CD;
+    --rule-soft:  #E3DFDB;
+    --redline:    #B8332C;
+    --redline-dim:#B8332C1F;
+
+    --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --f-body:    "Spectral", Georgia, "Times New Roman", serif;
+    --f-mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    --col: 68ch;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #171614;
+      --surface:    #1F1E1C;
+      --surface-2:  #2A2825;
+      --ink:        #EEEBE7;
+      --ink-2:      #B6B1AA;
+      --ink-3:      #85807A;
+      --rule:       #35322E;
+      --rule-soft:  #292724;
+      --redline:    #E8695D;
+      --redline-dim:#E8695D24;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #171614;
+    --surface:    #1F1E1C;
+    --surface-2:  #2A2825;
+    --ink:        #EEEBE7;
+    --ink-2:      #B6B1AA;
+    --ink-3:      #85807A;
+    --rule:       #35322E;
+    --rule-soft:  #292724;
+    --redline:    #E8695D;
+    --redline-dim:#E8695D24;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible { outline: 2px solid var(--redline); outline-offset: 3px; }
+
+  /* ---- shell ---- */
+  .shell {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 0;
+    max-width: 1180px;
+    margin: 0 auto;
+    align-items: start;
+  }
+
+  /* ---- left rail ---- */
+  .rail {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 40px 28px 40px 32px;
+    border-right: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    overflow-y: auto;
+  }
+  .mark {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--redline);
+  }
+  .mark span { color: var(--ink-3); display: block; margin-top: 5px; letter-spacing: 0.1em; }
+  .toc { display: flex; flex-direction: column; gap: 1px; }
+  .toc a {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 6px;
+    padding: 5px 8px 5px 0;
+    font-family: var(--f-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    padding-left: 10px;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .toc a b { font-weight: 500; color: var(--ink-3); transition: color .15s ease; }
+  .toc a:hover { color: var(--ink); }
+  .toc a.on { color: var(--ink); border-left-color: var(--redline); }
+  .toc a.on b { color: var(--redline); }
+
+  /* ---- main column ---- */
+  main { padding: 0 56px 140px; min-width: 0; }
+
+  header.masthead {
+    padding: 84px 0 40px;
+    border-bottom: 1px solid var(--ink);
+  }
+  h1 {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: clamp(38px, 5.4vw, 62px);
+    line-height: 1.02;
+    letter-spacing: -0.028em;
+    margin: 0 0 22px;
+    text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--redline); }
+  .standfirst {
+    font-size: 21px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 60ch;
+    margin: 0;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 26px;
+    margin-top: 34px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .meta b { color: var(--ink-2); font-weight: 500; }
+
+  section { padding-top: 72px; scroll-margin-top: 24px; }
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--redline);
+    margin: 0 0 12px;
+  }
+  h2 {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: clamp(26px, 3.1vw, 34px);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: -0.008em;
+    margin: 36px 0 10px;
+  }
+  p { margin: 0 0 17px; max-width: var(--col); }
+  a { color: var(--ink); text-decoration-color: var(--redline); text-underline-offset: 3px; }
+  strong { font-weight: 600; }
+  code {
+    font-family: var(--f-mono);
+    font-size: 0.86em;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  .pull {
+    border-left: 2px solid var(--redline);
+    padding: 4px 0 4px 22px;
+    margin: 26px 0;
+    max-width: var(--col);
+    font-size: 20px;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+  .pull p { margin: 0; font-size: inherit; }
+
+  ul.plain { margin: 0 0 18px; padding-left: 20px; max-width: var(--col); }
+  ul.plain li { margin-bottom: 8px; }
+
+  /* ---- structural diagrams ---- */
+  .stack { margin: 30px 0 34px; border-top: 1px solid var(--rule); }
+  .stack .row {
+    display: grid;
+    grid-template-columns: 148px 1fr;
+    gap: 20px;
+    padding: 15px 0 15px 16px;
+    border-bottom: 1px solid var(--rule);
+    border-left: 2px solid transparent;
+    align-items: baseline;
+  }
+  .stack .row.mine { border-left-color: var(--redline); background: var(--redline-dim); }
+  .stack .lbl {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .stack .row.mine .lbl { color: var(--redline); }
+  .stack .desc { font-size: 15.5px; color: var(--ink-2); line-height: 1.5; }
+  .stack .desc b { color: var(--ink); font-weight: 600; }
+
+  .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--rule); margin: 30px 0 34px; border: 1px solid var(--rule); }
+  .trio .cell { background: var(--surface); padding: 20px 18px; }
+  .trio .cell.mut { background: var(--redline-dim); }
+  .trio .k {
+    font-family: var(--f-mono);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.11em; text-transform: uppercase;
+    color: var(--ink-3); margin: 0 0 10px;
+  }
+  .trio .cell.mut .k { color: var(--redline); }
+  .trio h4 { font-family: var(--f-display); font-size: 17px; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .trio p { font-size: 14.5px; line-height: 1.5; color: var(--ink-2); margin: 0; max-width: none; }
+
+  .ladder { margin: 30px 0 34px; display: flex; flex-direction: column; gap: 1px; }
+  .ladder .step {
+    display: grid; grid-template-columns: 30px 1fr auto; gap: 16px; align-items: baseline;
+    padding: 13px 16px; background: var(--surface); border-left: 2px solid var(--rule);
+  }
+  .ladder .step:first-child { border-left-color: var(--redline); }
+  .ladder .n { font-family: var(--f-mono); font-size: 12px; font-weight: 600; color: var(--ink-3); }
+  .ladder .step:first-child .n { color: var(--redline); }
+  .ladder .what { font-size: 15.5px; }
+  .ladder .needs { font-family: var(--f-mono); font-size: 11.5px; color: var(--ink-3); text-align: right; }
+
+  /* ---- tables ---- */
+  .tw { overflow-x: auto; margin: 26px 0 32px; border: 1px solid var(--rule); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; background: var(--surface); }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  thead th {
+    font-family: var(--f-mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-3);
+    border-bottom: 1px solid var(--rule); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--ink-3); }
+  td.rl { color: var(--redline); font-weight: 600; }
+
+  /* ---- code block ---- */
+  pre {
+    font-family: var(--f-mono); font-size: 12.5px; line-height: 1.72;
+    background: var(--surface); border: 1px solid var(--rule);
+    padding: 18px 20px; overflow-x: auto; margin: 24px 0 30px;
+    color: var(--ink-2);
+  }
+  pre b { color: var(--ink); font-weight: 500; }
+  pre i { color: var(--redline); font-style: normal; }
+
+  /* ---- question list ---- */
+  ol.q { counter-reset: q; list-style: none; margin: 26px 0 0; padding: 0; max-width: var(--col); }
+  ol.q li {
+    counter-increment: q; position: relative; padding: 0 0 18px 42px;
+    margin-bottom: 18px; border-bottom: 1px solid var(--rule-soft);
+  }
+  ol.q li:last-child { border-bottom: none; }
+  ol.q li::before {
+    content: counter(q, decimal-leading-zero);
+    position: absolute; left: 0; top: 2px;
+    font-family: var(--f-mono); font-size: 12px; font-weight: 600; color: var(--redline);
+  }
+  ol.q b { display: block; font-family: var(--f-display); font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  ol.q span { font-size: 15px; color: var(--ink-2); }
+
+  footer {
+    margin-top: 88px; padding-top: 26px; border-top: 1px solid var(--ink);
+    font-family: var(--f-mono); font-size: 11.5px; color: var(--ink-3);
+    display: flex; flex-wrap: wrap; gap: 8px 28px;
+  }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; }
+    .rail { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--rule); padding: 26px 22px; }
+    .toc { flex-direction: row; flex-wrap: wrap; gap: 2px 4px; }
+    .toc a { border-left: none; border-bottom: 2px solid transparent; padding: 4px 8px; }
+    .toc a.on { border-left-color: transparent; border-bottom-color: var(--redline); }
+    main { padding: 0 22px 90px; }
+    header.masthead { padding-top: 44px; }
+    .trio { grid-template-columns: 1fr; }
+    .ladder .step { grid-template-columns: 26px 1fr; }
+    .ladder .needs { grid-column: 2; text-align: left; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  }
+</style>
+
+<div class="shell">
+  <nav class="rail" aria-label="Contents">
+    <div class="mark">JIT&#8209;SD<span>Design brief</span></div>
+    <div class="toc">
+      <a href="#thesis"><b>01</b> Thesis</a>
+      <a href="#phases"><b>02</b> Two phases</a>
+      <a href="#versioning"><b>03</b> Versioning</a>
+      <a href="#contracts"><b>04</b> Contracts</a>
+      <a href="#contexts"><b>05</b> Contexts</a>
+      <a href="#storage"><b>06</b> On disk</a>
+      <a href="#relation"><b>07</b> Relation to USD</a>
+      <a href="#adoption"><b>08</b> Adoption</a>
+      <a href="#open"><b>09</b> Open questions</a>
+    </div>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <h1>Just&#8209;In&#8209;Time<br>Scene <em>Description</em></h1>
+      <p class="standfirst">A resolution layer beneath USD composition that turns a stage from a file you open into a query you evaluate — and gives the scene graph a version identity it has never had.</p>
+      <div class="meta">
+        <span>Status <b>Design phase — no implementation</b></span>
+        <span>Repo <b>distancetozero/jit-sd</b></span>
+        <span>Branch <b>claude/jitsd-engine-design</b></span>
+      </div>
+    </header>
+
+    <section id="thesis">
+      <p class="eyebrow">01 — Thesis</p>
+      <h2>USD is already the evaluator. Only its inputs are rigid.</h2>
+      <p>USD's composition engine is a pure functional evaluator. LIVRPS — Local, Inherits, VariantSets, References, Payloads, Specializes — is a deterministic function from a layer stack to a composed stage. Open the same layers, get the same stage. Pixar already built the hard part.</p>
+      <p>What is rigid is not the evaluator but that <strong>its inputs are static files on disk</strong>. Someone must publish <code>hero_car_v037.usd</code> before anyone can reference it, and the reference is a path — so it points at a thing that already exists.</p>
+      <div class="pull"><p>JIT&#8209;SD keeps USD's evaluator and makes its inputs generated on demand and parameterised by who is asking.</p></div>
+
+      <div class="stack">
+        <div class="row"><div class="lbl">Consumption</div><div class="desc">Hydra · Fabric · renderers · game runtimes</div></div>
+        <div class="row"><div class="lbl">Composition</div><div class="desc"><b>USD</b> — LIVRPS, layers, schemas, payloads · <b>unchanged</b></div></div>
+        <div class="row mine"><div class="lbl">Resolution</div><div class="desc"><b>JIT&#8209;SD</b> — contracts, channels, baselines, contexts · the new layer</div></div>
+        <div class="row"><div class="lbl">Storage</div><div class="desc">Content-addressed objects + an append-only ledger</div></div>
+      </div>
+
+      <h3>What it is not</h3>
+      <ul class="plain">
+        <li><strong>Not a new scene description format.</strong> USD stays, entirely.</li>
+        <li><strong>Not a competitor to glTF or USDZ.</strong> Those are output codecs — the compiled binaries. This is the compiler and the build system.</li>
+        <li><strong>Not a replacement for live collaborative editing.</strong> Live sync is consumed, not replaced.</li>
+        <li><strong>Not procedural-only.</strong> A hand-sculpted hero asset is a generator with no parameters. Everything is <em>addressed</em> as a function; constants are functions.</li>
+      </ul>
+
+      <h3>The structural rule everything rests on</h3>
+      <p>The <strong>relational plane</strong> — parameters, ports, contracts, dependency structure — is kilobytes and never sees a triangle. The <strong>geometric plane</strong> is opaque kernels invoked at the leaves of a resolved derivation. Let geometry into the relational plane and you lose termination guarantees, cacheability, and any hope of resolving a graph in under a second.</p>
+      <p>Operationally this is also what makes it fast: resolve the whole graph from parameters and port specs alone, then fan out geometry generation in parallel. Naive fan-out gives a serial chain where tail latency <em>sums</em> rather than maxes.</p>
+    </section>
+
+    <section id="phases">
+      <p class="eyebrow">02 — Two phases</p>
+      <h2>Definition and Assembly are not film words.</h2>
+      <p>Film calls them "asset build" and "shot execution." Those are not film-specific activities — they are the two halves of every USD workflow, in every industry that has adopted it.</p>
+      <p><strong>Definition</strong> authors a reusable, context-free, timeless description of a <em>kind of thing</em>. A type, not an instance. <strong>Assembly</strong> binds definitions into a specific place, at a specific moment, for a specific purpose, and materialises the result.</p>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th></th><th>Film / TV</th><th>Games</th><th>Manufacturing</th><th>AEC</th><th>Robotics</th></tr></thead>
+          <tbody>
+            <tr><td>Definition</td><td>asset</td><td>prefab</td><td>part definition</td><td>product family</td><td>robot model</td></tr>
+            <tr><td>Assembly</td><td>shot</td><td>level / cell</td><td>configured unit</td><td>building on a site</td><td>scenario</td></tr>
+            <tr><td>Articulation</td><td>rigging</td><td>anim blueprint</td><td>joints, DOF</td><td>operable parts</td><td>actuators</td></tr>
+            <tr><td>Analysis</td><td>FX / sim</td><td>physics</td><td>FEA / CFD</td><td>clash, energy</td><td>physics sim</td></tr>
+            <tr><td>Gate</td><td>dailies</td><td>cert</td><td>change sign-off</td><td>for construction</td><td>regression suite</td></tr>
+            <tr><td class="rl">Pinning</td><td class="rl">version per shot</td><td class="rl">content build</td><td class="rl">effectivity</td><td class="rl">issue set</td><td class="rl">scenario version</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Read the last row. <strong>Every one of these industries independently invented the same idea</strong> — a pinned coordinate saying which definitions were in force — and every one implements it as a bespoke pipeline database bolted onto USD from outside, incompatibly.</p>
+
+      <h3>Why the non-film case is the stronger one</h3>
+      <p>Outside entertainment, USD is used as a downstream assembly and visualisation target, not a source of truth. Truth stays in CAD, PLM or BIM; something converts to USD; the USD gets assembled and looked at. At that boundary you lose parametric intent (a feature tree becomes triangles), version identity, and the round trip.</p>
+      <div class="pull"><p>CAD, PLM and BIM are already just-in-time systems. The bake to USD is what stops them being one.</p></div>
+      <p>A CAD model <em>is</em> a program that generates geometry from parameters. A Revit family <em>is</em> a generator that builds itself against its host. PLM effectivity <em>is</em> a pinned coordinate. These industries have had these ideas for thirty years in their authoring tools and discard all of it at export. Film has to be persuaded its bakes are a problem; manufacturing already knows.</p>
+    </section>
+
+    <section id="versioning">
+      <p class="eyebrow">03 — Versioning</p>
+      <h2>Versions are acts of intent, not moments in time.</h2>
+      <p>An earlier draft made the evaluation coordinate a wall-clock timestamp. That was wrong. Clock time records <em>when</em> but carries no meaning — which is why autosave history is excellent for recovery and useless for collaboration. There is no way to say "use the good one."</p>
+      <p>Every system people actually hand work off through versions by deliberate act: a tag, a release, a lifecycle state change, an issued drawing set. Time survives only as an index for looking those up afterwards.</p>
+
+      <div class="trio">
+        <div class="cell">
+          <p class="k">Immutable</p>
+          <h4>Revisions</h4>
+          <p>Content-addressed, never typed by a human. Every save makes one. Never mutated, never reused, deduped by construction.</p>
+        </div>
+        <div class="cell mut">
+          <p class="k">The only mutable object</p>
+          <h4>Channels</h4>
+          <p><code>@wip</code>, <code>@review</code>, <code>@approved</code>. A pointer to a revision, owned by a team. Moving it is deliberate, attributed, audited.</p>
+        </div>
+        <div class="cell">
+          <p class="k">Immutable</p>
+          <h4>Baselines</h4>
+          <p>A named, complete resolution map — the whole world pinned. A lockfile. Created by a decision, never by a clock.</p>
+        </div>
+      </div>
+
+      <div class="pull"><p>There is exactly one mutable object in the system. All volatility is confined to a single small surface that is human-controlled and auditable — which is why rollback is a pointer move, not a migration.</p></div>
+
+      <h3>Channels are not a new idea</h3>
+      <p>Film runs work → publish → approved. Games run dev → main → cert → live. PLM runs In Work → Under Review → Released → Superseded. AEC has it standardised in ISO 19650 as Work in Progress → Shared → Published → Archived. Every industry converged on a promotion ladder and every one implements it as a status field beside files that resolution ignores. The contribution here is making the pointer <em>be</em> the resolution mechanism.</p>
+
+      <h3>Float on compatibility, pin on breakage</h3>
+      <p>Everyone floating on latest means nothing is stable. Everyone pinning hard means everything is stale. The way out is to couple to the <em>contract</em>, not the revision: a consumer floats freely across any revision still satisfying the contract it declared, and breaking changes stop at the boundary.</p>
+      <p>And unlike semver in software — which is a human promise maintainers frequently get wrong — <strong>compatibility here is measured, not asserted</strong>. Every generator ships exemplars, its canonical parameter bindings. Promotion re-evaluates every downstream consumer's exemplars and compares manifests. A "compatible" change that breaks one is reclassified as breaking and refused.</p>
+
+      <h3>Reproducibility without discipline</h3>
+      <p>You never ask for a baseline — you receive one. Resolving against floating channels mints a baseline as a side effect and hands it back, the way <code>npm install</code> writes a lockfile unasked. Reproducibility becomes a byproduct of working normally rather than something anyone must remember.</p>
+
+      <h3>What people actually say</h3>
+      <p>Nobody says a hash out loud. Hashes fail at both jobs a spoken version name does: ordering (v37 is obviously after v36) and pronounceability. The only number form people do speak is monotonic and centrally assigned — publish versions, revision letters, changelists, build numbers.</p>
+      <div class="pull"><p>People name inputs and decisions. Machines identify outputs.</p></div>
+      <p>So what appears on screen is a coordinate, not an identity — <code>hero_car v37 · baseline 118 · lighting</code>. Speakable, ordered, diagnostic: two people seeing different pictures locate the disagreement in seconds. The hash lives underneath, in the receipt and the burn-in, never in anyone's mouth.</p>
+
+      <h3>Live WIP</h3>
+      <p>Live sync is a transport attached to a channel, never a requirement. Each participant authors into their own sublayer, and everyone subscribes to everyone else's deltas — which means <strong>conflict resolution comes free from LIVRPS</strong>. No CRDT, no merge algorithm; layer strength decides, deterministically, by an order declared up front and visible to everyone. Better than last-writer-wins, which is invisible.</p>
+      <p>A live session is volatile and disposable. Checkpoints crystallise it into immutable revisions, automatically every few seconds. Three invariants keep it from corrupting the reproducible core:</p>
+      <ul class="plain">
+        <li><strong>Live is viewable, never citable.</strong> You may watch a colleague's session; nothing with a receipt may be built from it. Only revisions can be resolved against.</li>
+        <li><strong>Losing the live server degrades to solo</strong>, never to a blocked session.</li>
+        <li><strong>Ownership is advisory</strong>, not a lock. Locking by default is how you get people emailing each other to release files.</li>
+      </ul>
+    </section>
+
+    <section id="contracts">
+      <p class="eyebrow">04 — Contracts</p>
+      <h2>Couple to contracts, not to names.</h2>
+      <p>USD composes by namespace overlay — an <code>over</code> on <code>/World/Set/Trees/Tree_047</code>. Everyone must agree on the tree in advance, and renaming a prim breaks downstream departments. Namespace editing and relocates exist to paper over this; they are a patch on the underlying coupling.</p>
+      <p>JIT&#8209;SD binds by structural schema match instead: the resolver finds a provider whose emitted interface satisfies a consumer's declared requirement. <strong>The namespace becomes an output of composition rather than a precondition for it.</strong> Contracts are declared as codeless applied API schemas — pure plugin data, nobody compiles anything.</p>
+
+      <h3>Four archetypes carry most of it</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Archetype</th><th>Film</th><th>Games</th><th>Manufacturing</th><th>AEC</th></tr></thead>
+          <tbody>
+            <tr><td>Mount / Socket</td><td>rig attachment</td><td>weapon socket</td><td>fastener pattern</td><td>façade grid</td></tr>
+            <tr><td>Field / Domain</td><td>scatter density</td><td>foliage spawn</td><td>thermal field</td><td>daylight, occupancy</td></tr>
+            <tr><td>Envelope</td><td>sim bounds</td><td>navmesh clearance</td><td>swept volume</td><td>egress path</td></tr>
+            <tr><td>Kinematic chain</td><td>rigs</td><td>anim graphs</td><td>mechanisms</td><td>operable parts</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>One archetype, four industries. The solver understands only archetypes; each industry's vocabulary arrives as a schema pack on top. "Wheels must match the chassis mount points" is exactly "props must sit on the terrain after FX re-sculpts it."</p>
+
+      <h3>Ports carry envelopes, not just values</h3>
+      <p>A port is a transform <em>plus an admissible envelope</em>. That is what actually decouples teams: a consumer iterates freely while staying inside it, and the provider never re-resolves. Only envelope violations escalate. Units live in the type system, because dimensional mismatch across a team boundary is the empirical failure mode in this domain and is cheap to make unrepresentable.</p>
+
+      <h3>Exemplars are the test suite</h3>
+      <p>Nobody can author a function blind, so a generator ships canonical parameter bindings and the authoring tool opens one to work in. The same set doubles as continuous integration for 3D content — re-evaluate downstream exemplars, diff the manifests. Today film finds out at dailies, manufacturing at a design review, AEC at clash detection or on site, games at cert. All late, by looking, with humans.</p>
+
+      <h3>Overrides bind to declared handles</h3>
+      <p>Every industry needs "this one instance is special." Today a shot-level override on <code>/World/Char/geo/mesh.points</code> silently detonates the moment the modeler changes topology, and nobody finds out until a render looks wrong. Bound to a declared handle, a generator change that removes it fails loudly at resolution and names its owner.</p>
+
+      <h3>Bounds without geometry</h3>
+      <p>Spatial queries matter for games, digital twins and AEC — but <strong>you cannot spatially index something you have not generated yet</strong>. So every generator must declare conservative bounds computable from parameters alone, in microseconds, never wrong in the direction that hides something. Index the bounds in the relational plane, then materialise only what intersects.</p>
+    </section>
+
+    <section id="contexts">
+      <p class="eyebrow">05 — Contexts</p>
+      <h2>The same query, compiled differently for who is asking.</h2>
+      <p>USD <code>variantSet</code>s must be authored ahead and shipped whole. Someone must anticipate every variant, they drift out of sync, they bloat the file — and an outsourcing vendor receives the unreleased-character variant whether or not they are allowed to see it. Here, variation is compiled per request and <strong>the other variants never exist</strong>. That is a security property, not merely an efficiency one.</p>
+      <p>Context is a claim set, not a role — <code>{department, purpose, platform, budget, clearance, jurisdiction}</code>. Roles do not compose and explode the moment "previz artist at a vendor on a tablet" appears.</p>
+
+      <div class="stack">
+        <div class="row"><div class="lbl">Tier 1 · Representation</div><div class="desc">LOD, tessellation, displacement, texture budget, coordinate convention, output codec. Pure negotiation. May live in a Hydra filter.</div></div>
+        <div class="row"><div class="lbl">Tier 2 · Semantics</div><div class="desc">A different derivation, not a coarser one. Animator gets a proxy with a rig; lighter gets displacement and shaders but no rig; the game server gets collision hulls and <b>nothing else</b>.</div></div>
+        <div class="row mine"><div class="lbl">Tier 3 · Authorization</div><div class="desc">Vendor redaction, unannounced characters, territory-restricted IP. <b>Must be an independent deny-by-default gate</b> — otherwise a bug in a LOD rule is a data breach.</div></div>
+      </div>
+
+      <p>For games, tier 2 is the headline: one authored asset, N platform compilations, consistent by construction. Today each is a separate published asset from a separate pipeline step, and they drift — the mobile LOD is two revisions behind the hero, the collision proxy no longer matches the model.</p>
+
+      <h3>The trap: omission is not redaction</h3>
+      <p>Removing a prim leaves the hole in the floor, the shadow holdout, the light rig aimed at nothing, and a bounding volume that gives away the silhouette. A decimated mesh can be partially inverted. A boolean subtraction leaves the negative of what was removed.</p>
+      <div class="pull"><p>Compile a different program. Do not compile the full one down.</p></div>
+      <p>The restricted variant must come from a separate declassifying generator that provably emits only a permitted feature set. "Just decimate the real model" is the tempting and wrong architecture, and it is the kind of thing discovered after it ships.</p>
+
+      <h3>Consistency and cache sharing from one constraint</h3>
+      <p>Context may change <em>which rules fire</em> and <em>which codec is emitted</em> — never the parameters flowing through shared nodes. Declare explicit variation points; everything outside them is context-invariant. So shared subgraphs hash identically across contexts, meaning all contexts share cache <em>and</em> the marketing render is provably the actual asset.</p>
+
+      <h3>Approval attaches to a derivation, not a file</h3>
+      <p>Dailies sign-off, engineering change approval, issued-for-construction and cert all become "someone signed derivation <em>H</em> at baseline <em>E</em> under context <em>C</em>." You can prove what was approved — and "has anything drifted since?" becomes a hash comparison. Instant, for a question that currently takes a person a day and is usually answered wrong.</p>
+    </section>
+
+    <section id="storage">
+      <p class="eyebrow">06 — On disk</p>
+      <h2>Three stores, and only one of them is big.</h2>
+      <p>A revision is a <em>recipe</em>, not geometry. <code>v037.usda</code> is about three kilobytes — a real USD layer, openable in usdview, containing prim definitions, contract declarations, parameters, and payloads pointing at object-store hashes. The four gigabytes live once, shared by every version that did not change them.</p>
+
+<pre><b>/jitsd/objects/</b>                       <i>immutable · content-addressed · write-once</i>
+  sha256/8f/2c/8f2c9a1b….usdc          geometry payload            (GB)
+  sha256/aa/12/aa12cc90….wasm          a generator kernel          (MB)
+
+<b>/jitsd/ledger/</b>                        <i>append-only · all text · all diffable</i>
+  assets/hero_car/revisions/v037.usda  the recipe                  (KB)
+  assets/hero_car/channels/approved    <i>→ v036   the only mutable thing</i>
+  baselines/000118.usda                "client_review"             (KB)
+
+<b>~/work/seq040_sh0120/</b>                 <i>per person · disposable</i>
+  shot.usda                            what the artist edits       (KB)
+  jitsd.lock                           resolved against 118        (KB)
+  .jitsd/cache/                        hardlinks. delete anytime.  (GB)</pre>
+
+      <div class="pull"><p>JIT&#8209;SD moves the source of truth from the big files to the small ones.</p></div>
+      <p>Today the precious artifact is a 4 GB file that must never be deleted. Here it is a 3 KB recipe, and the 4 GB is a cache anyone can rebuild. Saving writes a hash, uploads the blob only if new, writes a 3 KB revision, and moves a pointer. That pointer move is the only thing in the entire system that overwrites anything.</p>
+
+      <h3>Merkle the hierarchy</h3>
+      <p>Hash every node so a node's hash includes its children's. Subtree equality becomes one comparison rather than forty thousand prim visits; diff cost becomes proportional to changes rather than scene size — exactly why <code>git status</code> is instant on a huge repo. This is a core structural decision, not an optimisation: the kilobyte-scale drift check only works if it is in place.</p>
+
+      <h3>What OpenVDB already proved</h3>
+      <p>Two ideas transfer directly. <strong>Tiles</strong> — an internal node holding one constant instead of a child pointer — mean a 200,000-prim plant does not need a 200,000-row pin table. <strong>Topology separated from values</strong> gives the sharper formulation of the two-plane rule: a baseline diff is a topological operation, not a value comparison. And VDB's value accessors, which cache the root-to-leaf path, are the model for caching derivation paths so a lighter working on one character re-resolves nothing frame to frame.</p>
+      <p>But the strongest signal is NanoVDB. Three independent teams converged on the same split:</p>
+      <div class="tw">
+        <table>
+          <thead><tr><th>System</th><th>Authoring representation</th><th>Consumption representation</th></tr></thead>
+          <tbody>
+            <tr><td>OpenVDB</td><td>mutable pointer tree</td><td>NanoVDB</td></tr>
+            <tr><td>USD</td><td><code>UsdStage</code> + composition</td><td>Fabric</td></tr>
+            <tr><td>JIT&#8209;SD</td><td>derivation + baseline</td><td>materialised payload</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Authoring structure and consumption structure should be different data structures, and the compile between them is where the value is.</p>
+    </section>
+
+    <section id="relation">
+      <p class="eyebrow">07 — Relation to existing work</p>
+      <h2>What this competes with, and what it does not.</h2>
+
+      <h3>Plain USD — filling a gap it left deliberately</h3>
+      <p>USD has no concept of "as of," no contract system, no provenance beyond which layer won, no way to detect breakage except looking, and no redaction model. But these are not failures. USD was scoped as an interchange and composition format, leaving pipeline concerns to the studio, and at that scope it succeeded more completely than anything before it. Pixar had a pipeline team to fill the empty layer.</p>
+      <p>The problem is that USD's success carried it into industries with no Pixar-scale pipeline team, each now rebuilding that layer badly and incompatibly. This is a proposal to standardise the layer USD deliberately left empty — not a criticism of what USD chose to do.</p>
+
+      <h3>Omniverse / Nucleus — complementary, at a different timescale</h3>
+      <p>Nucleus with live layers is a <strong>push</strong> model: state lives on a server, clients mutate in place, deltas broadcast. JIT&#8209;SD is a <strong>pull</strong> model: nothing is mutated, immutable revisions are created and pointers move deliberately.</p>
+      <div class="pull"><p>Live sync is what happens inside a revision. JIT&#8209;SD is what happens between revisions.</p></div>
+      <p>These compose. A team collaborates live on <code>@wip</code> using delta sync; on promotion to <code>@review</code>, the immutable revision, contract check and exemplar validation engage. Do not compete on live multi-user editing — pull-based resolution is genuinely worse at four people rearranging a room together, and pretending otherwise would be a mistake.</p>
+
+      <h3>Fabric — a materialisation target, not a rival</h3>
+      <p>Fabric exists because <code>UsdStage</code> is optimised for authoring, not for touching values a hundred times a second. It answers "how do I read this at frame rate." JIT&#8209;SD answers "which scene, from whose definitions, at what baseline, compiled for whom." The natural pipeline runs one into the other. Fabric actually strengthens the case: it proves the industry already accepts that the runtime representation should be a compiled derivative rather than the authored one.</p>
+    </section>
+
+    <section id="adoption">
+      <p class="eyebrow">08 — Adoption</p>
+      <h2>It has to work like <code>git init</code>.</h2>
+      <p>The cold-start problem is the serious risk: value comes from teams coupling through contracts, so one team adopting in isolation gets almost nothing, and network-effect systems die in that gap. The constraint that answers it:</p>
+      <div class="pull"><p>No rung may be required for a lower rung to be useful.</p></div>
+
+      <div class="ladder">
+        <div class="step"><span class="n">01</span><span class="what"><strong>Solo.</strong> Local object store and ledger, auto-versioning, baselines.</span><span class="needs">nothing</span></div>
+        <div class="step"><span class="n">02</span><span class="what"><strong>Solo, many machines.</strong> A remote; push and pull revisions.</span><span class="needs">a blob store</span></div>
+        <div class="step"><span class="n">03</span><span class="what"><strong>Small team, one asset.</strong> Live sync on a WIP channel.</span><span class="needs">a delta relay</span></div>
+        <div class="step"><span class="n">04</span><span class="what"><strong>Multiple teams.</strong> Channels, promotion, contracts.</span><span class="needs">+ a sequencer</span></div>
+        <div class="step"><span class="n">05</span><span class="what"><strong>Cross-org.</strong> Contexts, redaction, exemplar CI.</span><span class="needs">+ policy, workers</span></div>
+      </div>
+
+      <h3>What rung one gives one person, alone, offline</h3>
+      <p>Every save versioned forever, with no <code>_v3_final_FINAL</code>. Storage collapse — 200 saves of a 4 GB asset costing 4 GB plus deltas rather than 800, which is the thing people feel on day one. Instant rollback. Reproducible renders, because "why does this frame look different from yesterday's" is a daily problem for one person too. Named checkpoints. Structural diff.</p>
+      <p>That is a defensible standalone product with zero collaborators, zero contracts and zero servers. Contracts become an upgrade earned once a second team appears.</p>
+
+      <h3>Where this is the wrong paradigm</h3>
+      <p>For a locked shot or a shipped level, bake it. The real home is assets in flux with many authors — configurators, engineering review, simulation prep, live product data, anything with a supply chain. But a bake is just a query pinned to a baseline and flattened, so it falls out for free, and the file is demoted from source of truth to cached result. Far easier to sell than "files are obsolete," with the advantage of being true.</p>
+    </section>
+
+    <section id="open">
+      <p class="eyebrow">09 — Open questions</p>
+      <h2>What is still undecided.</h2>
+      <ol class="q">
+        <li><b>Channel ownership and promotion policy</b><span>Whether promotion is a permission check, an exemplar gate, or a human sign-off. This is where the design stops being a data architecture and becomes an organisational one.</span></li>
+        <li><b>Checkpoint granularity in a live session</b><span>One co-authored revision, or per-participant sublayer revisions that compose? Decides whether authorship is per-asset or per-layer, and what "revert" means when three people are in the room.</span></li>
+        <li><b>Bounds declaration format</b><span>AABB only, or OBB, hull, sphere set? Time-varying for a swinging door or an animated character? Per variation point? Blocks the contract schema.</span></li>
+        <li><b>Contract versioning semantics</b><span>Adding an optional port is compatible; removing one is breaking; tightening a tolerance envelope is breaking for some consumers and not others. How much can the exemplar suite decide automatically?</span></li>
+        <li><b>Diamond dependencies</b><span>Two consumers need incompatible revisions of the same provider. Package managers have twenty years of answers — which apply when the package is geometry that must be spatially coherent with itself?</span></li>
+        <li><b>Live contract validation</b><span>Should a participant see "you have just broken the wheel team's mount" as they work? Valuable, but it puts relational evaluation on the interactive path.</span></li>
+      </ol>
+    </section>
+
+    <footer>
+      <span>Design brief · no implementation yet</span>
+      <span>Full specs and decision records in <code>docs/</code> and <code>specs/</code></span>
+      <span>distancetozero/jit-sd</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var map = {};
+    links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+    var sections = Array.prototype.slice.call(document.querySelectorAll('main section'));
+    if (!('IntersectionObserver' in window) || !sections.length) return;
+
+    var visible = {};
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { visible[e.target.id] = e.isIntersecting; });
+      var current = null;
+      for (var i = 0; i < sections.length; i++) {
+        if (visible[sections[i].id]) { current = sections[i].id; break; }
+      }
+      links.forEach(function (a) { a.classList.remove('on'); });
+      if (current && map[current]) map[current].classList.add('on');
+    }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+
+    sections.forEach(function (s) { obs.observe(s); });
+  })();
+</script>
