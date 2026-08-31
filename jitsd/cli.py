@@ -10,7 +10,8 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from .ledger import Repo
+from .contracts import Surface
+from .ledger import BreakingChange, Repo
 
 
 def _human(n: float) -> str:
@@ -43,13 +44,21 @@ def cmd_save(args) -> int:
     if not src.is_file():
         print("no such file: %s" % src, file=sys.stderr)
         return 1
+    iface = Path(args.interface) if args.interface else None
+    if iface and not iface.is_file():
+        print("no such interface file: %s" % iface, file=sys.stderr)
+        return 1
     before = repo.store.stats()
-    rev = repo.save(args.asset, src, _author(), args.message or "")
+    rev = repo.save(args.asset, src, _author(), args.message or "", interface=iface)
     after = repo.store.stats()
     added = after.physical_bytes - before.physical_bytes
     print("%s %s  %s  (+%s on disk)" % (args.asset, rev.rev, _human(rev.size), _human(added)))
     if rev.message:
         print("  %s" % rev.message)
+    surf = Surface.from_dict(rev.surface)
+    if surf:
+        print("  contract surface: %d offered, %d required"
+              % (len(surf.offers), len(surf.requires)))
     return 0
 
 
@@ -90,9 +99,63 @@ def cmd_channels(args) -> int:
 
 def cmd_promote(args) -> int:
     repo = Repo.find()
-    rev = repo.promote(args.asset, args.rev, args.to)
-    print("@%s -> %s %s" % (args.to, args.asset, rev))
+    try:
+        rev = repo.promote(args.asset, args.rev, args.to, force=args.force)
+    except BreakingChange as e:
+        print("REFUSED: %s %s -> @%s is a breaking change" % (e.asset, e.rev, e.channel),
+              file=sys.stderr)
+        for v in e.violations:
+            print("  %s" % v, file=sys.stderr)
+        print("\nBump the contract major, or --force to promote anyway.", file=sys.stderr)
+        return 1
+    checked = repo.check_promotion(args.asset, rev, args.to)
+    note = "  (forced over %d violation%s)" % (len(checked), "" if len(checked) == 1 else "s") \
+        if (checked and args.force) else ""
+    print("@%s -> %s %s%s" % (args.to, args.asset, rev, note))
     return 0
+
+
+def cmd_bind(args) -> int:
+    """Resolve requirements to offers by contract identity."""
+    repo = Repo.find()
+    res = repo.bind(baseline=args.baseline, channel=args.channel)
+    surfaces = repo.surfaces(repo.resolve(baseline=args.baseline, channel=args.channel))
+
+    if not surfaces:
+        print("no asset declares a contract surface")
+        return 0
+
+    noffers = sum(len(s.offers) for s in surfaces.values())
+    nreq = sum(len(s.requires) for s in surfaces.values())
+    print("%d asset%s  ·  %d offered  ·  %d required"
+          % (len(surfaces), "" if len(surfaces) == 1 else "s", noffers, nreq))
+    print()
+
+    for b in res.bindings:
+        who = "%s %s" % (b.consumer, b.requirement.rsplit(":", 1)[-1])
+        print("  %-30s %-12s -> %s" % (who, b.contract, ", ".join(b.providers)))
+
+    if res.diagnostics:
+        print()
+        for d in res.diagnostics:
+            stream = sys.stderr if d.severity == "error" else sys.stdout
+            print("  %s" % d, file=stream)
+
+    return 0 if res.ok else 1
+
+
+def cmd_check(args) -> int:
+    """What would promoting this revision break?"""
+    repo = Repo.find()
+    violations = repo.check_promotion(args.asset, args.rev, args.to)
+    rev = repo.ledger.resolve_ref(args.asset, args.rev)
+    if not violations:
+        print("%s %s -> @%s: compatible" % (args.asset, rev, args.to))
+        return 0
+    print("%s %s -> @%s: breaking" % (args.asset, rev, args.to))
+    for v in violations:
+        print("  %s" % v)
+    return 1
 
 
 def cmd_back(args) -> int:
@@ -239,6 +302,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("asset")
     s.add_argument("file")
     s.add_argument("-m", "--message", default="")
+    s.add_argument("--interface", help="authored .usda declaring this asset's contract surface")
     s.set_defaults(fn=cmd_save)
 
     s = sub.add_parser("log", help="revision history for an asset")
@@ -253,7 +317,19 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("asset")
     s.add_argument("rev")
     s.add_argument("--to", required=True)
+    s.add_argument("--force", action="store_true", help="promote over a breaking change")
     s.set_defaults(fn=cmd_promote)
+
+    s = sub.add_parser("bind", help="resolve requirements to offers by contract")
+    s.add_argument("--baseline")
+    s.add_argument("--channel", default="approved")
+    s.set_defaults(fn=cmd_bind)
+
+    s = sub.add_parser("check", help="would promoting this revision break anything?")
+    s.add_argument("asset")
+    s.add_argument("rev")
+    s.add_argument("--to", default="approved")
+    s.set_defaults(fn=cmd_check)
 
     s = sub.add_parser("back", help="point @wip at an earlier revision")
     s.add_argument("asset")

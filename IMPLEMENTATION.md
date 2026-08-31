@@ -1,8 +1,8 @@
-# Reference implementation — rung 1
+# Reference implementation — rung 1, plus contract resolution
 
-Solo, offline, no contracts, no server. Per `docs/07-adoption.md`, nothing
-above rung 1 may be required for rung 1 to be useful, so this implements only
-what one person working alone needs.
+Solo, offline, no server. Per `docs/07-adoption.md`, nothing above rung 1 may
+be required for rung 1 to be useful — so versioning works with no contracts
+declared at all, and contracts are an upgrade layered on top.
 
 ```
 pip install -e ".[dev]"      # numpy and pytest are optional
@@ -27,6 +27,59 @@ python -m jitsd save hero_car car.usdc -m "reworked front wing"
 | `diff <asset> <a> <b>` | structural diff — chunks shared vs new |
 | `stat` | storage and dedup |
 | `gc` | drop unreachable blobs and chunks |
+| `save --interface <f.usda>` | attach an authored contract surface |
+| `bind` | resolve requirements to offers **by contract identity** |
+| `check <asset> <rev>` | would promoting this break anything? |
+| `promote` | refuses breaking changes unless `--force` |
+
+## Contract resolution
+
+The first thing here USD cannot do. Consumers declare a requirement against a
+contract identity; providers declare an offer satisfying one; the resolver
+matches by type. **No prim path crosses an asset boundary in either
+direction** — `examples/wheelset.iface.usda` names `Mount@2` and the role
+`wheelHub`, and never names the chassis. The chassis team can rename or
+restructure their internals freely.
+
+```
+$ jitsd bind
+3 assets  ·  5 offered  ·  2 required
+
+  aero rail        Mount@2  -> chassis/chassis/mounts/aeroRail
+  wheelset hubs    Mount@2  -> chassis/chassis/mounts/hubFL, .../hubFR, .../hubRL, .../hubRR
+```
+
+### The envelope gate
+
+`docs/03-versioning.md` claims compatibility is measured, not asserted. That is
+now executable. An offer declares how far it may move before consumers care;
+promotion compares a candidate against what is currently on the channel.
+
+```
+$ jitsd promote chassis v002 --to approved     # hub nudged 0.3 mm, envelope 0.5 mm
+chassis v002 -> @approved: compatible
+@approved -> chassis v002                       # consumers untouched, no re-work
+
+$ jitsd promote chassis v003 --to approved     # hub moved 2.7 mm
+REFUSED: chassis v003 -> @approved is a breaking change
+  envelope   /chassis/mounts/hubFL: moved 0.0027, envelope allows 0.0005
+             -- provider broke its own promise
+```
+
+Breaking: an offer removed, its contract major bumped, its envelope tightened,
+or its frame moved beyond what it promised. Compatible: offers added, or an
+offer moving inside its envelope.
+
+Failure policy decides severity rather than being an exception path. With the
+providers gone, `wheelset` (`required`) errors and `aero` (`substitutable`)
+warns, from the same absence.
+
+### What this deliberately does not do
+
+Cardinality is `one` or `many`, and `one` with several candidates is reported
+as ambiguous rather than guessed. Real disambiguation — four wheels, four hubs,
+each bound individually — is an assembly-level concern that needs the query
+document, which rung 1 does not have.
 
 ## What building it changed
 
@@ -60,8 +113,15 @@ exists to validate the model, not to ship.
   `customLayerData` (`jitsd__meta`) because parsing `.usda` without USD is not
   worth doing. With pxr present this is read through the API instead; the files
   on disk do not change.
-- **One file per asset.** No prim-level structure, so no contracts, no bounds,
-  no context compilation. Those are rungs 4 and 5.
+- **One file per asset payload.** The contract surface is authored separately
+  and attached at save time; there is no prim-level structure inside the
+  payload itself. No bounds evaluation, no context compilation.
+- **`jitsd/usda.py` is a restricted parser, and temporary.** Contracts had to
+  be authored in real USD — declaring an interface in JSON would prove nothing
+  about whether the design fits USD — but rung 1 has no pxr. It handles prims,
+  nested prims, applied API schemas and uniform attributes; no variants, no
+  references, no composition of any kind. When pxr is available the file is
+  deleted and `GetAppliedSchemas()` / `GetAttribute()` replace it outright.
 - **`checkout` reassembles in memory** per chunk; fine at these sizes, wrong
   for a streaming client.
 

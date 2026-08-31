@@ -106,3 +106,57 @@ def test_gc_preserves_everything_a_baseline_pins(tmp_path):
     assert r.store.has_blob(pinned.blob)
     head = r.ledger.read_revision("car", r.ledger.channels("car")["wip"])
     assert r.store.has_blob(head.blob)
+
+
+# -- contracts ------------------------------------------------------------
+
+EXAMPLES = __import__("pathlib").Path(__file__).resolve().parents[1] / "examples"
+
+
+def test_promotion_is_gated_on_measured_compatibility(tmp_path):
+    """The claim in docs/03-versioning.md, as a test."""
+    from jitsd.ledger import BreakingChange
+
+    r = _repo(tmp_path)
+    payload = _write(tmp_path, "c.bin", 50_000, 20)
+    r.save("chassis", payload, "tester", interface=EXAMPLES / "chassis.iface.usda")
+    r.promote("chassis", "v001", "approved")
+
+    # Move a hub far outside its declared envelope.
+    text = (EXAMPLES / "chassis.iface.usda").read_text().replace(
+        "(1.42, 0.31, 0.78)", "(1.44, 0.31, 0.78)")
+    broken = tmp_path / "broken.usda"
+    broken.write_text(text)
+    r.save("chassis", payload, "tester", interface=broken)
+
+    with pytest.raises(BreakingChange) as e:
+        r.promote("chassis", "v002", "approved")
+    assert e.value.violations[0].kind == "envelope"
+
+    # The channel did not move.
+    assert r.ledger.channels("chassis")["approved"] == "v001"
+    # ...unless forced.
+    r.promote("chassis", "v002", "approved", force=True)
+    assert r.ledger.channels("chassis")["approved"] == "v002"
+
+
+def test_interface_carries_forward_when_only_the_payload_changes(tmp_path):
+    r = _repo(tmp_path)
+    payload = _write(tmp_path, "c.bin", 50_000, 21)
+    r.save("chassis", payload, "tester", interface=EXAMPLES / "chassis.iface.usda")
+    payload.write_bytes(random.Random(22).randbytes(50_000))
+    v2 = r.save("chassis", payload, "tester")
+    assert v2.rev == "v002"
+    assert v2.surface == r.ledger.read_revision("chassis", "v001").surface
+
+
+def test_bind_across_assets_at_a_channel(tmp_path):
+    r = _repo(tmp_path)
+    for name in ("chassis", "wheelset"):
+        p = _write(tmp_path, name + ".bin", 20_000, hash(name) % 97)
+        r.save(name, p, "tester", interface=EXAMPLES / ("%s.iface.usda" % name))
+        r.promote(name, "v001", "approved")
+    res = r.bind()
+    assert res.ok
+    (b,) = res.bindings
+    assert b.consumer == "wheelset" and len(b.providers) == 4

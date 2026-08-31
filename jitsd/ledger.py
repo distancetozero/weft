@@ -22,6 +22,7 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from .contracts import Surface, Resolution, Violation, check_compatibility, extract_text, resolve
 from .store import ObjectStore
 
 META_RE = re.compile(r'string\s+jitsd__meta\s*=\s*"""(.*?)"""', re.DOTALL)
@@ -47,8 +48,11 @@ class Revision:
     author: str
     created: str
     message: str = ""
-    contracts_provides: List[str] = field(default_factory=list)
-    contracts_requires: List[str] = field(default_factory=list)
+    # Contract surface, extracted at save time from an authored .usda interface.
+    # Stored on the revision so resolution never re-parses and never needs the
+    # payload -- resolution is a relational-plane operation (docs/02).
+    interface_blob: Optional[str] = None
+    surface: Optional[Dict] = None
 
 
 @dataclass
@@ -223,6 +227,12 @@ over "World" (
         return Baseline(**json.loads(m.group(1)))
 
 
+class BreakingChange(Exception):
+    def __init__(self, asset: str, rev: str, channel: str, violations: List[Violation]):
+        self.asset, self.rev, self.channel, self.violations = asset, rev, channel, violations
+        super().__init__("%s %s -> @%s is a breaking change" % (asset, rev, channel))
+
+
 class Repo:
     """A jitsd working root: object store + ledger."""
 
@@ -251,15 +261,27 @@ class Repo:
         self.ledger.init()
 
     # -- the save path ----------------------------------------------------
-    def save(self, asset: str, path: Path, author: str, message: str = "") -> Revision:
+    def save(self, asset: str, path: Path, author: str, message: str = "",
+             interface: Optional[Path] = None) -> Revision:
         data = Path(path).read_bytes()
         blob = self.store.put_bytes(data)
         chans = self.ledger.channels(asset)
         parent = chans.get("wip")
 
+        iface_blob = None
+        surface = None
+        if interface is not None:
+            text = Path(interface).read_text()
+            surface = extract_text(text).to_dict()   # fails loudly on bad .usda
+            iface_blob = self.store.put_bytes(text.encode())
+        elif parent:
+            # Carry the previous interface forward when only the payload moved.
+            prev = self.ledger.read_revision(asset, parent)
+            iface_blob, surface = prev.interface_blob, prev.surface
+
         if parent:
             prev = self.ledger.read_revision(asset, parent)
-            if prev.blob == blob:
+            if prev.blob == blob and prev.interface_blob == iface_blob:
                 return prev  # nothing changed; do not mint a revision
 
         rev = Revision(
@@ -271,18 +293,57 @@ class Repo:
             author=author,
             created=_now(),
             message=message,
+            interface_blob=iface_blob,
+            surface=surface,
         )
         self.ledger.write_revision(rev)
         self.ledger.set_channel(asset, "wip", rev.rev)
         self.ledger.log_event("save", asset=asset, rev=rev.rev, blob=blob, size=len(data))
         return rev
 
-    def promote(self, asset: str, ref: str, to: str) -> str:
+    def check_promotion(self, asset: str, ref: str, to: str) -> List[Violation]:
+        """Compatibility of a candidate against what is currently on `to`.
+
+        The gate from docs/03-versioning.md: compatibility is measured, not
+        asserted. Nothing on the channel yet means nothing to break.
+        """
+        rev = self.ledger.resolve_ref(asset, ref)
+        current = self.ledger.channels(asset).get(to)
+        if not current or current == rev:
+            return []
+        old = Surface.from_dict(self.ledger.read_revision(asset, current).surface)
+        new = Surface.from_dict(self.ledger.read_revision(asset, rev).surface)
+        if not old:
+            return []
+        return check_compatibility(old, new)
+
+    def promote(self, asset: str, ref: str, to: str, force: bool = False) -> str:
         rev = self.ledger.resolve_ref(asset, ref)
         self.ledger.read_revision(asset, rev)  # existence check
+        violations = self.check_promotion(asset, ref, to)
+        if violations and not force:
+            raise BreakingChange(asset, rev, to, violations)
         self.ledger.set_channel(asset, to, rev)
-        self.ledger.log_event("promote", asset=asset, rev=rev, channel=to)
+        self.ledger.log_event("promote", asset=asset, rev=rev, channel=to,
+                              forced=bool(violations and force))
         return rev
+
+    # -- contracts --------------------------------------------------------
+    def surfaces(self, pins: Dict[str, str]) -> Dict[str, Surface]:
+        out: Dict[str, Surface] = {}
+        for asset, rev in pins.items():
+            s = Surface.from_dict(self.ledger.read_revision(asset, rev).surface)
+            if s:
+                out[asset] = s
+        return out
+
+    def bind(self, baseline: Optional[str] = None, channel: str = "approved") -> Resolution:
+        """Type-directed resolution across every pinned asset.
+
+        No prim path crosses an asset boundary: a requirement names a contract,
+        never a provider.
+        """
+        return resolve(self.surfaces(self.resolve(baseline=baseline, channel=channel)))
 
     # -- resolution -------------------------------------------------------
     def resolve(self, baseline: Optional[str] = None, channel: str = "approved") -> Dict[str, str]:
