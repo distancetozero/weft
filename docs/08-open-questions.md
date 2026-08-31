@@ -27,16 +27,26 @@ This decides whether authorship is per-asset or per-layer, and changes how
 promotion and credit work. It also decides what "revert" means when three
 people are in the session.
 
-## 3. Bounds declaration format
+## 3. Bounds as a function of parameters
 
-What a generator's cheap conservative bounds actually look like
-(`04-contracts.md`). Constrains the contract schema and is much easier to
-design in now than to retrofit.
+Substantially narrowed by the audit. `UsdGeomModelAPI.extentsHint` already
+exists precisely so bounds can be read **without loading payloads** — which is
+most of what this question asked for, and it is authored per purpose. Reuse it;
+do not invent a bounds representation.
 
-Open sub-questions: are bounds time-varying (a swinging door, an animated
-character)? Are they per-variation-point (the shell-only variant is smaller)?
-Is a single AABB enough, or is an OBB / convex hull / sphere set worth the
-complexity?
+What `extentsHint` does not give is the part that matters for a JIT system: it
+is **authored data fixed at write time**, not a cheap evaluation. A generator
+must answer "where will you be for parameter set P" in microseconds without
+generating anything.
+
+So the question is now only: what is the form of that function, and who writes
+it? Candidates: an authored conservative hull that covers the whole legal
+parameter domain (trivial, wasteful, always correct); a declared per-parameter
+sensitivity the resolver composes; or a cheap bounds-only kernel entry point
+alongside the main generator.
+
+Still open beneath it: are bounds time-varying (a swinging door, an animated
+character), and per-variation-point (the shell-only variant is smaller)?
 
 ## 4. Contract versioning semantics
 

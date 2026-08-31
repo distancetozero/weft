@@ -48,6 +48,7 @@ GitHub Pages on that folder serves it directly.
 | [`docs/05-contexts.md`](docs/05-contexts.md) | claims, the three tiers, declassification, approval |
 | [`docs/06-storage.md`](docs/06-storage.md) | the three stores, on-disk layout, Merkle hierarchy, OpenVDB lessons |
 | [`docs/07-adoption.md`](docs/07-adoption.md) | the rung ladder, comparisons to USD / Omniverse / Fabric, risks |
+| [`docs/09-usd-audit.md`](docs/09-usd-audit.md) | what USD already holds, and what is genuinely absent |
 | [`docs/08-open-questions.md`](docs/08-open-questions.md) | what is still undecided |
 
 ## Draft specs
