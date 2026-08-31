@@ -1,0 +1,21 @@
+#usda 1.0
+#
+# The aero team. Requires a panel clip; offers nothing.
+#
+# Note the failure policy: aero is 'substitutable', so a missing provider
+# degrades with a warning instead of failing the whole resolution. Partial
+# failure is declared, not exceptional.
+#
+(
+    defaultPrim = "aero"
+)
+
+def Xform "aero" (
+    prepend apiSchemas = ["JitsdGeneratorAPI", "JitsdRequireAPI:rail"]
+)
+{
+    uniform token jitsd:require:rail:contract      = "Mount@2"
+    uniform token jitsd:require:rail:role          = "panelClip"
+    uniform token jitsd:require:rail:cardinality   = "one"
+    uniform token jitsd:require:rail:failurePolicy = "substitutable"
+}

@@ -1,0 +1,23 @@
+#usda 1.0
+#
+# The wheel team's contract surface.
+#
+# It names a CONTRACT ("Mount@2") and a ROLE ("wheelHub"). It does not name the
+# chassis, or any prim path inside it. The chassis team may rename, restructure
+# or replace their internals freely; this file does not change.
+#
+(
+    defaultPrim = "wheelset"
+)
+
+def Xform "wheelset" (
+    prepend apiSchemas = ["JitsdGeneratorAPI", "JitsdRequireAPI:hubs"]
+)
+{
+    uniform token jitsd:costClass = "moderate"
+
+    uniform token jitsd:require:hubs:contract      = "Mount@2"
+    uniform token jitsd:require:hubs:role          = "wheelHub"
+    uniform token jitsd:require:hubs:cardinality   = "many"
+    uniform token jitsd:require:hubs:failurePolicy = "required"
+}

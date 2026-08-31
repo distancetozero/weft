@@ -1,0 +1,53 @@
+name: tests
+
+# Pull requests and main only -- not every push on every branch. A working
+# session produces a dozen intermediate commits and only the PR state is worth
+# gating; this also keeps Actions minutes near zero on a private repo.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  full:
+    name: full (numpy + usd-core)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+
+  bare:
+    # The job that matters. docs/07-adoption.md, the README and pyproject all
+    # promise rung 1 runs with no optional dependency installed. That promise
+    # was FALSE until it was checked: test_numpy_and_pure_agree hard-failed
+    # without numpy instead of skipping, and nobody noticed because every local
+    # environment had numpy.
+    name: bare (no optional dependencies)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pytest
+      - run: pip install -e . --no-deps
+
+      - name: assert no optional dependency leaked in
+        # Guards against the failure mode where numpy or usd-core drifts into
+        # the base dependencies and this job silently stops testing anything.
+        run: |
+          python - <<'EOF'
+          import importlib.util, sys
+          leaked = [m for m in ("numpy", "pxr") if importlib.util.find_spec(m)]
+          if leaked:
+              sys.exit("optional dependency present in the bare job: " + ", ".join(leaked))
+          print("numpy and pxr both absent, as intended")
+          EOF
+
+      - run: pytest -q

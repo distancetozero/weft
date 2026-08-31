@@ -1,0 +1,254 @@
+#usda 1.0
+#
+# DRAFT SPEC -- JIT-SD contract schemas.
+#
+# CODELESS applied API schemas (USD 21.08+): pure plugin data, no C++ build.
+# Teams agree on SCHEMAS, not on prim paths, so the namespace becomes an OUTPUT
+# of composition rather than a precondition for it.
+#
+# REVISED after the audit in docs/09-usd-audit.md. Three principles:
+#
+#   1. Follow UsdShade's connectable model rather than inventing a parallel
+#      one. Typed inputs and outputs published as an interface is a solved,
+#      tooled, familiar pattern; what USD lacks is an interface OFFERED to a
+#      consumer not yet chosen, resolved by type rather than by an authored
+#      connection, and carrying a tolerance envelope. Add only that.
+#
+#   2. Applied schemas mark EXISTING USD data as a contract surface. They do
+#      not restate it. UsdPhysics already models articulation; primvars already
+#      model surface fields; extent already models bounds. Point at them.
+#
+#   3. Anything expressible in existing USD is not repeated here. What remains
+#      below is only what the audit found genuinely absent.
+#
+(
+    subLayers = [ @usd/schema.usda@ ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName        = "jitsdContracts"
+        string libraryPrefix      = "Jitsd"
+        bool   skipCodeGeneration = true
+    }
+) {}
+
+# ===========================================================================
+# The core addition: an OFFERED interface.
+#
+# UsdShade connects an output to an input WITHIN a graph, by authored
+# connection. A contract must be publishable before any consumer exists, and
+# resolved by type. That -- plus the tolerance envelope -- is the whole of what
+# USD does not already provide.
+# ===========================================================================
+
+class "JitsdOfferAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """Marks a prim as OFFERING an interface: publishable with no
+             consumer bound, resolved by contract type rather than by an
+             authored connection. Apply alongside the schema that actually
+             carries the data (UsdPhysics, primvars, Xformable, ...)."""
+)
+{
+    uniform token jitsd:offer:contract (
+        doc = """The contract this prim satisfies, e.g. "Mount@2". Consumers
+                 declare a requirement against this identifier, never against a
+                 prim path."""
+    )
+    uniform token jitsd:offer:archetype (
+        allowedTokens = ["mount", "field", "clearance", "articulation"]
+    )
+    uniform bool jitsd:offer:public = true (
+        doc = """False marks an internal surface: visible to the resolver for
+                 provenance, not offered for binding."""
+    )
+}
+
+class "JitsdRequireAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "multipleApply" }
+    doc = """Declares a requirement satisfied by some offer. Multiple-apply so
+             one prim may require several. The resolver matches on contract
+             identity; failure policy decides what happens when nothing does."""
+)
+{
+    uniform token jitsd:require:contract
+    uniform token jitsd:require:failurePolicy = "required" (
+        allowedTokens = ["required", "substitutable", "omittable"]
+        doc = "Partial failure is declared, not exceptional."
+    )
+    uniform token jitsd:require:boundTo (
+        doc = "Written by the resolver, never authored. Provenance."
+    )
+}
+
+class "JitsdEnvelopeAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """The admissible envelope around an offered value. This is what
+             actually makes teams independent: a consumer iterates freely while
+             staying inside it and the provider never re-resolves. Only
+             violations escalate. USD has no equivalent."""
+)
+{
+    uniform double jitsd:envelope:linear  = 0.0
+    uniform double jitsd:envelope:angular = 0.0
+    uniform token  jitsd:envelope:linearUnit  = "m"
+    uniform token  jitsd:envelope:angularUnit = "rad"
+}
+
+# ===========================================================================
+# Archetype markers.
+#
+# Each points at the USD schema that already carries the data. None restates
+# it. Compare the pre-audit draft, which re-specified joints, fields and
+# volumes that UsdPhysics, UsdGeomPrimvarsAPI and UsdVol already model.
+# ===========================================================================
+
+class "JitsdMountAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """An OFFERED attachment frame. The one archetype with no USD
+             equivalent: PhysicsFixedJoint expresses a REALISED connection
+             between two known bodies, but nothing expresses an attachment
+             point published before a consumer is chosen.
+
+             Apply to a UsdGeomXformable, which carries the frame. Where
+             physics matters, a bound mount resolves INTO a PhysicsFixedJoint
+             rather than living beside one.
+
+             film: rig attachment, prop socket   games: weapon socket
+             mfg: fastener pattern               AEC: facade grid
+             robotics: sensor mount"""
+)
+{
+    uniform token jitsd:mount:role (
+        allowedTokens = ["wheelHub", "fastener", "panelClip", "sensorMount", "propSocket"]
+    )
+    uniform double jitsd:mount:loadLimit = 0.0
+    uniform token  jitsd:mount:loadUnit  = "N"
+    # Frame comes from Xformable. Tolerance comes from JitsdEnvelopeAPI.
+    # Nothing else is restated here.
+}
+
+class "JitsdFieldAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """Names an EXISTING primvar or UsdVol field as a semantically typed,
+             offered quantity.
+
+             A primvar with a declared interpolation already IS a sampleable
+             quantity over a surface, and UsdVol already models volumes. This
+             schema adds only what they lack: what the quantity MEANS, in what
+             units, and that it is offered for binding. It is a naming and
+             visibility layer, not a data model."""
+)
+{
+    uniform token jitsd:field:source (
+        doc = "Name of the primvar, or the UsdVol field prim, carrying the data."
+    )
+    uniform token jitsd:field:quantity (
+        allowedTokens = ["scatterDensity", "pressure", "temperature", "illuminance", "occupancy"]
+    )
+    uniform token jitsd:field:unit
+}
+
+class "JitsdClearanceAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """A volume nothing may intrude into.
+
+             extent and UsdPhysics collision shapes describe where a thing IS.
+             Nothing in USD declares where things may NOT be, so the CONSTRAINT
+             is new -- but the geometry carrying it is an existing Boundable's
+             extent or collision shape, referenced here rather than duplicated.
+
+             film: sim bounds, frustum      mfg: swept volume, service access
+             AEC: egress, plenum            games: navmesh clearance
+
+             Violations are checkable relationally, before any geometry
+             is built."""
+)
+{
+    uniform token jitsd:clearance:kind (
+        allowedTokens = ["sweptVolume", "serviceAccess", "egress", "simBounds", "frustum"]
+    )
+    rel jitsd:clearance:geometry (
+        doc = "The Boundable or collision shape whose volume is reserved."
+    )
+    uniform token jitsd:clearance:severity = "hard" (
+        allowedTokens = ["hard", "advisory"]
+    )
+}
+
+class "JitsdArticulationInterfaceAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """Marks which joints of an EXISTING UsdPhysics articulation are the
+             public interface.
+
+             The pre-audit draft had a 'kinematic chain' archetype re-specifying
+             joints, degrees of freedom and limits. UsdPhysics already provides
+             revolute, prismatic, spherical, fixed and distance joints, plus
+             PhysicsLimitAPI, PhysicsDriveAPI and PhysicsArticulationRootAPI --
+             across robotics, mechanisms and operable parts. UsdSkel covers
+             deformation. All of that was duplication and is deleted.
+
+             What remains is the distinction USD does not draw: which joints a
+             consumer may depend on, and which are internal."""
+)
+{
+    rel jitsd:articulation:publicJoints (
+        doc = "Subset of the articulation's joints that consumers may bind to."
+    )
+    rel jitsd:articulation:root (
+        doc = "The prim carrying PhysicsArticulationRootAPI."
+    )
+}
+
+# ===========================================================================
+# Generator surface.
+# ===========================================================================
+
+class "JitsdGeneratorAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """Applied to any prim generated on demand -- including constants. A
+             hand-sculpted asset is a generator with no parameters. Everything
+             is ADDRESSED as a function; not everything must be procedural."""
+)
+{
+    uniform asset  jitsd:generator
+    uniform string jitsd:generatorVersion
+    uniform token  jitsd:costClass = "moderate" (
+        allowedTokens = ["trivial", "moderate", "heavy", "offline"]
+    )
+
+    # Bounds WITHOUT generating geometry. UsdGeomModelAPI.extentsHint already
+    # provides bounds readable without loading payloads -- but as AUTHORED
+    # data, fixed at write time. What is missing is bounds as a cheap FUNCTION
+    # of parameters. Until open question 3 settles that, this is a conservative
+    # authored fallback with the same meaning as extentsHint.
+    uniform float3[] jitsd:bounds:hint
+    uniform bool     jitsd:bounds:conservative = true
+
+    # The only places context may change output. Everything else is
+    # context-invariant, so shared subgraphs hash identically across contexts.
+    uniform token[] jitsd:variationPoints
+}
+
+class "JitsdOverrideHandleAPI" (
+    inherits = </APISchemaBase>
+    customData = { token apiSchemaType = "singleApply" }
+    doc = """A declared handle an assembly may override. An override on an
+             arbitrary prim path silently detonates when the generator
+             regenerates; an override on a handle fails loudly at resolution
+             and names its owner.
+
+             Closest USD precedent is a UsdShade NodeGraph's interface inputs --
+             the same idea, scoped to shading. This generalises it."""
+)
+{
+    uniform bool jitsd:handle:required = false
+}
