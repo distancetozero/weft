@@ -1,0 +1,349 @@
+"""Revisions, channels and baselines.
+
+The three-layer model from docs/03-versioning.md:
+
+  revisions   immutable, content-addressed. Every save makes one.
+  channels    the ONLY mutable object in the system -- a pointer to a revision.
+  baselines   immutable, named, complete resolution maps. The lockfile.
+
+Revision and baseline files are real .usda layers, so they open in usdview and
+diff as text. Rung 1 has no pxr dependency, so machine-readable state travels
+in a compact JSON string inside customLayerData (`jitsd__meta`) which one regex
+recovers. When pxr is available this is read properly through the USD API and
+the shim goes away -- the file on disk does not change either way.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import time
+from dataclasses import dataclass, field, asdict
+from pathlib import Path
+from typing import Dict, List, Optional
+
+from .store import ObjectStore
+
+META_RE = re.compile(r'string\s+jitsd__meta\s*=\s*"""(.*?)"""', re.DOTALL)
+
+DEFAULT_CHANNELS = ("wip", "review", "approved")
+
+
+def _now() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+
+def _esc(s: str) -> str:
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
+@dataclass
+class Revision:
+    asset: str
+    rev: str
+    blob: str
+    size: int
+    parent: Optional[str]
+    author: str
+    created: str
+    message: str = ""
+    contracts_provides: List[str] = field(default_factory=list)
+    contracts_requires: List[str] = field(default_factory=list)
+
+
+@dataclass
+class Baseline:
+    number: str
+    label: str
+    parent: Optional[str]
+    cut: str
+    cut_by: str
+    pins: Dict[str, str]
+    merkle_root: str
+
+
+class Ledger:
+    def __init__(self, root: Path):
+        self.root = Path(root)
+        self.assets = self.root / "assets"
+        self.baselines_dir = self.root / "baselines"
+        self.logdir = self.root / "log"
+
+    def init(self) -> None:
+        for d in (self.assets, self.baselines_dir, self.logdir):
+            d.mkdir(parents=True, exist_ok=True)
+
+    # -- event log --------------------------------------------------------
+    def log_event(self, kind: str, **fields) -> None:
+        rec = {"t": _now(), "kind": kind}
+        rec.update(fields)
+        day = time.strftime("%Y-%m-%d", time.gmtime())
+        self.logdir.mkdir(parents=True, exist_ok=True)
+        with (self.logdir / ("%s.jsonl" % day)).open("a") as fh:
+            fh.write(json.dumps(rec, separators=(",", ":")) + "\n")
+
+    # -- asset layout -----------------------------------------------------
+    def _adir(self, asset: str) -> Path:
+        return self.assets / asset
+
+    def _revdir(self, asset: str) -> Path:
+        return self._adir(asset) / "revisions"
+
+    def _chandir(self, asset: str) -> Path:
+        return self._adir(asset) / "channels"
+
+    def asset_names(self) -> List[str]:
+        if not self.assets.exists():
+            return []
+        return sorted(p.name for p in self.assets.iterdir() if p.is_dir())
+
+    def revisions(self, asset: str) -> List[str]:
+        d = self._revdir(asset)
+        if not d.exists():
+            return []
+        return sorted(p.stem for p in d.glob("v*.usda"))
+
+    def next_rev(self, asset: str) -> str:
+        existing = self.revisions(asset)
+        n = max((int(r[1:]) for r in existing), default=0) + 1
+        return "v%03d" % n
+
+    # -- revisions --------------------------------------------------------
+    def write_revision(self, r: Revision) -> Path:
+        self._revdir(r.asset).mkdir(parents=True, exist_ok=True)
+        meta = json.dumps(asdict(r), separators=(",", ":"))
+        body = f'''#usda 1.0
+(
+    customLayerData = {{
+        string jitsd__revision = "{r.rev}"
+        string jitsd__asset    = "{_esc(r.asset)}"
+        string jitsd__parent   = "{r.parent or ""}"
+        string jitsd__author   = "{_esc(r.author)}"
+        string jitsd__created  = "{r.created}"
+        string jitsd__message  = "{_esc(r.message)}"
+        string jitsd__meta = """{meta}"""
+    }}
+)
+
+def "{r.asset}" (
+    prepend apiSchemas = ["JitsdGeneratorAPI"]
+)
+{{
+    uniform int64 jitsd:payloadSize = {r.size}
+    prepend payload = @jitsd:obj/sha256:{r.blob}@
+}}
+'''
+        p = self._revdir(r.asset) / ("%s.usda" % r.rev)
+        p.write_text(body)
+        return p
+
+    def read_revision(self, asset: str, rev: str) -> Revision:
+        p = self._revdir(asset) / ("%s.usda" % rev)
+        if not p.exists():
+            raise KeyError("no such revision: %s %s" % (asset, rev))
+        m = META_RE.search(p.read_text())
+        if not m:
+            raise IOError("revision %s/%s has no jitsd__meta block" % (asset, rev))
+        return Revision(**json.loads(m.group(1)))
+
+    # -- channels ---------------------------------------------------------
+    def channels(self, asset: str) -> Dict[str, str]:
+        d = self._chandir(asset)
+        if not d.exists():
+            return {}
+        return {p.name: p.read_text().strip() for p in sorted(d.iterdir()) if p.is_file()}
+
+    def set_channel(self, asset: str, channel: str, rev: str) -> None:
+        """The one mutation in the system."""
+        self._chandir(asset).mkdir(parents=True, exist_ok=True)
+        prev = self.channels(asset).get(channel)
+        (self._chandir(asset) / channel).write_text(rev + "\n")
+        self.log_event("channel_move", asset=asset, channel=channel, frm=prev, to=rev)
+
+    def resolve_ref(self, asset: str, ref: str) -> str:
+        """Accept 'v012', '@approved', or 'approved'."""
+        if ref.startswith("@"):
+            ref = ref[1:]
+        chans = self.channels(asset)
+        if ref in chans:
+            return chans[ref]
+        if ref in self.revisions(asset):
+            return ref
+        raise KeyError("cannot resolve %r for asset %r" % (ref, asset))
+
+    # -- baselines --------------------------------------------------------
+    def baseline_numbers(self) -> List[str]:
+        if not self.baselines_dir.exists():
+            return []
+        return sorted(p.stem for p in self.baselines_dir.glob("*.usda"))
+
+    def next_baseline(self) -> str:
+        existing = self.baseline_numbers()
+        n = max((int(b) for b in existing), default=0) + 1
+        return "%06d" % n
+
+    def write_baseline(self, b: Baseline) -> Path:
+        self.baselines_dir.mkdir(parents=True, exist_ok=True)
+        meta = json.dumps(asdict(b), separators=(",", ":"))
+        pins = "\n".join(
+            '            string "%s" = "%s"' % (_esc(k), v) for k, v in sorted(b.pins.items())
+        )
+        body = f'''#usda 1.0
+(
+    customLayerData = {{
+        string jitsd__baseline   = "{b.number}"
+        string jitsd__label      = "{_esc(b.label)}"
+        string jitsd__parent     = "{b.parent or ""}"
+        string jitsd__cut        = "{b.cut}"
+        string jitsd__cutBy      = "{_esc(b.cut_by)}"
+        string jitsd__merkleRoot = "sha256:{b.merkle_root}"
+        string jitsd__meta = """{meta}"""
+    }}
+)
+
+over "World" (
+    customData = {{
+        dictionary jitsd__pins = {{
+{pins}
+        }}
+    }}
+)
+'''
+        p = self.baselines_dir / ("%s.usda" % b.number)
+        p.write_text(body)
+        return p
+
+    def read_baseline(self, number: str) -> Baseline:
+        p = self.baselines_dir / ("%s.usda" % number)
+        if not p.exists():
+            raise KeyError("no such baseline: %s" % number)
+        m = META_RE.search(p.read_text())
+        if not m:
+            raise IOError("baseline %s has no jitsd__meta block" % number)
+        return Baseline(**json.loads(m.group(1)))
+
+
+class Repo:
+    """A jitsd working root: object store + ledger."""
+
+    DIRNAME = ".jitsd"
+
+    def __init__(self, root: Path):
+        self.root = Path(root)
+        self.dir = self.root / self.DIRNAME
+        self.store = ObjectStore(self.dir / "objects")
+        self.ledger = Ledger(self.dir / "ledger")
+
+    @classmethod
+    def find(cls, start: Optional[Path] = None) -> "Repo":
+        cur = Path(start or Path.cwd()).resolve()
+        for cand in [cur, *cur.parents]:
+            if (cand / cls.DIRNAME).is_dir():
+                return cls(cand)
+        raise SystemExit("not a jitsd repository (no .jitsd found) -- run `jitsd init`")
+
+    def exists(self) -> bool:
+        return self.dir.is_dir()
+
+    def init(self) -> None:
+        self.dir.mkdir(parents=True, exist_ok=True)
+        self.store.init()
+        self.ledger.init()
+
+    # -- the save path ----------------------------------------------------
+    def save(self, asset: str, path: Path, author: str, message: str = "") -> Revision:
+        data = Path(path).read_bytes()
+        blob = self.store.put_bytes(data)
+        chans = self.ledger.channels(asset)
+        parent = chans.get("wip")
+
+        if parent:
+            prev = self.ledger.read_revision(asset, parent)
+            if prev.blob == blob:
+                return prev  # nothing changed; do not mint a revision
+
+        rev = Revision(
+            asset=asset,
+            rev=self.ledger.next_rev(asset),
+            blob=blob,
+            size=len(data),
+            parent=parent,
+            author=author,
+            created=_now(),
+            message=message,
+        )
+        self.ledger.write_revision(rev)
+        self.ledger.set_channel(asset, "wip", rev.rev)
+        self.ledger.log_event("save", asset=asset, rev=rev.rev, blob=blob, size=len(data))
+        return rev
+
+    def promote(self, asset: str, ref: str, to: str) -> str:
+        rev = self.ledger.resolve_ref(asset, ref)
+        self.ledger.read_revision(asset, rev)  # existence check
+        self.ledger.set_channel(asset, to, rev)
+        self.ledger.log_event("promote", asset=asset, rev=rev, channel=to)
+        return rev
+
+    # -- resolution -------------------------------------------------------
+    def resolve(self, baseline: Optional[str] = None, channel: str = "approved") -> Dict[str, str]:
+        """Pin every asset. A baseline is replayed; floating mints a new one."""
+        if baseline:
+            return dict(self.ledger.read_baseline(baseline).pins)
+        pins: Dict[str, str] = {}
+        for asset in self.ledger.asset_names():
+            chans = self.ledger.channels(asset)
+            rev = chans.get(channel) or chans.get("wip")
+            if rev:
+                pins[asset] = rev
+        return pins
+
+    def merkle_root(self, pins: Dict[str, str]) -> str:
+        """Rung 1: a hash over the pinned revision blobs.
+
+        Real subtree-level Merkle hashing (docs/06-storage.md) needs a prim
+        hierarchy, which arrives with the resolver. This gives the same
+        top-level property -- an identical world hashes identically -- but not
+        yet O(changes) subtree diffs.
+        """
+        import hashlib
+
+        h = hashlib.sha256()
+        for asset, rev in sorted(pins.items()):
+            r = self.ledger.read_revision(asset, rev)
+            h.update(("%s\0%s\0%s\n" % (asset, rev, r.blob)).encode())
+        return h.hexdigest()
+
+    def cut_baseline(self, label: str = "", cut_by: str = "user",
+                     channel: str = "approved") -> Baseline:
+        pins = self.resolve(channel=channel)
+        nums = self.ledger.baseline_numbers()
+        b = Baseline(
+            number=self.ledger.next_baseline(),
+            label=label,
+            parent=nums[-1] if nums else None,
+            cut=_now(),
+            cut_by=cut_by,
+            pins=pins,
+            merkle_root=self.merkle_root(pins),
+        )
+        self.ledger.write_baseline(b)
+        self.ledger.log_event("baseline_cut", baseline=b.number, label=label,
+                              merkle=b.merkle_root)
+        return b
+
+    def reachable_blobs(self) -> List[str]:
+        """Everything a baseline pins, plus every current channel head."""
+        keep = set()
+        for num in self.ledger.baseline_numbers():
+            for asset, rev in self.ledger.read_baseline(num).pins.items():
+                try:
+                    keep.add(self.ledger.read_revision(asset, rev).blob)
+                except KeyError:
+                    pass
+        for asset in self.ledger.asset_names():
+            for rev in self.ledger.channels(asset).values():
+                try:
+                    keep.add(self.ledger.read_revision(asset, rev).blob)
+                except KeyError:
+                    pass
+        return sorted(keep)

@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.jitsd/
+jitsd.lock
+*.egg-info/
+.pytest_cache/

@@ -1,0 +1,22 @@
+[project]
+name = "jitsd"
+version = "0.1.0"
+description = "JIT-SD reference implementation -- rung 1: solo, offline, no contracts"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+# numpy is a performance path only. The pure-Python chunker produces identical
+# boundaries; it is just far slower. Nothing in rung 1 requires a dependency.
+fast = ["numpy>=1.24"]
+dev = ["numpy>=1.24", "pytest>=7"]
+
+[project.scripts]
+jitsd = "jitsd.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
