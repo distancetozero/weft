@@ -1,5 +1,7 @@
 import random
 
+import pytest
+
 from jitsd.chunker import chunk, cut_points_numpy, cut_points_pure
 
 MIN, AVG, MAX = 1024, 4096, 16384
@@ -12,9 +14,13 @@ def _data(n, seed=7):
 def test_numpy_and_pure_agree():
     """The vectorised path must produce byte-identical boundaries.
 
+    Skips without numpy: there is no second backend to compare against, and
+    rung 1 must run with no optional dependency installed at all.
+
     If it does not, two machines chunk the same file differently and the store
     silently stops deduplicating.
     """
+    pytest.importorskip("numpy")
     for n in (0, 1, 100, 1024, 5000, 100_000, 300_000):
         d = _data(n)
         assert cut_points_pure(d, MIN, AVG, MAX) == cut_points_numpy(d, MIN, AVG, MAX), n
