@@ -1,19 +1,23 @@
-"""A restricted .usda reader.
+"""Reading .usda, through pxr when it is installed.
 
-Rung 1 has no pxr dependency, but contracts have to be authored in real USD --
-declaring an interface in JSON would prove nothing about whether the design
-fits USD. So this parses the subset a contract surface needs: prims, nested
-prims, applied API schemas, and uniform attributes of scalar, tuple and array
-type.
+Two backends behind one shape:
 
-It is deliberately small and deliberately temporary. When pxr is available this
-file is deleted and `UsdPrim.GetAppliedSchemas()` / `GetAttribute()` replace it
-outright; nothing above depends on the parser rather than on the shape it
-returns.
+  pxr        `Sdf.Layer` -- the real thing. Note Sdf, not Usd: the raw
+             `(path, field) -> value` data model reads authored `apiSchemas`
+             without those schemas being registered, which is exactly what a
+             contract surface needs.
 
-Not supported, because a contract surface does not need them: variants,
-references, payloads, relationships to other layers, time samples, composition
-of any kind.
+  fallback   A restricted hand-rolled parser, used when pxr is absent. It
+             handles prims, nested prims, applied API schemas and uniform
+             attributes of scalar, tuple and array type -- and nothing else:
+             no variants, no references, no composition. Enough for a contract
+             surface, and no more.
+
+Contracts had to be authored in real USD -- declaring an interface in JSON
+would prove nothing about whether the design fits USD -- but rung 1 must run
+with no dependencies at all. Hence both. `tests/test_usda.py` asserts the two
+backends agree, because a silent divergence would mean an interface that reads
+differently depending on what happens to be installed.
 """
 
 from __future__ import annotations
@@ -233,7 +237,76 @@ class Layer:
             yield from p.walk()
 
 
-def parse(text: str) -> Layer:
+def _have_pxr() -> bool:
+    try:
+        from pxr import Sdf  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def _from_sdf(layer_obj) -> Layer:
+    """Build the same shape from an Sdf.Layer."""
+    from pxr import Sdf
+
+    def value(v):
+        # Normalise pxr's vector and array types to plain tuples/lists so both
+        # backends return identical structures.
+        if isinstance(v, Sdf.AssetPath):
+            return v.path
+        if isinstance(v, str) or isinstance(v, bool):
+            return v
+        if isinstance(v, (int, float)):
+            return v
+        try:
+            items = list(v)
+        except TypeError:
+            return v
+        if items and hasattr(items[0], "__len__") and not isinstance(items[0], str):
+            return [tuple(float(x) for x in row) for row in items]
+        if all(isinstance(x, (int, float)) for x in items) and hasattr(v, "dimension"):
+            return tuple(float(x) for x in items)
+        return [value(x) for x in items]
+
+    def convert(spec, parent_path: str) -> Prim:
+        prim = Prim(name=spec.name, type_name=spec.typeName or "",
+                    path="%s/%s" % (parent_path.rstrip("/"), spec.name))
+        if "apiSchemas" in spec.ListInfoKeys():
+            prim.api_schemas = list(
+                spec.GetInfo("apiSchemas").GetAddedOrExplicitItems())
+        for attr in spec.attributes:
+            prim.attrs[attr.name] = value(attr.default) if attr.HasDefaultValue() else None
+        for child in spec.nameChildren:
+            c = convert(child, prim.path)
+            prim.children[c.name] = c
+        return prim
+
+    out = Layer()
+    if layer_obj.customLayerData:
+        out.meta["customLayerData"] = dict(layer_obj.customLayerData)
+    if layer_obj.HasDefaultPrim():
+        out.meta["defaultPrim"] = layer_obj.defaultPrim
+    for spec in layer_obj.rootPrims:
+        prim = convert(spec, "")
+        out.prims[prim.name] = prim
+    return out
+
+
+def parse_pxr(text: str) -> Layer:
+    from pxr import Sdf, Tf
+
+    layer_obj = Sdf.Layer.CreateAnonymous(".usda")
+    try:
+        ok = layer_obj.ImportFromString(text)
+    except Tf.ErrorException as e:
+        # Normalise to our own error so callers need not know which backend ran.
+        raise UsdaError(str(e).strip().splitlines()[-1].strip()) from e
+    if not ok:
+        raise UsdaError("USD rejected this layer")
+    return _from_sdf(layer_obj)
+
+
+def parse_fallback(text: str) -> Layer:
     text = text.lstrip()
     if not text.startswith("#usda"):
         raise UsdaError("not a .usda layer (missing #usda header)")
@@ -248,5 +321,12 @@ def parse(text: str) -> Layer:
     return layer
 
 
-def parse_file(path: Path) -> Layer:
-    return parse(Path(path).read_text())
+def parse(text: str, force_fallback: bool = False) -> Layer:
+    """Parse a .usda layer. Uses pxr when installed."""
+    if not force_fallback and _have_pxr():
+        return parse_pxr(text)
+    return parse_fallback(text)
+
+
+def parse_file(path: Path, force_fallback: bool = False) -> Layer:
+    return parse(Path(path).read_text(), force_fallback=force_fallback)

@@ -191,14 +191,45 @@ exists to validate the model, not to ship.
 - **Stored payloads cannot be parameterised.** An asset is either a generator
   or a blob; compiling a query against a blob-backed asset fails loudly rather
   than silently ignoring the parameters.
-- **`jitsd/usda.py` is a restricted parser, and temporary.** Contracts had to
-  be authored in real USD — declaring an interface in JSON would prove nothing
-  about whether the design fits USD — but rung 1 has no pxr. It handles prims,
-  nested prims, applied API schemas and uniform attributes; no variants, no
-  references, no composition of any kind. When pxr is available the file is
-  deleted and `GetAppliedSchemas()` / `GetAttribute()` replace it outright.
+- **The fallback parser is more lenient than USD.** `jitsd/usda.py` now uses
+  `Sdf.Layer` when pxr is installed and its own parser when it is not — and
+  the hand-rolled one accepts layers real USD rejects (a closing brace on the
+  same line as a value, for one). A layer authored offline can therefore fail
+  once pxr is present. `test_both_reader_backends_agree` locks the two together
+  on everything in `examples/`, but leniency in one direction remains.
 - **`checkout` reassembles in memory** per chunk; fine at these sizes, wrong
   for a streaming client.
+
+## Validated against real USD
+
+`pip install -e ".[dev]"` brings in `usd-core`. The suite then runs 74 tests
+instead of 54; without pxr the extra ones skip and everything else still
+passes, because rung 1 must run with nothing installed.
+
+`tests/test_pxr.py` opens **everything jitsd writes** in real USD — revision
+layers (both generator- and payload-backed), baseline layers, every authored
+example and spec, and compiled stages in all five contexts — then checks each
+mesh's face counts against its index list, and compares our cheap parametric
+bounds against `UsdGeom.BBoxCache`.
+
+Wiring it found five real syntax bugs that nothing else would have caught:
+
+| | |
+|---|---|
+| `prepend payload` emitted in the prim **body** | it is prim metadata; belongs in the `( )` block. In `write_revision`, on the payload-backed path the demo never exercised |
+| `over "World" ( … )` with **no `{ }` body** | in `write_baseline`, and in the spec draft |
+| `uniform rel` | relationships cannot be uniform (`specs/jitsdContracts/schema.usda`) |
+| the same payload bug in `specs/revision-layer.usda` | hand-written in the design phase, never validated |
+| the same bodyless `over` in `specs/baseline-layer.usda` | likewise |
+
+Three were in hand-written spec drafts that nothing consumed; **two were in
+shipping code**, on paths the demos happened to miss. The design documents had
+claimed for weeks that this "fits USD". It mostly did — but not exactly, and
+only real USD could say which.
+
+Compilation is unaffected by which backend is present: a stage compiled with
+pxr absent has the same digest as one compiled with it installed, and opens
+cleanly in USD.
 
 ## Benchmark
 

@@ -124,13 +124,19 @@ def test_two_instances_of_one_asset_are_separate_consumers(tmp_path):
 def Xform "Twin"
 {
     def Xform "carA" ( prepend apiSchemas = ["JitsdInstanceAPI"] )
-    { uniform token jitsd:instance:asset = "chassis"
-      uniform double jitsd:param:wheelbase = 2.60 }
+    {
+        uniform token jitsd:instance:asset = "chassis"
+        uniform double jitsd:param:wheelbase = 2.60
+    }
     def Xform "wheelsA" ( prepend apiSchemas = ["JitsdInstanceAPI"] )
-    { uniform token jitsd:instance:asset = "wheelset" }
+    {
+        uniform token jitsd:instance:asset = "wheelset"
+    }
     def Xform "wheelsB" ( prepend apiSchemas = ["JitsdInstanceAPI"] )
-    { uniform token jitsd:instance:asset = "wheelset"
-      uniform double jitsd:param:diameter = 0.80 }
+    {
+        uniform token jitsd:instance:asset = "wheelset"
+        uniform double jitsd:param:diameter = 0.80
+    }
 }
 '''
     c = compile_query(r, parse_query(parse(src)))

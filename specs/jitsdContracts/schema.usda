@@ -174,7 +174,7 @@ class "JitsdClearanceAPI" (
     uniform token jitsd:clearance:kind (
         allowedTokens = ["sweptVolume", "serviceAccess", "egress", "simBounds", "frustum"]
     )
-    uniform rel jitsd:clearance:geometry (
+    rel jitsd:clearance:geometry (
         doc = "The Boundable or collision shape whose volume is reserved."
     )
     uniform token jitsd:clearance:severity = "hard" (
@@ -199,10 +199,10 @@ class "JitsdArticulationInterfaceAPI" (
              consumer may depend on, and which are internal."""
 )
 {
-    uniform rel jitsd:articulation:publicJoints (
+    rel jitsd:articulation:publicJoints (
         doc = "Subset of the articulation's joints that consumers may bind to."
     )
-    uniform rel jitsd:articulation:root (
+    rel jitsd:articulation:root (
         doc = "The prim carrying PhysicsArticulationRootAPI."
     )
 }

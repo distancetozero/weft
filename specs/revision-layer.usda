@@ -50,6 +50,12 @@
 
 def Xform "hero_car" (
     prepend apiSchemas = ["JitsdGeneratorAPI", "JitsdMountProviderAPI"]
+
+    # payload is prim METADATA, not an attribute: it belongs in this block.
+    # USD's text parser rejects it in the prim body.
+    #
+    # USD's payload mechanism IS the manifest/blob split.
+    prepend payload = @jitsd:obj/sha256:8f2c9a1b@
 )
 {
     # --- the generator ------------------------------------------------------
@@ -85,10 +91,6 @@ def Xform "hero_car" (
     # Manufacturing calls this effectivity; film calls it pinning. Subject-side,
     # not the evaluation coordinate — do not confuse the two clocks.
     uniform string jitsd:effectiveFrom = "2026-09-01"
-
-    # --- the heavy data, deferred --------------------------------------------
-    # USD's payload mechanism IS the manifest/blob split.
-    prepend payload = @jitsd:obj/sha256:8f2c9a1b@
 
     # --- the contract surface, as prims --------------------------------------
     def Scope "mounts"

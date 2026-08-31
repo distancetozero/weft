@@ -125,11 +125,14 @@ class Ledger:
             plist = "".join(
                 "    uniform double jitsd:param:%s = %s\n" % (k, v)
                 for k, v in sorted((r.params or {}).items()))
-            payload = ('    uniform string jitsd:generator = "%s"\n%s'
-                       % (_esc(r.generator), plist))
+            body_attrs = ('    uniform string jitsd:generator = "%s"\n%s'
+                          % (_esc(r.generator), plist))
+            prim_meta = ""
         else:
-            payload = ('    uniform int64 jitsd:payloadSize = %d\n'
-                       '    prepend payload = @jitsd:obj/sha256:%s@\n' % (r.size, r.blob))
+            body_attrs = "    uniform int64 jitsd:payloadSize = %d\n" % r.size
+            # payload is prim METADATA -- it belongs in the ( ) block. Real USD
+            # rejects it in the prim body.
+            prim_meta = "\n    prepend payload = @jitsd:obj/sha256:%s@" % r.blob
         body = f'''#usda 1.0
 (
     customLayerData = {{
@@ -144,10 +147,10 @@ class Ledger:
 )
 
 def "{r.asset}" (
-    prepend apiSchemas = ["JitsdGeneratorAPI"]
+    prepend apiSchemas = ["JitsdGeneratorAPI"]{prim_meta}
 )
 {{
-{payload}}}
+{body_attrs}}}
 '''
         p = self._revdir(r.asset) / ("%s.usda" % r.rev)
         p.write_text(body)
@@ -224,6 +227,8 @@ over "World" (
         }}
     }}
 )
+{{
+}}
 '''
         p = self.baselines_dir / ("%s.usda" % b.number)
         p.write_text(body)

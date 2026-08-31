@@ -6,10 +6,15 @@ requires-python = ">=3.9"
 dependencies = []
 
 [project.optional-dependencies]
-# numpy is a performance path only. The pure-Python chunker produces identical
-# boundaries; it is just far slower. Nothing in rung 1 requires a dependency.
+# Both extras are optional by design: rung 1 must run with nothing installed.
+#   numpy    a performance path only -- the pure-Python chunker produces
+#            identical boundaries, just far slower.
+#   usd-core real USD. When present it backs the .usda reader and validates
+#            everything jitsd emits; when absent the fallback parser runs and
+#            the pxr tests skip.
 fast = ["numpy>=1.24"]
-dev = ["numpy>=1.24", "pytest>=7"]
+usd = ["usd-core>=24.0"]
+dev = ["numpy>=1.24", "usd-core>=24.0", "pytest>=7"]
 
 [project.scripts]
 jitsd = "jitsd.cli:main"
