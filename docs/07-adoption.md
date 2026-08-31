@@ -24,9 +24,12 @@ contracts and zero servers:
 
 1. **Every save versioned, forever, automatically.** No more
    `car_v3_final_FINAL_useThis.usd`.
-2. **Storage collapses.** 200 saves of a 4 GB asset cost ~4 GB plus deltas, not
-   800 GB. An iteration changing one material costs kilobytes. This is the one
-   people feel on day one.
+2. **Storage collapses.** Measured (`bench/dedup.py`, 64 KiB chunks): twelve
+   saves of a 16 MiB asset under localised editing cost 1.14x one copy, about
+   205 KiB per save. On real USD crate, editing one mesh in a 4000-mesh scene
+   costs 0.1% of the file. This is the one people feel on day one — with the
+   caveat that a re-export perturbing *every* value deduplicates nothing; see
+   `06-storage.md`.
 3. **Instant rollback** — a pointer move, no data copying.
 4. **Reproducible renders, even solo.** "Why does this frame look different
    from yesterday's" is a daily problem for one person too.
