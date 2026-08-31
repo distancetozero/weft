@@ -146,42 +146,65 @@ generalises further and gives the diff for free.
 
 ## Measured, not assumed
 
-`bench/dedup.py` tests the claim above. 64 MiB asset, 30 saves, 0.5% edited per
-save:
+`bench/granularity.py` tests the storage claims against real USD rather than
+against synthetic binary. 4000 meshes, 13.9 MiB of crate, 64 KiB chunks. Four
+perturbations, because "a re-export" is not one thing:
 
-| edit pattern | as separate files | on disk | dedup |
+| perturbation | bytes new | fields new | fields changed |
 |---|---|---|---|
-| localised rework | 1.9 GiB | 121.8 MiB | 15.8x |
-| several scattered edits | 1.9 GiB | 341.1 MiB | 5.6x |
-| global re-export | 1.9 GiB | 1.9 GiB | **1.0x** |
+| re-serialise, no change | 0.0% | 0.0% | 0 / 16000 |
+| one mesh of 4000 edited | 0.1% | 0.0% | 1 / 16000 |
+| every prim reordered | 1.3% | 0.0% | 0 / 16000 |
+| float noise on every value | 100.0% | 69.0% | 4000 / 16000 |
 
-Two corrections to what this document originally claimed:
+**This overturns three things this document previously asserted.**
 
-**Whole-file content addressing deduplicates nothing.** One changed byte
-changes the file hash. The claim only holds with content-defined chunk
-boundaries (`jitsd/chunker.py`), which is a hard requirement rather than an
-optimisation. Dedup granularity is then the chunk size, so a 50 KB edit costs
-the chunks it touches — one to two megabytes at ~1 MiB average — not 50 KB.
+**Crate serialisation is deterministic.** The same scene written twice produced
+byte-identical files. The claim that USD gives no byte-stable output was
+overstated: it holds across USD versions and across different writers, not
+within one.
 
-**Byte-level chunking cannot survive a re-export.** The third row is not
-contrived: re-exporting from a DCC rewrites the whole file — vertex ordering,
-float noise in the low bits, regenerated metadata — and no chunker can see
-through it. An artist who re-exports rather than saving incrementally gets zero
-dedup.
+**Byte-level chunking survives a re-export.** A one-mesh edit costs 0.1% and a
+complete prim reorder costs 1.3%. Crate keeps an edit local — the one-mesh case
+had a 25 KiB common prefix and a 681 KiB common suffix at identical file
+length.
 
-The answer is not a better chunker. It is to hash at the granularity USD
-already uses: an `SdfLayer` is a sparse map from `(path, field)` to value, so
-**hash per field** and a re-export perturbing one mesh leaves every other
-prim's fields hashing identically. That makes the Merkle hierarchy below
-load-bearing for deduplication, not only for fast diffs.
+**The earlier "1.0x on re-export" figure was an artifact.** It came from
+`bench/dedup.py`, which perturbs every 512th byte of random binary — a
+synthetic worst case that no USD workflow produces. A first pass at this
+benchmark then reported 88% for a one-mesh edit, which was worse: the shipping
+1 MiB chunk default against a 710 KiB file is two chunks, so any edit
+invalidates half of it. Chunk size must be small relative to the file or the
+measurement means nothing.
 
-Two consequences. Crate's intra-file value dedup stops mattering, because
-fields are stored individually anyway — but the byte chunker keeps its job for
-opaque payloads (textures, volumes, caches) where USD's data model gives
-nothing. And because USD does not guarantee byte-identical serialisation for
-identical data, the hash must be taken over the **canonicalised typed value**
-rather than its bytes — which is the stronger property anyway, stable across
-`.usda` / `.usdc` and across USD versions. See open question 9.
+### What changed as a result
+
+The default average chunk is now **64 KiB**, not 1 MiB. Measured on crate:
+
+| avg chunk | one-mesh edit | prim reorder | chunks per GiB |
+|---|---|---|---|
+| 16 KiB | 0.31% | 0.87% | 55,780 |
+| 64 KiB | 0.31% | 2.53% | 13,205 |
+| 256 KiB | 3.45% | 6.46% | 4,533 |
+| 1 MiB | 12.53% | 67.57% | 591 |
+
+Below 64 KiB only the reorder case keeps improving, and it costs 4x the objects
+to halve it. Pack files would buy room to go lower.
+
+A store now records its chunker parameters in `objects/config.json` and uses
+those rather than the current module defaults. Chunk parameters are not a
+tuning knob after the fact: different boundaries mean nothing new deduplicates
+against anything already stored, and the failure is silent — the store keeps
+working and quietly stops saving space.
+
+### What would change the answer
+
+The scene is synthetic: uniform meshes, one USD version, no textures, no time
+samples, no references, and no real DCC in the loop. If exports from an actual
+Maya or Houdini pipeline show heavy prim renaming, or re-tessellation that
+perturbs every value, the float-noise row becomes the common case and
+field-level hashing earns its cost. Worth re-running against real production
+exports before this is treated as settled.
 
 ## Garbage collection
 

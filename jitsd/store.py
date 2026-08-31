@@ -18,8 +18,9 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Optional
 
+from . import chunker
 from .chunker import chunk
 
 READ_BUF = 8 * 1024 * 1024
@@ -57,10 +58,37 @@ class ObjectStore:
         self.root = Path(root)
         self.chunks = self.root / "chunks"
         self.blobs = self.root / "blobs"
+        self.config_path = self.root / "config.json"
+        self._params: Optional[Dict[str, int]] = None
 
     def init(self) -> None:
         self.chunks.mkdir(parents=True, exist_ok=True)
         self.blobs.mkdir(parents=True, exist_ok=True)
+        if not self.config_path.exists():
+            self.config_path.write_text(json.dumps(self.default_params(), indent=2) + "\n")
+
+    # -- chunker parameters ----------------------------------------------
+    @staticmethod
+    def default_params() -> Dict[str, int]:
+        return {"min_size": chunker.MIN_SIZE,
+                "avg_size": chunker.AVG_SIZE,
+                "max_size": chunker.MAX_SIZE}
+
+    def params(self) -> Dict[str, int]:
+        """Chunker settings this store was created with.
+
+        Recorded because they are not a tuning knob after the fact: different
+        boundaries mean nothing new dedups against anything already stored, and
+        the damage is silent -- the store keeps working, it just stops saving
+        space. A store is therefore self-describing, and re-chunking is an
+        explicit migration rather than an accident.
+        """
+        if self._params is None:
+            if self.config_path.exists():
+                self._params = json.loads(self.config_path.read_text())
+            else:
+                self._params = self.default_params()
+        return self._params
 
     # -- paths ------------------------------------------------------------
     def _chunk_path(self, digest: str) -> Path:
@@ -92,7 +120,7 @@ class ObjectStore:
             return blob_id
 
         chunk_ids: List[str] = []
-        for piece in chunk(data):
+        for piece in chunk(data, **self.params()):
             cid = sha256_bytes(piece)
             chunk_ids.append(cid)
             self._write_atomic(self._chunk_path(cid), piece)

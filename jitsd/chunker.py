@@ -32,11 +32,20 @@ GEAR: Tuple[int, ...] = tuple(_rng.getrandbits(64) for _ in range(256))
 MASK64 = (1 << 64) - 1
 WINDOW = 64
 
-# ~1 MiB average. Chosen for 3D payloads: a localised edit costs ~2-3 chunks,
-# and a 4 GB asset yields ~4000 chunks rather than millions of tiny files.
-MIN_SIZE = 256 * 1024
-AVG_SIZE = 1024 * 1024
-MAX_SIZE = 4 * 1024 * 1024
+# 64 KiB average, measured rather than guessed (bench/granularity.py). The
+# first default here was 1 MiB, reasoned from "a localised edit costs 2-3
+# chunks". On real USD crate files that is far too coarse:
+#
+#   avg        one-mesh edit    prim reorder    chunks per GiB
+#   16 KiB          0.31%           0.87%            55,780
+#   64 KiB          0.31%           2.53%            13,205
+#    1 MiB         12.53%          67.57%               591
+#
+# Below 64 KiB only the reorder case keeps improving, and it costs 4x the
+# objects to halve it. Pack files would buy room to go smaller later.
+MIN_SIZE = 16 * 1024
+AVG_SIZE = 64 * 1024
+MAX_SIZE = 256 * 1024
 
 
 def _mask_for(avg_size: int) -> int:

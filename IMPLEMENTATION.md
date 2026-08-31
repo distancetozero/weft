@@ -231,6 +231,46 @@ Compilation is unaffected by which backend is present: a stage compiled with
 pxr absent has the same digest as one compiled with it installed, and opens
 cleanly in USD.
 
+## Storage granularity — settled by measurement
+
+`bench/granularity.py` tests the storage claims against **real USD** rather
+than synthetic binary: 4000 meshes, 13.9 MiB of crate, 64 KiB chunks.
+
+| perturbation | bytes new | fields new |
+|---|---|---|
+| re-serialise, no change | 0.0% | 0.0% |
+| one mesh of 4000 edited | 0.1% | 0.0% |
+| every prim reordered | 1.3% | 0.0% |
+| float noise on every value | 100.0% | 69.0% |
+
+**Recommendation: keep byte-level chunking; do not move to per-field hashing.**
+Field-level wins in one case only — global value perturbation — and saves 31%
+there. That does not justify layer decomposition, value canonicalisation, pack
+files and a pxr dependency in the write path.
+
+It corrected three earlier claims. Crate *is* deterministic within a version
+and writer, so "no byte-stable output" was overstated. Byte chunking *does*
+survive a re-export. And the alarming numbers that motivated the question —
+"1.0x on re-export", then "88% for a one-mesh edit" — were both artifacts: the
+first from perturbing every 512th byte of random binary, the second from
+running 1 MiB chunks against a 710 KiB file, which is two chunks.
+
+The real fix was the chunk size, not the strategy. Default moved from 1 MiB to
+**64 KiB**:
+
+| avg chunk | one-mesh edit | prim reorder | chunks per GiB |
+|---|---|---|---|
+| 16 KiB | 0.31% | 0.87% | 55,780 |
+| 64 KiB | 0.31% | 2.53% | 13,205 |
+| 1 MiB | 12.53% | 67.57% | 591 |
+
+Effect on the original benchmark, per additional save: local **2.0 MiB →
+205 KiB**, scattered **9.6 MiB → 596 KiB**.
+
+A store now records its chunker parameters in `objects/config.json` and uses
+those rather than the current defaults — different boundaries mean nothing new
+deduplicates against anything already stored, and the failure is silent.
+
 ## Benchmark
 
 ```

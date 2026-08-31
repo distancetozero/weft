@@ -78,52 +78,30 @@ Valuable, but it puts relational evaluation on the interactive path.
 Append-only and kilobyte-scale, but it is the one thing that must survive
 everything else. Same store as the ledger, or separately durable?
 
-## 9. Granularity of content addressing
+## 9. Granularity of content addressing — RESOLVED
 
-Measured in `bench/dedup.py`: byte-level content-defined chunking gives 15.8x
-dedup on localised edits and **1.0x on a whole-file re-export**, which is the
-common case whenever someone exports from a DCC rather than saving
-incrementally. So the unit of content addressing cannot be the file.
+**Recommendation: keep byte-level content-defined chunking. Do not move to
+per-`(path, field)` hashing.** Full measurements in `docs/06-storage.md`.
 
-An earlier draft of this question asked whether to decompose assets into
-per-prim, per-attribute pieces. That was the wrong question: **USD already is
-that decomposition.** An `SdfLayer` is a sparse map from `(path, field)` to
-value, and `SdfAbstractData` exposes exactly that. The question is only at what
-granularity to hash the decomposition USD already provides.
+The question existed because byte chunking supposedly could not survive a DCC
+re-export. Measured against real USD, it survives easily: a one-mesh edit in a
+4000-mesh scene costs 0.1% of the file, and reordering every prim costs 1.3%.
+Crate is deterministic and keeps edits local. The original "1.0x on re-export"
+number came from perturbing every 512th byte of random binary — a synthetic
+worst case no USD workflow produces.
 
-### The shape it actually has
+Field-level hashing wins in exactly one case: float noise on every value, where
+it stores 69% against byte chunking's 100%. A 31% saving does not justify
+layer decomposition, value canonicalisation, pack files, and a pxr dependency
+in the write path.
 
-**USD layers — hash per `(path, field)`.** A re-export perturbing float noise
-on one mesh leaves every other prim's fields hashing identically, which is the
-property byte chunking demonstrably cannot deliver. Crate's own intra-file
-value dedup becomes irrelevant, because fields are stored individually anyway.
+What actually changed: the default average chunk moved from 1 MiB to **64 KiB**
+(measured knee), and a store now records its chunker parameters so a future
+change is an explicit migration rather than a silent loss of dedup.
 
-**Opaque payloads — keep the chunker.** Textures, VDB volumes, point caches,
-Alembic, video. USD's data model gives nothing here; they are bytes behind an
-asset path, and content-defined chunking is the only tool. The re-export
-problem is milder for these: a texture that was not re-authored usually
-produces identical bytes.
+**Reopen this if** exports from a real DCC pipeline show heavy prim renaming or
+re-tessellation that perturbs every value. The test scene is synthetic — one
+USD version, uniform meshes, no textures, time samples or references. A cheaper
+middle path exists if it is needed: hash per *prim* rather than per field,
+which survives reordering and renaming without full value canonicalisation.
 
-### Hash values, not bytes
-
-USD does **not** guarantee that semantically identical data serialises to
-identical bytes. Crate output varies with writer version and value-table
-ordering. So hash the typed value in a canonical encoding rather than its
-serialisation.
-
-This is an improvement, not a tax: a `float3[]` then hashes the same whether it
-came from `.usda` or `.usdc`, and whether it was written by one USD version or
-another. Byte hashing would have failed silently and late.
-
-### What it costs
-
-- **Small-object explosion.** Millions of prims times several fields each. Hash
-  individually, store in packs, as git does. Design it in now rather than
-  discovering it at scale.
-- **A pxr dependency in the write path.** Rung 1 deliberately has none. Store
-  granularity and the USD dependency therefore arrive together — a decision
-  point, not a free upgrade.
-
-Still open: whether canonicalisation should also normalise prim and array
-ordering (defeating re-exports that only reorder, at the risk of being lossy),
-and what the pack format is.

@@ -56,3 +56,31 @@ def test_gc_keeps_reachable_and_drops_the_rest(tmp_path):
     assert res["blobs"] == 1
     assert s.has_blob(keep) and not s.has_blob(drop)
     assert len(s.get_bytes(keep)) == 2_000_000
+
+
+def test_store_records_its_chunker_parameters(tmp_path):
+    """Chunk parameters are not a tuning knob after the fact: changing them
+    means nothing new dedups against anything already stored, silently."""
+    import json
+
+    from jitsd import chunker
+
+    s = _store(tmp_path)
+    cfg = json.loads((tmp_path / "objects" / "config.json").read_text())
+    assert cfg == {"min_size": chunker.MIN_SIZE,
+                   "avg_size": chunker.AVG_SIZE,
+                   "max_size": chunker.MAX_SIZE}
+
+
+def test_store_uses_its_recorded_parameters_not_the_current_default(tmp_path):
+    import json
+
+    s = _store(tmp_path)
+    (tmp_path / "objects" / "config.json").write_text(
+        json.dumps({"min_size": 2048, "avg_size": 8192, "max_size": 32768}))
+    s._params = None
+    data = random.Random(9).randbytes(400_000)
+    bid = s.put_bytes(data)
+    assert s.get_bytes(bid) == data
+    # Far more chunks than the 64 KiB default would produce.
+    assert len(s.manifest(bid)["chunks"]) > 20
