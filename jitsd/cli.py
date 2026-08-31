@@ -12,6 +12,9 @@ from typing import List, Optional
 
 from .contracts import Surface
 from .ledger import BreakingChange, Repo
+from . import generators as _gens
+from . import query as _query
+from .generators import vehicle as _vehicle  # noqa: F401  registers the built-ins
 
 
 def _human(n: float) -> str:
@@ -112,6 +115,71 @@ def cmd_promote(args) -> int:
     note = "  (forced over %d violation%s)" % (len(checked), "" if len(checked) == 1 else "s") \
         if (checked and args.force) else ""
     print("@%s -> %s %s%s" % (args.to, args.asset, rev, note))
+    return 0
+
+
+def cmd_declare(args) -> int:
+    """Create a generator-backed revision: an asset that is a function."""
+    repo = Repo.find()
+    params = {}
+    for kv in args.param or []:
+        if "=" not in kv:
+            print("--param expects k=v, got %r" % kv, file=sys.stderr)
+            return 1
+        k, _, v = kv.partition("=")
+        params[k.strip()] = v.strip()
+    try:
+        rev = repo.declare(args.asset, args.generator, params, _author(), args.message or "")
+    except (KeyError, ValueError) as e:
+        print("%s" % e, file=sys.stderr)
+        return 1
+    surf = Surface.from_dict(rev.surface)
+    print("%s %s  generator %s" % (args.asset, rev.rev, rev.generator))
+    print("  params: %s" % ", ".join("%s=%g" % kv for kv in sorted((rev.params or {}).items())))
+    print("  computed surface: %d offered, %d required" % (len(surf.offers), len(surf.requires)))
+    return 0
+
+
+def cmd_generators(args) -> int:
+    for ident in _gens.known():
+        g = _gens.get(ident)
+        ps = ", ".join("%s=%g%s" % (p.name, p.default, p.unit) for p in g.params)
+        print("%-18s %-9s %s" % (ident, g.cost_class, ps))
+        if g.variation_points:
+            print("%-18s %-9s variation points: %s"
+                  % ("", "", ", ".join(g.variation_points)))
+    return 0
+
+
+def cmd_compile(args) -> int:
+    """Compile a query document into a stage, on demand."""
+    repo = Repo.find()
+    try:
+        q = _query.parse_query_file(Path(args.query))
+        c = _query.compile_query(repo, q, context=args.context,
+                                 geometry=not args.resolve_only)
+    except (KeyError, ValueError) as e:
+        print("%s" % e, file=sys.stderr)
+        return 1
+
+    for d in c.resolution.diagnostics:
+        print("  %s" % d, file=sys.stderr if d.severity == "error" else sys.stdout)
+    if not c.ok:
+        print("resolution failed; nothing compiled", file=sys.stderr)
+        return 1
+
+    if args.out:
+        Path(args.out).write_text(c.stage)
+
+    where = args.out or "(not written)"
+    print("%s  context %s  baseline %s" % (where, c.context.name, c.pins and (q.baseline or "floating")))
+    print("  bindings   %d" % len(c.resolution.bindings))
+    if c.scene_bounds:
+        lo, hi = c.scene_bounds
+        print("  bounds     (%.3g, %.3g, %.3g) .. (%.3g, %.3g, %.3g)" % (lo + hi))
+    print("  phase A    %7.2f ms   relational -- parameters, contracts, bounds" % c.phase_a_ms)
+    print("  phase B    %7.2f ms   materialise -- geometry" % c.phase_b_ms)
+    print("  digest     sha256:%s" % c.digest[:16])
     return 0
 
 
@@ -319,6 +387,24 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--to", required=True)
     s.add_argument("--force", action="store_true", help="promote over a breaking change")
     s.set_defaults(fn=cmd_promote)
+
+    s = sub.add_parser("declare", help="create a generator-backed revision")
+    s.add_argument("asset")
+    s.add_argument("--generator", required=True)
+    s.add_argument("--param", action="append", metavar="K=V")
+    s.add_argument("-m", "--message", default="")
+    s.set_defaults(fn=cmd_declare)
+
+    s = sub.add_parser("generators", help="list registered generators")
+    s.set_defaults(fn=cmd_generators)
+
+    s = sub.add_parser("compile", help="compile a query document into a stage")
+    s.add_argument("query")
+    s.add_argument("--context", default=None)
+    s.add_argument("-o", "--out")
+    s.add_argument("--resolve-only", action="store_true",
+                   help="phase A only: contracts and bounds, no geometry")
+    s.set_defaults(fn=cmd_compile)
 
     s = sub.add_parser("bind", help="resolve requirements to offers by contract")
     s.add_argument("--baseline")

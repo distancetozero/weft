@@ -1,8 +1,8 @@
-# Reference implementation — rung 1, plus contract resolution
+# Reference implementation
 
 Solo, offline, no server. Per `docs/07-adoption.md`, nothing above rung 1 may
 be required for rung 1 to be useful — so versioning works with no contracts
-declared at all, and contracts are an upgrade layered on top.
+declared and no generator in sight, and each layer above is an upgrade.
 
 ```
 pip install -e ".[dev]"      # numpy and pytest are optional
@@ -31,6 +31,70 @@ python -m jitsd save hero_car car.usdc -m "reworked front wing"
 | `bind` | resolve requirements to offers **by contract identity** |
 | `check <asset> <rev>` | would promoting this break anything? |
 | `promote` | refuses breaking changes unless `--force` |
+| `declare <asset> --generator G` | an asset that is a **function**, not a file |
+| `generators` | list registered generators and their parameter domains |
+| `compile <query.usda>` | **compile a stage on demand** |
+
+## Compiling on demand
+
+This is the part that makes it just-in-time. A query document names generators,
+parameters and a context — about a kilobyte of readable USD, and the only
+durable artifact. It names no geometry, no file, and no positions.
+
+```
+$ jitsd compile examples/shot.usda --context review -o stage.usda
+stage.usda  context review  baseline floating
+  bindings   1
+  bounds     (-1.87, -0.33, -0.903) .. (1.87, 1.41, 0.903)
+  phase A       0.38 ms   relational -- parameters, contracts, bounds
+  phase B       1.00 ms   materialise -- geometry
+  digest     sha256:186d110a5835791d
+```
+
+### The contract surface is computed, not authored
+
+`Chassis.offers()` derives its hub frames from `wheelbase` and `track`. So
+changing one parameter moves the mount points, and the wheelset — which never
+names the chassis and is never edited — follows:
+
+```
+wheelbase 2.84 -> wheel x: [1.42, 1.42, -1.42, -1.42]
+wheelbase 3.30 -> wheel x: [1.65, 1.65, -1.65, -1.65]
+```
+
+That is the scenario the project opened with, executable.
+
+### One query, five contexts
+
+| context | meshes | points | phase B | note |
+|---|---|---|---|---|
+| hero | 5 | 520 | 1.41 ms | |
+| review | 5 | 200 | 0.60 ms | |
+| proxy | 5 | 104 | 0.44 ms | |
+| engineering | **6** | 528 | 1.48 ms | includes the battery cell |
+| collision | 5 | 72 | 0.32 ms | |
+
+`engineering` is a **different derivation, not a coarser one** — the other four
+never generate the internal cell at all. Each context yields a distinct digest,
+and recompiling any of them is byte-identical.
+
+### The two planes, measured
+
+Phase A resolves parameters, contract surfaces, bindings and bounds without
+touching geometry:
+
+| chassis instances | phase A | phase B | ratio |
+|---|---|---|---|
+| 1 | 0.30 ms | 1.42 ms | 5x |
+| 8 | 1.12 ms | 9.77 ms | 9x |
+| 32 | 3.68 ms | 38.87 ms | 11x |
+| 128 | 14.71 ms | 152.24 ms | 10x |
+| 512 | 56.97 ms | 640.15 ms | 11x |
+
+At 512 instances, phase A answers bindings and scene bounds in 57 ms without
+producing any of the 16 MB of geometry phase B would. That is the operational
+justification for the relational/geometric split, and what makes "what is in
+this frustum" answerable before anything is generated.
 
 ## Contract resolution
 
@@ -113,9 +177,20 @@ exists to validate the model, not to ship.
   `customLayerData` (`jitsd__meta`) because parsing `.usda` without USD is not
   worth doing. With pxr present this is read through the API instead; the files
   on disk do not change.
-- **One file per asset payload.** The contract surface is authored separately
-  and attached at save time; there is no prim-level structure inside the
-  payload itself. No bounds evaluation, no context compilation.
+- **Generators are Python callables, not sandboxed kernels.** `docs/02` calls
+  for WASM: deterministic FP, sandboxed vendor code, portable. These are
+  in-process and trusted.
+- **Two toy generators.** `chassis` and `wheelset` exercise computed offers,
+  bounds-without-geometry and context variation. They are boxes and cylinders,
+  not a test of anything at production complexity.
+- **Overrides and the baseline+overlay handoff are not built.** A query
+  document pins parameters and a baseline; it cannot yet express
+  "baseline 118 + chassis@wip", which `docs/03` makes the unit of handoff.
+- **Contexts are five presets**, not the claim lattice of `docs/05`. No
+  authorization tier, no redaction, no declassifying generators.
+- **Stored payloads cannot be parameterised.** An asset is either a generator
+  or a blob; compiling a query against a blob-backed asset fails loudly rather
+  than silently ignoring the parameters.
 - **`jitsd/usda.py` is a restricted parser, and temporary.** Contracts had to
   be authored in real USD — declaring an interface in JSON would prove nothing
   about whether the design fits USD — but rung 1 has no pxr. It handles prims,

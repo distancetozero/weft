@@ -1,0 +1,37 @@
+#usda 1.0
+#
+# A query document. THIS is the durable artifact -- about a kilobyte of
+# readable USD. Everything else is derived and can be thrown away.
+#
+# It names generators and parameters. It does not name geometry, does not name
+# a file, and does not say where anything is: the wheels find the chassis hubs
+# by contract at compile time.
+#
+(
+    customLayerData = {
+        string jitsd__label    = "sq040_sh0120"
+        string jitsd__context  = "review"
+        # Omit jitsd__baseline to float on @approved -- resolution then mints a
+        # baseline and hands it back, so this stays reproducible either way.
+    }
+)
+
+def Xform "Shot"
+{
+    def Xform "car_body" (
+        prepend apiSchemas = ["JitsdInstanceAPI"]
+    )
+    {
+        uniform token  jitsd:instance:asset = "chassis"
+        uniform double jitsd:param:wheelbase = 2.84
+        uniform double jitsd:param:track     = 1.56
+    }
+
+    def Xform "car_wheels" (
+        prepend apiSchemas = ["JitsdInstanceAPI"]
+    )
+    {
+        uniform token  jitsd:instance:asset = "wheelset"
+        uniform double jitsd:param:diameter = 0.66
+    }
+}

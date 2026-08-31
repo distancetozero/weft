@@ -118,6 +118,8 @@ class _Parser:
                     self.next()
             self.expect("]")
             return items
+        if tok == "{":
+            return self.parse_dict()
         if tok == "(":
             self.next()
             items = []

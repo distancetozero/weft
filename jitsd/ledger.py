@@ -42,7 +42,7 @@ def _esc(s: str) -> str:
 class Revision:
     asset: str
     rev: str
-    blob: str
+    blob: Optional[str]
     size: int
     parent: Optional[str]
     author: str
@@ -53,6 +53,11 @@ class Revision:
     # payload -- resolution is a relational-plane operation (docs/02).
     interface_blob: Optional[str] = None
     surface: Optional[Dict] = None
+    # A revision is EITHER a stored payload (a constant) or a generator
+    # reference (a function). Both are generators; a constant is one with no
+    # parameters. See docs/04-contracts.md.
+    generator: Optional[str] = None
+    params: Optional[Dict] = None
 
 
 @dataclass
@@ -116,6 +121,15 @@ class Ledger:
     def write_revision(self, r: Revision) -> Path:
         self._revdir(r.asset).mkdir(parents=True, exist_ok=True)
         meta = json.dumps(asdict(r), separators=(",", ":"))
+        if r.generator:
+            plist = "".join(
+                "    uniform double jitsd:param:%s = %s\n" % (k, v)
+                for k, v in sorted((r.params or {}).items()))
+            payload = ('    uniform string jitsd:generator = "%s"\n%s'
+                       % (_esc(r.generator), plist))
+        else:
+            payload = ('    uniform int64 jitsd:payloadSize = %d\n'
+                       '    prepend payload = @jitsd:obj/sha256:%s@\n' % (r.size, r.blob))
         body = f'''#usda 1.0
 (
     customLayerData = {{
@@ -133,9 +147,7 @@ def "{r.asset}" (
     prepend apiSchemas = ["JitsdGeneratorAPI"]
 )
 {{
-    uniform int64 jitsd:payloadSize = {r.size}
-    prepend payload = @jitsd:obj/sha256:{r.blob}@
-}}
+{payload}}}
 '''
         p = self._revdir(r.asset) / ("%s.usda" % r.rev)
         p.write_text(body)
@@ -317,6 +329,38 @@ class Repo:
             return []
         return check_compatibility(old, new)
 
+    def declare(self, asset: str, generator: str, params: Optional[Dict],
+                author: str, message: str = "") -> Revision:
+        """Create a generator-backed revision.
+
+        The contract surface is not authored here -- it is COMPUTED by the
+        generator from its parameters, and recorded on the revision so
+        resolution never has to call the generator to know what it offers.
+        """
+        from .generators import get as get_generator
+
+        gen = get_generator(generator)
+        bound = gen.bind_params(params)
+        surface = gen.surface(bound).to_dict()
+
+        chans = self.ledger.channels(asset)
+        parent = chans.get("wip")
+        if parent:
+            prev = self.ledger.read_revision(asset, parent)
+            if (prev.generator == generator and prev.params == bound
+                    and prev.surface == surface):
+                return prev
+
+        rev = Revision(
+            asset=asset, rev=self.ledger.next_rev(asset), blob=None, size=0,
+            parent=parent, author=author, created=_now(), message=message,
+            surface=surface, generator=generator, params=bound,
+        )
+        self.ledger.write_revision(rev)
+        self.ledger.set_channel(asset, "wip", rev.rev)
+        self.ledger.log_event("declare", asset=asset, rev=rev.rev, generator=generator)
+        return rev
+
     def promote(self, asset: str, ref: str, to: str, force: bool = False) -> str:
         rev = self.ledger.resolve_ref(asset, ref)
         self.ledger.read_revision(asset, rev)  # existence check
@@ -371,7 +415,8 @@ class Repo:
         h = hashlib.sha256()
         for asset, rev in sorted(pins.items()):
             r = self.ledger.read_revision(asset, rev)
-            h.update(("%s\0%s\0%s\n" % (asset, rev, r.blob)).encode())
+            ident = r.blob or "%s|%s" % (r.generator, json.dumps(r.params, sort_keys=True))
+            h.update(("%s\0%s\0%s\n" % (asset, rev, ident)).encode())
         return h.hexdigest()
 
     def cut_baseline(self, label: str = "", cut_by: str = "user",
@@ -398,13 +443,15 @@ class Repo:
         for num in self.ledger.baseline_numbers():
             for asset, rev in self.ledger.read_baseline(num).pins.items():
                 try:
-                    keep.add(self.ledger.read_revision(asset, rev).blob)
+                    r = self.ledger.read_revision(asset, rev)
                 except KeyError:
-                    pass
+                    continue
+                keep.update(b for b in (r.blob, r.interface_blob) if b)
         for asset in self.ledger.asset_names():
             for rev in self.ledger.channels(asset).values():
                 try:
-                    keep.add(self.ledger.read_revision(asset, rev).blob)
+                    r = self.ledger.read_revision(asset, rev)
                 except KeyError:
-                    pass
+                    continue
+                keep.update(b for b in (r.blob, r.interface_blob) if b)
         return sorted(keep)

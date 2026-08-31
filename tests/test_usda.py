@@ -66,3 +66,19 @@ def test_multiple_apply_instances():
 def test_rejects_non_usda():
     with pytest.raises(UsdaError):
         parse("{ not usd }")
+
+
+def test_dictionary_value_after_equals():
+    """`customLayerData = { ... }` -- a dict as an rvalue, not just a block."""
+    layer = parse('''#usda 1.0
+(
+    customLayerData = {
+        string jitsd__label = "sq040"
+        string jitsd__context = "review"
+    }
+)
+''')
+    cld = layer.meta["customLayerData"]
+    assert isinstance(cld, dict)
+    assert cld["jitsd__label"] == "sq040"
+    assert cld["jitsd__context"] == "review"
