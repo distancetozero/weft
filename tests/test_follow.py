@@ -36,3 +36,8 @@ def test_roundtrip():
 def test_parse_follow_accepts_string_and_list():
     assert parse_follow("Mount,up:x:y") == [parse_term("Mount"), parse_term("up:x:y")]
     assert parse_follow(["Mount"]) == [parse_term("Mount")]
+
+
+def test_explicit_down_prefix_normalizes():
+    assert parse_term("down:Mount") == FollowTerm(kind="Mount")
+    assert format_term(parse_term("down:Mount")) == "Mount"

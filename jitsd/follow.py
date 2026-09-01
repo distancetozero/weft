@@ -13,7 +13,7 @@ FOLLOW_LANGUAGE_VERSION = 1
 
 _RESERVED = ("->", "|", "(", ")")
 _TERM_RE = re.compile(
-    r"^(?:(?P<dir>up|both):)?(?:(?P<contract>contract):)?"
+    r"^(?:(?P<dir>up|both|down):)?(?:(?P<contract>contract):)?"
     r"(?P<kind>[A-Za-z_][\w:.-]*?)(?:@(?P<major>\d+))?(?:\*(?P<depth>\d+))?$")
 
 
@@ -37,7 +37,7 @@ def parse_term(text: str) -> FollowTerm:
         raise ValueError("cannot parse follow term %r (reserved or malformed)" % text)
     return FollowTerm(
         kind=m.group("kind"),
-        direction=m.group("dir") or "down",
+        direction=m.group("dir") if m.group("dir") and m.group("dir") != "down" else "down",
         depth=int(m.group("depth")) if m.group("depth") else None,
         contract=bool(m.group("contract")),
         major=int(m.group("major")) if m.group("major") else None,
