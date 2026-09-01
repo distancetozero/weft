@@ -44,12 +44,22 @@ class SliceSpec:
     closure: List[str] = field(default_factory=lambda: ["needs"])
     depth: int = DEFAULT_DEPTH
     include_optional: bool = False
+    # Which relationship KINDS closure may follow. Empty means every kind --
+    # which on a real assembly means everything, since the bench's assembly
+    # references every prop. "Pull one thread" needs this to be a choice:
+    # follow Mount contracts and material bindings, leave sublayers alone.
+    # Kinds are contract names ("Mount") or USD edge kinds ("usd:binding").
+    follow: List[str] = field(default_factory=list)
+    # Which binding attributes are in view -- what this slice's consumers read.
+    # Empty means all. Passed to re-evaluation for the impact preview.
+    view: List[str] = field(default_factory=list)
     pins: List[Overlay] = field(default_factory=list)
     omits: List[Overlay] = field(default_factory=list)
     baseline: Optional[str] = None
     channel: str = "approved"
     context: str = "review"
     label: str = ""
+    rules: Optional[str] = None     # provenance: the rule set applied, "name@rev"
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), separators=(",", ":"), sort_keys=True)
@@ -59,7 +69,109 @@ class SliceSpec:
         d = json.loads(text)
         d["pins"] = [Overlay(**p) for p in d.get("pins", [])]
         d["omits"] = [Overlay(**o) for o in d.get("omits", [])]
-        return cls(**d)
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in d.items() if k in known})
+
+
+# -- rule sets: a team's way of seeing the scene, as content ---------------
+
+RULES_RE = re.compile(r'string\s+jitsd__rules\s*=\s*"((?:[^"\\]|\\.)*)"')
+
+
+@dataclass
+class RuleSet:
+    """The reusable half of a slice: everything except what was seeded.
+
+    docs/10-slices.md: rule sets are content -- revisioned, channelled, owned,
+    promoted like any asset. "The lighting closure rule v12" is a publishable
+    artifact, so a team shares a way of seeing rather than a scene file. One
+    hard constraint, kept here: a rule reads only the relational plane.
+    """
+    closure: List[str] = field(default_factory=lambda: ["needs"])
+    follow: List[str] = field(default_factory=list)
+    depth: int = DEFAULT_DEPTH
+    include_optional: bool = False
+    view: List[str] = field(default_factory=list)
+    context: str = "review"
+    label: str = ""
+    author: str = ""
+    note: str = ""
+
+    def to_json(self) -> str:
+        return json.dumps(asdict(self), separators=(",", ":"), sort_keys=True)
+
+    @classmethod
+    def from_json(cls, text: str) -> "RuleSet":
+        d = json.loads(text)
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in d.items() if k in known})
+
+    @classmethod
+    def from_spec(cls, spec: "SliceSpec", author: str = "", note: str = "") -> "RuleSet":
+        return cls(closure=list(spec.closure), follow=list(spec.follow), depth=spec.depth,
+                   include_optional=spec.include_optional, view=list(spec.view),
+                   context=spec.context, label=spec.label, author=author, note=note)
+
+    def apply(self, spec: "SliceSpec", overrides: Dict[str, object]) -> "SliceSpec":
+        """Rules fill in what the caller did not say. Explicit flags win."""
+        for name in ("closure", "follow", "depth", "include_optional", "view", "context"):
+            if overrides.get(name) is None:
+                setattr(spec, name, getattr(self, name))
+        if not spec.label and self.label:
+            spec.label = self.label
+        return spec
+
+
+def emit_rules_document(rs: RuleSet, name: str) -> str:
+    return "\n".join([
+        "#usda 1.0",
+        "#",
+        "# A rule set: a team's way of seeing the scene. Reads only the relational",
+        "# plane. Apply with `jitsd select --rules %s`." % name,
+        "#",
+        "(",
+        "    customLayerData = {",
+        '        string jitsd__rules = "%s"' % _esc(rs.to_json()),
+        "    }",
+        ")",
+        "",
+    ])
+
+
+def read_rules(text: str) -> RuleSet:
+    m = RULES_RE.search(text)
+    if not m:
+        raise ValueError("no jitsd__rules block")
+    return RuleSet.from_json(m.group(1).encode().decode("unicode_escape"))
+
+
+def load_rules(repo, ref: str) -> Tuple[RuleSet, str]:
+    """`name` or `name@ref` from the repository. Returns (rules, "name@rev").
+
+    Unqualified names take @approved when it exists -- the team's published
+    way of seeing -- and fall back to @wip.
+    """
+    name, _, rev_ref = ref.partition("@")
+    if rev_ref:
+        rev = repo.ledger.resolve_ref(name, rev_ref)
+    else:
+        try:
+            rev = repo.ledger.resolve_ref(name, "approved")
+        except KeyError:
+            rev = repo.ledger.resolve_ref(name, "wip")
+    r = repo.ledger.read_revision(name, rev)
+    if not r.blob:
+        raise ValueError("%s %s carries no payload" % (name, rev))
+    return read_rules(repo.store.get_bytes(r.blob).decode()), "%s@%s" % (name, rev)
+
+
+def save_rules(repo, name: str, rs: RuleSet, author: str, message: str = "") -> str:
+    """Store a rule set as an asset revision. Returns the revision id."""
+    import tempfile
+    d = Path(tempfile.mkdtemp(prefix="jitsd-rules-"))
+    p = d / ("%s.usda" % name)
+    p.write_text(emit_rules_document(rs, name))
+    return repo.save(name, p, author, message or ("rules: %s" % name)).rev
 
 
 # -- result ----------------------------------------------------------------
@@ -200,8 +312,31 @@ def _seed_matches(seed: str, info: _AssetInfo, repo,
 class _Edge:
     consumer: str
     provider: str
-    contract: str
+    contract: str        # "Mount@1" for a contract edge; "usd:binding" etc. for a USD edge
     policy: str          # required | substitutable | omittable
+
+    @property
+    def kind(self) -> str:
+        """What `follow` matches on: the contract name, or the USD edge kind."""
+        return split_contract(self.contract)[0]
+
+
+def _usd_kind(edge) -> str:
+    """Label a deps edge by the relationship it is, so closure can choose."""
+    from deps.walk import ARC, ASSET_ATTR, COLLECTION, CONN, INHERIT, REL
+    if edge.kind == ARC:
+        return "usd:arc"
+    if edge.kind == ASSET_ATTR:
+        return "usd:asset"
+    if edge.kind == REL:
+        return "usd:binding" if edge.name.startswith("material:binding") else "usd:rel"
+    if edge.kind == CONN:
+        return "usd:conn"
+    if edge.kind == INHERIT:
+        return "usd:inherit"
+    if edge.kind == COLLECTION:
+        return "usd:collection"
+    return "usd:%s" % edge.kind
 
 
 REFERENCE_CONTRACT = "usd:reference"
@@ -261,22 +396,32 @@ def _reference_edges(universe: Dict[str, _AssetInfo]):
     # Untracked files are expanded through, so an edge tracked -> untracked ->
     # tracked is recorded as a direct requirement -- which it is -- while a
     # chain of tracked assets keeps its hops, so `--depth` means what it says.
+    # Each edge keeps the KIND of relationship it came from -- a material
+    # binding, a reference, a class arc -- so closure can follow one thread
+    # and not another. Through an untracked intermediate, the kind is the
+    # first hop's: how the consumer reached out.
     edges: List[_Edge] = []
+    seen_edges = set()
     untracked: Dict[str, _Untracked] = {}
     for src, asset in sources.items():
         seen = {src}
-        frontier = [src]
+        frontier: List[Tuple[str, Optional[str]]] = [(src, None)]
         while frontier:
-            nxt: List[str] = []
-            for node in frontier:
+            nxt: List[Tuple[str, Optional[str]]] = []
+            for node, via in frontier:
                 for target in sorted(g.direct_needs(node)):
                     if target in seen:
                         continue
                     seen.add(target)
+                    kinds = sorted({_usd_kind(e) for e in g.why(node, target)}) or ["usd:arc"]
+                    label = via or kinds[0]
                     other = sources.get(target)
                     if other is not None:
                         if other != asset:
-                            edges.append(_Edge(asset, other, REFERENCE_CONTRACT, "required"))
+                            for k in ([via] if via else kinds):
+                                if (asset, other, k) not in seen_edges:
+                                    seen_edges.add((asset, other, k))
+                                    edges.append(_Edge(asset, other, k, "required"))
                         continue
                     if target not in untracked:
                         try:
@@ -284,7 +429,7 @@ def _reference_edges(universe: Dict[str, _AssetInfo]):
                         except OSError:
                             size = 0
                         untracked[target] = _Untracked(asset, target, size)
-                    nxt.append(target)
+                    nxt.append((target, label))
             frontier = nxt
     return edges, list(untracked.values())
 
@@ -364,7 +509,13 @@ def resolve_slice(repo, spec: SliceSpec) -> SliceResult:
         needs_by_consumer.setdefault(e.consumer, []).append(e)
         feeds_by_provider.setdefault(e.provider, []).append(e)
 
+    follow = set(spec.follow)
+
+    def followed(e: _Edge) -> bool:
+        return not follow or e.kind in follow
+
     boundary: List[BoundaryItem] = []
+    not_followed: Dict[Tuple[str, str], str] = {}
     frontier = list(members)
     for depth in range(spec.depth):
         nxt: List[str] = []
@@ -372,6 +523,10 @@ def resolve_slice(repo, spec: SliceSpec) -> SliceResult:
             if "needs" in spec.closure:
                 for e in needs_by_consumer.get(a, []):
                     if e.provider in members:
+                        continue
+                    if not followed(e):
+                        # Declared, not silent: the thread exists, it was not pulled.
+                        not_followed.setdefault((e.provider, e.kind), a)
                         continue
                     if e.policy == "required" or spec.include_optional:
                         members[e.provider] = member_from(
@@ -385,11 +540,15 @@ def resolve_slice(repo, spec: SliceSpec) -> SliceResult:
                             "%s, not forced" % e.policy))
             if "feeds" in spec.closure:
                 for e in feeds_by_provider.get(a, []):
-                    if e.consumer not in members:
-                        members[e.consumer] = member_from(
-                            e.consumer,
-                            Provenance("closure", "feeds %s -> %s" % (e.contract, a)))
-                        nxt.append(e.consumer)
+                    if e.consumer in members:
+                        continue
+                    if not followed(e):
+                        not_followed.setdefault((e.consumer, e.kind), a)
+                        continue
+                    members[e.consumer] = member_from(
+                        e.consumer,
+                        Provenance("closure", "feeds %s -> %s" % (e.contract, a)))
+                    nxt.append(e.consumer)
         if not nxt:
             break
         frontier = nxt
@@ -398,10 +557,14 @@ def resolve_slice(repo, spec: SliceSpec) -> SliceResult:
         if "needs" in spec.closure:
             for a in frontier:
                 for e in needs_by_consumer.get(a, []):
-                    if e.provider not in members and e.policy == "required":
+                    if e.provider not in members and e.policy == "required" and followed(e):
                         boundary.append(BoundaryItem(
                             e.provider, "%s requires %s" % (a, e.contract),
                             "beyond depth %d" % spec.depth))
+    for (asset_, kind), via in sorted(not_followed.items()):
+        if asset_ not in members:
+            boundary.append(BoundaryItem(asset_, "%s via %s" % (via, kind),
+                                         "%s not followed" % kind))
 
     # omits: recorded with what they displaced, and with consequences
     omitted: List[Tuple[Overlay, str]] = []
@@ -504,6 +667,12 @@ def receipt(result: SliceResult) -> str:
     expr = " ".join(spec.seeds) or "(no seeds)"
     lines.append("slice: %s  +%s  depth %d  ctx:%s"
                  % (expr, ",".join(spec.closure) or "none", spec.depth, spec.context))
+    if spec.follow:
+        lines.append("follow: %s" % ", ".join(spec.follow))
+    if spec.view:
+        lines.append("view:   %s" % ", ".join(spec.view))
+    if spec.rules:
+        lines.append("rules:  %s" % spec.rules)
     lines.append("coordinate: %s" % result.coordinate)
     lines.append("")
     lines.append("members (%d):" % len(result.members))

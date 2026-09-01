@@ -418,11 +418,18 @@ class Repo:
         self.ledger.log_event("save", asset=asset, rev=rev.rev, blob=blob, size=len(data))
         return rev
 
-    def check_promotion(self, asset: str, ref: str, to: str) -> List[Violation]:
+    def check_promotion(self, asset: str, ref: str, to: str,
+                        view: Optional[List[str]] = None) -> List:
         """Compatibility of a candidate against what is currently on `to`.
 
-        The gate from docs/03-versioning.md: compatibility is measured, not
-        asserted. Nothing on the channel yet means nothing to break.
+        Two halves, both from docs/03-versioning.md:
+
+          1. the provider against its own promise -- check_compatibility();
+          2. every consumer bound to it, re-evaluated with the candidate
+             pinned and its manifest diffed -- reeval.reevaluate().
+
+        The second is what makes compatibility measured rather than asserted.
+        Nothing on the channel yet means nothing to break.
         """
         rev = self.ledger.resolve_ref(asset, ref)
         current = self.ledger.channels(asset).get(to)
@@ -432,7 +439,57 @@ class Repo:
         new = Surface.from_dict(self.ledger.read_revision(asset, rev).surface)
         if not old:
             return []
-        return check_compatibility(old, new)
+        out: List = list(check_compatibility(old, new))
+        out.extend(self.reevaluate(asset, rev, to, view).violations)
+        return out
+
+    def exemplar_surfaces(self, pins: Dict[str, str]) -> Dict[str, Surface]:
+        """Every pinned asset's surface, plus one per declared exemplar.
+
+        A generator that declares exemplars contributes an extra consumer
+        surface per exemplar, keyed `asset#name`, computed at those parameters.
+        A constant contributes one: its stored surface. Offers on exemplar
+        surfaces are hidden so an exemplar never provides for anyone.
+        """
+        from .generators import get as get_generator
+
+        out: Dict[str, Surface] = {}
+        for asset, rev in pins.items():
+            r = self.ledger.read_revision(asset, rev)
+            s = Surface.from_dict(r.surface)
+            if s:
+                out[asset] = s
+            if not r.generator:
+                continue
+            try:
+                gen = get_generator(r.generator)
+            except KeyError:
+                continue
+            for i, params in enumerate(gen.exemplars or ()):
+                bound = gen.bind_params({**(r.params or {}), **params})
+                es = gen.surface(bound)
+                for o in es.offers:
+                    o.public = False
+                out["%s#%d" % (asset, i)] = es
+        return out
+
+    def reevaluate(self, asset: str, rev: str, channel: str = "approved",
+                   view: Optional[List[str]] = None):
+        """Re-evaluate every consumer of `asset` with `rev` pinned in its place.
+
+        Standalone so slices can ask the same question -- "what does this
+        candidate break, inside and outside my slice" -- without promoting.
+        """
+        from .reeval import reevaluate
+
+        pins_old = self.resolve(channel=channel)
+        if asset not in pins_old:
+            from .reeval import ReEvaluation
+            return ReEvaluation(consumers=[], violations=[], proof="")
+        pins_new = dict(pins_old)
+        pins_new[asset] = rev
+        return reevaluate(self.exemplar_surfaces(pins_old),
+                          self.exemplar_surfaces(pins_new), {asset}, view)
 
     def declare(self, asset: str, generator: str, params: Optional[Dict],
                 author: str, message: str = "") -> Revision:

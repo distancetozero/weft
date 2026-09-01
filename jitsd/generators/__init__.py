@@ -66,6 +66,12 @@ class Generator:
     params: Sequence[Param] = ()
     variation_points: Sequence[str] = ()
     cost_class: str = "moderate"
+    # Canonical parameter bindings -- the generator's test suite
+    # (docs/04-contracts.md). At promotion, every downstream generator's
+    # exemplars are re-evaluated against the candidate and their manifests
+    # diffed. Empty means one exemplar: the defaults. A constant has one
+    # exemplar too -- itself -- which is what "constants are functions" costs.
+    exemplars: Sequence[Dict[str, float]] = ()
 
     # -- parameters -------------------------------------------------------
     def defaults(self) -> Dict[str, float]:

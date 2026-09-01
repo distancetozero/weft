@@ -119,8 +119,12 @@ def test_end_to_end_gate_refuses_a_moved_shelf(tmp_path):
     r.save("bench", asm, "t", interface=bad_iface)
     with pytest.raises(BreakingChange) as ei:
         r.promote("bench", "@wip", "approved")
+    # Both halves of the gate fire: the provider broke its promise (envelope),
+    # and every consumer bound to those offers sees them move (moved).
     kinds = {v.kind for v in ei.value.violations}
-    names = {v.offer for v in ei.value.violations}
-    assert kinds == {"envelope"}
-    assert names == {"/bench/shelf01/bottle01_0004", "/bench/shelf01/bottle01_0005"}
+    assert kinds == {"envelope", "moved"}
+    provider_names = {v.offer for v in ei.value.violations if v.kind == "envelope"}
+    assert provider_names == {"/bench/shelf01/bottle01_0004", "/bench/shelf01/bottle01_0005"}
+    consumers = {v.consumer for v in ei.value.violations if v.kind == "moved"}
+    assert consumers == {"bottle01"}
     assert r.ledger.channels("bench")["approved"] == "v002"

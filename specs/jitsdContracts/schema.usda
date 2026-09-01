@@ -63,6 +63,16 @@ class "JitsdOfferAPI" (
         doc = """False marks an internal surface: visible to the resolver for
                  provenance, not offered for binding."""
     )
+    # Binding attributes: `jitsd:bind:<name>`, any name, kind inferred from
+    # the value type (token -> exact, token[] -> set, double3 -> spatial) or
+    # forced with `jitsd:bind:<name>:kind`; spatial/angular may carry
+    # `jitsd:bind:<name>:tolerance`. A relationship is a set of these, not a
+    # position: material, purposes offered, a datum frame. A view is which of
+    # them a consumer reads. Position and orientation are always present,
+    # synthesised from the xform and JitsdEnvelopeAPI.
+    uniform token jitsd:bind:material (
+        doc = "Example of a binding attribute. Any `jitsd:bind:<name>` is one."
+    )
 }
 
 class "JitsdRequireAPI" (
@@ -81,6 +91,15 @@ class "JitsdRequireAPI" (
     uniform token jitsd:require:boundTo (
         doc = "Written by the resolver, never authored. Provenance."
     )
+    uniform double jitsd:require:tolerance:linear (
+        doc = """The CONSUMER's own limit on how far a bound offer may move.
+                 The provider's envelope is what it asserts; this is what is
+                 measured at re-evaluation. Unstated means trust the envelope."""
+    )
+    uniform double jitsd:require:tolerance:angular
+    # Constraints on binding attributes: `jitsd:require:bind:<name>`. An exact
+    # or set constraint must be satisfied by an offer to bind at all; a
+    # spatial/angular one carries the consumer's tolerance for it.
 }
 
 class "JitsdEnvelopeAPI" (

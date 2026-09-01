@@ -35,12 +35,14 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(HERE))
 
+from jitsd.contracts import Surface  # noqa: E402
 from jitsd.extract import provider_interface, read_assembly, write_interfaces  # noqa: E402
 from jitsd.ledger import BreakingChange, Repo  # noqa: E402
 
 PROVIDER = "lab_workbench01"
 ASSEMBLY = "fragment/assembly/assembly/lab_workbench01/assembly_assembly_lab_workbench01.usda"
 ENVELOPE_CM = 1.0
+TOLERANCE_FRACTION = 0.10   # a consumer tolerates 10% of its own footprint
 GATE_GROUP = "shelf01"
 
 
@@ -62,13 +64,27 @@ def main() -> int:
     step("extract contract surfaces from the assembly")
     t0 = time.perf_counter()
     ex = read_assembly(str(A / ASSEMBLY), PROVIDER)
-    ifaces = write_interfaces(ex, str(out / "iface"), envelope=ENVELOPE_CM)
+    # Consumer tolerances are DERIVED: a stated fraction of each prop's own
+    # footprint from its extentsHint. A 6 cm bottle and a 1 cm screw do not
+    # tolerate the same drift, and neither value is invented.
+    ifaces = write_interfaces(ex, str(out / "iface"), envelope=ENVELOPE_CM,
+                              tolerance_fraction=TOLERANCE_FRACTION)
     print("   %d placements in %d groups -> %d offers, %d consumer surfaces  (%.0f ms)"
           % (len(ex.placements), len(ex.groups), len(ex.placements), len(ex.assets),
              (time.perf_counter() - t0) * 1000))
     for g in ex.groups:
         n = sum(1 for p in ex.placements if p.group == g)
         print("   %-18s %3d mounts" % (g, n))
+    tols = {}
+    for a in ex.assets:
+        text = Path(ifaces[a]).read_text()
+        for line in text.splitlines():
+            if "tolerance:linear" in line:
+                tols[a] = float(line.split("=")[-1])
+    if tols:
+        lo, hi = min(tols.items(), key=lambda kv: kv[1]), max(tols.items(), key=lambda kv: kv[1])
+        print("   consumer tolerances derived for %d/%d props: %s %.2f cm .. %s %.2f cm"
+              % (len(tols), len(ex.assets), lo[0], lo[1], hi[0], hi[1]))
 
     step("ingest: workbench + every placed prop, each with its surface")
     repo = Repo(out / "repo")
@@ -100,15 +116,48 @@ def main() -> int:
     b = repo.cut_baseline(label="alab-workbench-poc", cut_by="poc", channel="approved")
     print("   baseline %s  merkle %s" % (b.number, b.merkle_root[:16]))
 
-    step("republish workbench: %s raised 0.5 cm (inside the %.0f cm envelope)"
-         % (GATE_GROUP, ENVELOPE_CM))
+    step("republish workbench: %s raised 0.05 cm (inside every tolerance)" % GATE_GROUP)
     ok_iface = out / "iface" / ("%s.ok.usda" % PROVIDER)
     ok_iface.write_text(provider_interface(ex, envelope=ENVELOPE_CM,
-                                           nudge={GATE_GROUP: (0.0, 0.5, 0.0)}))
+                                           nudge={GATE_GROUP: (0.0, 0.05, 0.0)}))
     repo.save(PROVIDER, A / "entity" / PROVIDER / ("%s.usda" % PROVIDER), "alab",
-              "%s +0.5cm" % GATE_GROUP, interface=ok_iface)
+              "%s +0.05cm" % GATE_GROUP, interface=ok_iface)
     rev, forced = repo.promote(PROVIDER, "@wip", "approved")
     print("   promoted %s -> @approved  (%d violations)" % (rev, len(forced)))
+
+    step("MEASURED, NOT ASSERTED: %s raised 0.7 cm -- inside the provider's %.0f cm "
+         "promise" % (GATE_GROUP, ENVELOPE_CM))
+    mid_iface = out / "iface" / ("%s.mid.usda" % PROVIDER)
+    mid_iface.write_text(provider_interface(ex, envelope=ENVELOPE_CM,
+                                            nudge={GATE_GROUP: (0.0, 0.7, 0.0)}))
+    repo.save(PROVIDER, A / "entity" / PROVIDER / ("%s.usda" % PROVIDER), "alab",
+              "%s +0.7cm" % GATE_GROUP, interface=mid_iface)
+    from jitsd.contracts import check_compatibility
+    cur = repo.ledger.channels(PROVIDER)["approved"]
+    cand = repo.ledger.resolve_ref(PROVIDER, "@wip")
+    old_s = Surface.from_dict(repo.ledger.read_revision(PROVIDER, cur).surface)
+    new_s = Surface.from_dict(repo.ledger.read_revision(PROVIDER, cand).surface)
+    print("   provider self-check (what it asserted): %d violations"
+          % len(check_compatibility(old_s, new_s)))
+    re = repo.reevaluate(PROVIDER, cand, "approved")
+    print("   consumer re-evaluation (what was measured): %d consumers checked, "
+          "%d broken" % (len(re.consumers), len(re.changed)))
+    try:
+        repo.promote(PROVIDER, "@wip", "approved")
+        print("   PROMOTED -- consumers with tolerance < 0.7 cm were not protected. Bug.")
+        return 1
+    except BreakingChange as e:
+        by_consumer = {}
+        for v in e.violations:
+            by_consumer.setdefault(getattr(v, "consumer", "(provider)"), []).append(v)
+        print("   REFUSED by consumers: %d prop%s would break, though the provider kept "
+              "its promise" % (len(re.changed), "" if len(re.changed) == 1 else "s"))
+        for c in sorted(by_consumer)[:6]:
+            v = by_consumer[c][0]
+            print("     %-26s %s" % (c, v.detail if hasattr(v, "detail") else v))
+        if len(by_consumer) > 6:
+            print("     ... and %d more" % (len(by_consumer) - 6))
+    print("   @approved still at %s" % repo.ledger.channels(PROVIDER)["approved"])
 
     step("republish workbench: %s raised 3 cm (past the envelope)" % GATE_GROUP)
     bad_iface = out / "iface" / ("%s.bad.usda" % PROVIDER)
@@ -121,20 +170,66 @@ def main() -> int:
         print("   PROMOTED -- the gate did not fire. That is a bug.")
         return 1
     except BreakingChange as e:
-        print("   REFUSED: %s %s -> @%s  (%d violations)"
-              % (e.asset, e.rev, e.channel, len(e.violations)))
-        for v in e.violations[:6]:
+        prov = [v for v in e.violations if not hasattr(v, "consumer")]
+        cons = [v for v in e.violations if hasattr(v, "consumer")]
+        print("   REFUSED: %s %s -> @%s  (%d provider violations, %d consumer violations)"
+              % (e.asset, e.rev, e.channel, len(prov), len(cons)))
+        for v in prov[:4]:
             print("     %s" % v)
-        if len(e.violations) > 6:
-            print("     ... and %d more, every one on %s" % (len(e.violations) - 6, GATE_GROUP))
+        if len(prov) > 4:
+            print("     ... and %d more, every one on %s" % (len(prov) - 4, GATE_GROUP))
     print("   @approved still at %s" % repo.ledger.channels(PROVIDER)["approved"])
+
+    step("impact preview from a slice (docs/10-slices.md): a lighter's slice of the bottles")
+    # No closure: the slice is exactly the bottles. With closure, the bottles
+    # need the bench and the bench's assembly references every prop, so the
+    # slice would be the whole set -- correct, but no blast radius to show.
+    from jitsd.slice import SliceSpec, resolve_slice
+    sl = resolve_slice(repo, SliceSpec(seeds=["chemistry_bottle*"], closure=[],
+                                       channel="approved"))
+    members = {m.asset for m in sl.members}
+    re = repo.reevaluate(PROVIDER, repo.ledger.resolve_ref(PROVIDER, "@wip"), "approved")
+    inside = sorted(c for c in re.changed if c in members)
+    outside = sorted(c for c in re.changed if c not in members)
+    print("   slice: %d bottles.  candidate %s@wip breaks %d consumers:"
+          % (len(members), PROVIDER, len(re.changed)))
+    print("     inside the slice  (%d): %s" % (len(inside), ", ".join(inside)))
+    print("     outside the slice (%d): %s%s"
+          % (len(outside), ", ".join(outside[:5]), " ..." if len(outside) > 5 else ""))
+    print("   -- the lighter sees what their edit breaks for other teams, without "
+          "loading their slices")
+
+    step("pull one thread: closure by relationship kind, and a team's rule set")
+    from jitsd.slice import RuleSet, load_rules, save_rules
+    everything = resolve_slice(repo, SliceSpec(seeds=["chemistry_bottle01"], channel="approved"))
+    mounts = resolve_slice(repo, SliceSpec(seeds=["chemistry_bottle01"], channel="approved",
+                                           follow=["Mount"]))
+    print("   seed chemistry_bottle01, follow everything: %d members  (the bench references "
+          "every prop)" % len(everything.members))
+    print("   seed chemistry_bottle01, follow Mount only: %d members  -> %s"
+          % (len(mounts.members), ", ".join(m.asset for m in mounts.members)))
+    held = [x for x in mounts.boundary if "not followed" in x.why_excluded]
+    print("   declared at the boundary, not pulled: %d threads (%s)"
+          % (len(held), ", ".join(sorted({x.why_excluded for x in held}))))
+    rev = save_rules(repo, "lookdev.rules",
+                     RuleSet(follow=["Mount"], depth=1, view=["position"], label="lookdev"),
+                     "dana", "lookdev pulls mounts only, one hop, position in view")
+    repo.promote("lookdev.rules", rev, "approved")
+    rules, applied = load_rules(repo, "lookdev.rules")
+    spec = SliceSpec(seeds=["chemistry_test_tube02"], channel="approved")
+    rules.apply(spec, {k: None for k in ("closure", "follow", "depth", "include_optional",
+                                         "view", "context")})
+    spec.rules = applied
+    via_rules = resolve_slice(repo, spec)
+    print("   rule set %s saved and promoted; applied to a different seed: %d members"
+          % (applied, len(via_rules.members)))
 
     step("drift since baseline %s" % b.number)
     pins = repo.resolve(channel="approved")
     now = repo.merkle_root(pins)
     print("   baseline %s   now %s   %s"
           % (b.merkle_root[:16], now[:16],
-             "DRIFTED (the +0.5cm republish is on @approved)" if now != b.merkle_root else "same"))
+             "DRIFTED (the +0.05cm republish is on @approved)" if now != b.merkle_root else "same"))
 
     step("verify")
     v = repo.store.verify()

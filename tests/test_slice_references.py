@@ -84,7 +84,9 @@ def test_reference_to_a_tracked_asset_joins_the_closure(tmp_path):
     names = {m.asset: m for m in res.members}
     assert set(names) == {"car", "mats"}
     assert names["mats"].provenance.kind == "closure"
-    assert "usd:reference" in names["mats"].provenance.detail
+    # Provenance names the KIND of relationship, not a catch-all: this one is
+    # a composition arc, and closure can be told to follow it or not.
+    assert "usd:arc" in names["mats"].provenance.detail
     assert res.untracked == []
 
 
