@@ -34,10 +34,11 @@ def test_compiles_and_binds_by_contract(tmp_path):
     c = compile_query(r, parse_query(parse(SHOT.read_text())))
     assert c.ok
     (b,) = c.resolution.bindings
-    # Consumers are keyed by INSTANCE, not asset: two instances of one asset
-    # are two distinct consumers with their own bindings.
-    assert b.consumer == "car_wheels" and len(b.providers) == 4
-    assert all(p.startswith("car_body/") for p in b.providers)
+    # Consumers are keyed by instance PATH, not by asset and not by leaf
+    # name: two instances of one asset are distinct consumers, and two
+    # instances sharing a leaf name under different parents must not collide.
+    assert b.consumer.endswith("car_wheels") and len(b.providers) == 4
+    assert all("car_body" in p for p in b.providers)
     assert c.stage.count("def Mesh") == 5           # 1 body + 4 wheels
     assert c.pins == {"chassis": "v001", "wheelset": "v001"}
 
@@ -142,5 +143,5 @@ def Xform "Twin"
     c = compile_query(r, parse_query(parse(src)))
     assert c.ok
     consumers = sorted(b.consumer for b in c.resolution.bindings)
-    assert consumers == ["wheelsA", "wheelsB"]
+    assert consumers == ["/Twin/wheelsA", "/Twin/wheelsB"]
     assert c.stage.count("def Mesh") == 9   # 1 body + 4 + 4 wheels

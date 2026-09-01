@@ -105,7 +105,7 @@ _REGISTRY: Dict[str, Generator] = {}
 
 def register(gen: Generator) -> Generator:
     _REGISTRY["%s@%s" % (gen.id, gen.version)] = gen
-    _REGISTRY[gen.id] = gen  # unversioned alias resolves to the latest registered
+    _REGISTRY[gen.id] = gen  # unversioned alias -- resolution only, never storage
     return gen
 
 
@@ -114,6 +114,46 @@ def get(ident: str) -> Generator:
         raise KeyError("no generator %r (have: %s)"
                        % (ident, ", ".join(sorted(k for k in _REGISTRY if "@" in k))))
     return _REGISTRY[ident]
+
+
+def pin(ident: str) -> str:
+    """Resolve a possibly-unversioned name to `id@version`.
+
+    A revision must never store a bare name. The unversioned alias resolves to
+    whatever was registered last, so a baseline pinning "chassis" recomposes
+    through new code the day a new version registers -- different geometry,
+    different mount points, from a coordinate that is supposed to be fixed.
+    Pin at declare time so the revision records which function it meant.
+    """
+    gen = get(ident)
+    return "%s@%s" % (gen.id, gen.version)
+
+
+def code_hash(gen: Generator) -> str:
+    """A digest of the generator's own code.
+
+    The version string is a promise; this is evidence. Folding it into the
+    baseline's merkle root means editing a generator without bumping its
+    version shows up as drift instead of passing silently.
+    """
+    import hashlib
+    import inspect
+
+    h = hashlib.sha256()
+    h.update(("%s@%s" % (gen.id, gen.version)).encode())
+    for name in ("surface", "bounds", "generate", "bind_params"):
+        fn = getattr(type(gen), name, None)
+        if fn is None:
+            continue
+        try:
+            src = inspect.getsource(fn)
+        except (OSError, TypeError):
+            src = ""            # C extension or REPL-defined; version only
+        h.update(name.encode())
+        h.update(src.encode())
+    for p in getattr(gen, "params", ()) or ():
+        h.update(repr(p).encode())
+    return h.hexdigest()
 
 
 def known() -> List[str]:

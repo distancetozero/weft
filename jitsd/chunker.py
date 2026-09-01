@@ -145,6 +145,15 @@ def cut_points_numpy(data: bytes, min_size: int, avg_size: int, max_size: int) -
             pos = end
         return None
 
+    # A zero or negative max_size makes `cut == pos` and the loop never
+    # advances. Reachable by hand-editing objects/config.json, which is read
+    # back without validation, so a bad config hangs rather than errors.
+    if max_size < 1:
+        raise ValueError("max_size must be >= 1, got %r" % max_size)
+    if min_size < 0 or min_size >= max_size:
+        raise ValueError("need 0 <= min_size < max_size, got %r and %r"
+                         % (min_size, max_size))
+
     out: List[int] = []
     pos = 0
     while pos < n:
@@ -154,6 +163,8 @@ def cut_points_numpy(data: bytes, min_size: int, avg_size: int, max_size: int) -
         hi = min(pos + max_size, n)
         hit = first_cut(pos + min_size, hi)
         cut = hit if hit is not None else hi
+        if cut <= pos:                       # belt and braces: always advance
+            cut = min(pos + max_size, n)
         out.append(cut)
         pos = cut
     return out
@@ -167,6 +178,22 @@ def _have_numpy() -> bool:
         return False
 
 
+def validate_params(min_size: int, avg_size: int, max_size: int) -> None:
+    """Reject settings that cannot produce progress.
+
+    A store reads these back from objects/config.json without checking them, so
+    a hand-edited max_size of 0 makes the cut loop never advance: the process
+    hangs instead of reporting a bad configuration.
+    """
+    if max_size < 1:
+        raise ValueError("max_size must be >= 1, got %r" % max_size)
+    if min_size < 0 or min_size >= max_size:
+        raise ValueError("need 0 <= min_size < max_size, got %r and %r"
+                         % (min_size, max_size))
+    if avg_size < 1:
+        raise ValueError("avg_size must be >= 1, got %r" % avg_size)
+
+
 def chunk(
     data: bytes,
     min_size: int = MIN_SIZE,
@@ -174,7 +201,17 @@ def chunk(
     max_size: int = MAX_SIZE,
     force_pure: bool = False,
 ) -> Iterator[bytes]:
-    """Split data at content-defined boundaries."""
+    """Split data at content-defined boundaries.
+
+    Validation happens before any generator is returned, so bad parameters
+    raise at the call site rather than on first iteration -- lazily reporting a
+    bad configuration is its own trap.
+    """
+    validate_params(min_size, avg_size, max_size)
+    return _chunk_iter(data, min_size, avg_size, max_size, force_pure)
+
+
+def _chunk_iter(data, min_size, avg_size, max_size, force_pure) -> Iterator[bytes]:
     if not data:
         return
     fn = cut_points_pure if (force_pure or not _have_numpy()) else cut_points_numpy

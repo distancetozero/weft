@@ -16,11 +16,12 @@ the shim goes away -- the file on disk does not change either way.
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from .contracts import Surface, Resolution, Violation, check_compatibility, extract_text, resolve
 from .store import ObjectStore
@@ -35,7 +36,59 @@ def _now() -> str:
 
 
 def _esc(s: str) -> str:
-    return s.replace("\\", "\\\\").replace('"', '\\"')
+    """Escape for a single-quoted USD string.
+
+    Newlines and tabs must be escaped too: a commit message containing one
+    otherwise emits a revision layer that real USD refuses to parse, which
+    breaks the module's central promise that these files open in usdview.
+    """
+    return (s.replace("\\", "\\\\")
+             .replace('"', '\\"')
+             .replace("\n", "\\n")
+             .replace("\r", "\\r")
+             .replace("\t", "\\t"))
+
+
+def _fsync_dir(path: Path) -> None:
+    try:
+        fd = os.open(str(path), os.O_RDONLY)
+    except OSError:
+        return
+    try:
+        os.fsync(fd)
+    except OSError:
+        pass
+    finally:
+        os.close(fd)
+
+
+def _write_text_atomic(path: Path, text: str) -> None:
+    """Write durably: temp file, fsync, rename, fsync the directory.
+
+    A plain write_text truncates first, so a crash mid-write leaves a
+    zero-length file. For a channel pointer that means the channel is *gone*
+    rather than stale, on an otherwise healthy repository.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp-%d" % os.getpid())
+    try:
+        with tmp.open("w") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+        _fsync_dir(path.parent)
+    except OSError:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+class RevisionExists(IOError):
+    """A revision file already exists. Revisions are never overwritten."""
+
+
+class ChannelRaced(IOError):
+    """A channel moved under us between the check and the write."""
 
 
 @dataclass
@@ -58,6 +111,12 @@ class Revision:
     # parameters. See docs/04-contracts.md.
     generator: Optional[str] = None
     params: Optional[Dict] = None
+    # Which *function* produced this, not just which name was typed.
+    # specs/revision-layer.usda has always specified jitsd:generatorVersion;
+    # without it a baseline pins its inputs and not its function, so the same
+    # coordinate can resolve to different geometry after a generator edit.
+    generator_version: Optional[str] = None
+    generator_hash: Optional[str] = None
 
 
 @dataclass
@@ -153,7 +212,23 @@ def "{r.asset}" (
 {body_attrs}}}
 '''
         p = self._revdir(r.asset) / ("%s.usda" % r.rev)
-        p.write_text(body)
+        # O_EXCL, because a revision is immutable. next_rev() is a read of the
+        # directory followed by a write, so two concurrent saves both compute
+        # v039 and the second would otherwise silently replace the first --
+        # destroying a revision the ledger has already promised never changes.
+        try:
+            fd = os.open(str(p), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+        except FileExistsError:
+            raise RevisionExists("revision %s/%s already exists" % (r.asset, r.rev))
+        try:
+            with os.fdopen(fd, "w") as fh:
+                fh.write(body)
+                fh.flush()
+                os.fsync(fh.fileno())
+        except BaseException:
+            p.unlink(missing_ok=True)
+            raise
+        _fsync_dir(p.parent)
         return p
 
     def read_revision(self, asset: str, rev: str) -> Revision:
@@ -172,11 +247,30 @@ def "{r.asset}" (
             return {}
         return {p.name: p.read_text().strip() for p in sorted(d.iterdir()) if p.is_file()}
 
-    def set_channel(self, asset: str, channel: str, rev: str) -> None:
-        """The one mutation in the system."""
-        self._chandir(asset).mkdir(parents=True, exist_ok=True)
+    def set_channel(self, asset: str, channel: str, rev: str,
+                    expect: Optional[str] = "__any__") -> None:
+        """The one mutation in the system, so it is the one that must be safe.
+
+        Compare-and-swap: pass `expect` as the value the caller believes the
+        channel currently holds, and the move is refused if it has changed.
+        Without that, a promotion gate evaluates compatibility against one
+        revision and then writes over whatever landed in the meantime -- the
+        "compatibility is measured" guarantee holds only up to the race.
+
+        Passing expect=None asserts the channel does not exist yet. The default
+        skips the check, for callers that genuinely want last-writer-wins.
+        """
+        d = self._chandir(asset)
+        d.mkdir(parents=True, exist_ok=True)
+        target = d / channel
         prev = self.channels(asset).get(channel)
-        (self._chandir(asset) / channel).write_text(rev + "\n")
+
+        if expect != "__any__" and prev != expect:
+            raise ChannelRaced(
+                "%s@%s is at %s, expected %s -- refusing to move it"
+                % (asset, channel, prev or "(unset)", expect or "(unset)"))
+
+        _write_text_atomic(target, rev + "\n")
         self.log_event("channel_move", asset=asset, channel=channel, frm=prev, to=rev)
 
     def resolve_ref(self, asset: str, ref: str) -> str:
@@ -342,9 +436,11 @@ class Repo:
         generator from its parameters, and recorded on the revision so
         resolution never has to call the generator to know what it offers.
         """
-        from .generators import get as get_generator
+        from .generators import code_hash, get as get_generator, pin as pin_generator
 
         gen = get_generator(generator)
+        pinned = pin_generator(generator)   # never store the bare name
+        ghash = code_hash(gen)
         bound = gen.bind_params(params)
         surface = gen.surface(bound).to_dict()
 
@@ -352,30 +448,41 @@ class Repo:
         parent = chans.get("wip")
         if parent:
             prev = self.ledger.read_revision(asset, parent)
-            if (prev.generator == generator and prev.params == bound
-                    and prev.surface == surface):
+            if (prev.generator == pinned and prev.params == bound
+                    and prev.surface == surface
+                    and prev.generator_hash == ghash):
                 return prev
 
         rev = Revision(
             asset=asset, rev=self.ledger.next_rev(asset), blob=None, size=0,
             parent=parent, author=author, created=_now(), message=message,
-            surface=surface, generator=generator, params=bound,
+            surface=surface, generator=pinned, params=bound,
+            generator_version=gen.version, generator_hash=ghash,
         )
         self.ledger.write_revision(rev)
         self.ledger.set_channel(asset, "wip", rev.rev)
-        self.ledger.log_event("declare", asset=asset, rev=rev.rev, generator=generator)
+        self.ledger.log_event("declare", asset=asset, rev=rev.rev, generator=pinned)
         return rev
 
-    def promote(self, asset: str, ref: str, to: str, force: bool = False) -> str:
+    def promote(self, asset: str, ref: str, to: str,
+                force: bool = False) -> Tuple[str, List[Violation]]:
+        """Move a channel pointer, gated on measured compatibility.
+
+        Returns (revision, violations-that-were-forced-over). The gate is
+        evaluated against the revision the channel held when we read it, and
+        the write refuses if it moved in between -- otherwise "compatibility is
+        measured" holds only until two people promote at once.
+        """
         rev = self.ledger.resolve_ref(asset, ref)
         self.ledger.read_revision(asset, rev)  # existence check
+        current = self.ledger.channels(asset).get(to)
         violations = self.check_promotion(asset, ref, to)
         if violations and not force:
             raise BreakingChange(asset, rev, to, violations)
-        self.ledger.set_channel(asset, to, rev)
+        self.ledger.set_channel(asset, to, rev, expect=current)
         self.ledger.log_event("promote", asset=asset, rev=rev, channel=to,
                               forced=bool(violations and force))
-        return rev
+        return rev, violations
 
     # -- contracts --------------------------------------------------------
     def surfaces(self, pins: Dict[str, str]) -> Dict[str, Surface]:
@@ -408,21 +515,64 @@ class Repo:
         return pins
 
     def merkle_root(self, pins: Dict[str, str]) -> str:
-        """Rung 1: a hash over the pinned revision blobs.
+        """Rung 1: a hash over the pinned revisions.
 
         Real subtree-level Merkle hashing (docs/06-storage.md) needs a prim
         hierarchy, which arrives with the resolver. This gives the same
         top-level property -- an identical world hashes identically -- but not
         yet O(changes) subtree diffs.
+
+        For a generator-backed revision the identity includes the generator's
+        *code hash*, not only its name and parameters. Hashing the name alone
+        means a rewritten generator produces an identical root, so `drift`
+        reports nothing about the one change most likely to alter every
+        downstream projection.
         """
         import hashlib
 
         h = hashlib.sha256()
         for asset, rev in sorted(pins.items()):
             r = self.ledger.read_revision(asset, rev)
-            ident = r.blob or "%s|%s" % (r.generator, json.dumps(r.params, sort_keys=True))
+            if r.blob:
+                ident = r.blob
+            else:
+                ident = "%s|%s|%s" % (
+                    r.generator,
+                    r.generator_hash or "unpinned",
+                    json.dumps(r.params, sort_keys=True))
             h.update(("%s\0%s\0%s\n" % (asset, rev, ident)).encode())
         return h.hexdigest()
+
+    def stale_generators(self) -> List[Dict[str, str]]:
+        """Revisions whose generator no longer matches the code they recorded.
+
+        A pinned baseline is only reproducible if the function it names still
+        behaves the same way. This is the check that says otherwise.
+        """
+        from .generators import code_hash, get as get_generator
+
+        out: List[Dict[str, str]] = []
+        for asset in self.ledger.asset_names():
+            for rev in self.ledger.revisions(asset):
+                try:
+                    r = self.ledger.read_revision(asset, rev)
+                except (KeyError, IOError):
+                    continue
+                if not r.generator:
+                    continue
+                try:
+                    gen = get_generator(r.generator)
+                except KeyError:
+                    out.append({"asset": asset, "rev": rev,
+                                "generator": r.generator, "why": "not registered"})
+                    continue
+                if r.generator_hash is None:
+                    out.append({"asset": asset, "rev": rev,
+                                "generator": r.generator, "why": "no code hash recorded"})
+                elif code_hash(gen) != r.generator_hash:
+                    out.append({"asset": asset, "rev": rev,
+                                "generator": r.generator, "why": "code changed"})
+        return out
 
     def cut_baseline(self, label: str = "", cut_by: str = "user",
                      channel: str = "approved") -> Baseline:
@@ -442,21 +592,39 @@ class Repo:
                               merkle=b.merkle_root)
         return b
 
-    def reachable_blobs(self) -> List[str]:
-        """Everything a baseline pins, plus every current channel head."""
+    def reachable_blobs(self, prune_history: bool = False) -> List[str]:
+        """Blobs that must survive a gc.
+
+        By default this is *every revision the ledger still lists*, not just
+        the ones a channel or baseline currently points at. Rooting only at
+        heads and pins deletes the payload of every intermediate revision while
+        `jitsd log` goes on listing it -- which silently destroys exactly the
+        rung-1 features that justify the tool: instant rollback, named
+        checkpoints, and diff between any two revisions.
+
+        Git keeps refs *and history*; so does this. `prune_history=True` asks
+        for the narrow behaviour explicitly, for a caller that really does want
+        unreferenced history collected.
+        """
         keep = set()
+
+        def take(asset: str, rev: str) -> None:
+            try:
+                r = self.ledger.read_revision(asset, rev)
+            except (KeyError, IOError):
+                return
+            keep.update(b for b in (r.blob, r.interface_blob) if b)
+
         for num in self.ledger.baseline_numbers():
             for asset, rev in self.ledger.read_baseline(num).pins.items():
-                try:
-                    r = self.ledger.read_revision(asset, rev)
-                except KeyError:
-                    continue
-                keep.update(b for b in (r.blob, r.interface_blob) if b)
+                take(asset, rev)
+
         for asset in self.ledger.asset_names():
-            for rev in self.ledger.channels(asset).values():
-                try:
-                    r = self.ledger.read_revision(asset, rev)
-                except KeyError:
-                    continue
-                keep.update(b for b in (r.blob, r.interface_blob) if b)
+            if prune_history:
+                for rev in self.ledger.channels(asset).values():
+                    take(asset, rev)
+            else:
+                for rev in self.ledger.revisions(asset):
+                    take(asset, rev)
+
         return sorted(keep)
