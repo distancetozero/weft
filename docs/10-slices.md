@@ -137,25 +137,53 @@ Phase A can answer "your edit moves hubFL 2 mm: 1 consumer inside your slice,
 2 outside it (wheelset@lighting, aero@fx)" — without loading either of their
 slices. The slice is also the blast-radius display.
 
-## Prior art, honestly
+## Prior art, precisely
 
-- **Katana** proved deferred, recipe-based scene resolution in production — and
-  its UI is still location-path-first and famously expert-only. The
-  differentiator here is semantic seeds and contract closure, not deferral.
-- **Solaris/LOPs** — procedural composition, stage-and-tree viewing.
-- **USD population masks** are the mechanism for partial loading; the missing
-  layer is exactly the selection model that decides what to mask. Today you
-  hand-author mask paths — hierarchy again. Slices are that missing layer, and
-  a slice can *compile to* a population mask for stock USD consumers.
-- **Game world streaming** — spatial-first loading exists, over authored grids
-  rather than queries.
-- **Sparse checkout / virtual filesystems** (git sparse-checkout, VFS for Git)
-  — "materialise what you touch" in another domain; same paradigm, good
-  lineage.
+Every ingredient exists somewhere in computing; none of the loop exists in
+scene work.
 
-The claim to novelty is the combination: predicate-seeded, contract-closed,
-cost-previewed, shareable slices over a JIT relational plane. Each ingredient
-exists somewhere; the loop does not.
+- **Bazel query** is the closure algebra verbatim: `deps()` is `needs()`,
+  `rdeps()` is `feeds()`. The algebra is Bazel query applied to scenes.
+- **BigQuery's dry run** is the receipt: "this will scan 4 TB" before you
+  commit. Cost-before-commitment is normal in data tooling and absent in DCCs.
+- **Katana's CEL** is a real predicate language over scene locations — the
+  closest ancestor of seeds — but it runs inside recipe evaluation, not as a
+  person's priced entry point, and has no dependency closure. Katana proved
+  deferral in production while staying location-path-first and expert-only.
+- **Navisworks search sets** are saved predicate selections over a federated
+  building model — seeds, shipping in AEC for years — but Navisworks loads the
+  whole model to evaluate them.
+- **USD population masks** are the load mechanism missing exactly this
+  selection layer; today you hand-author mask paths, which is hierarchy again.
+  A slice can *compile to* a population mask for stock USD consumers.
+- **Sparse checkout / VFS for Git** — materialise what you touch, in another
+  domain.
+
+What has no DCC equivalent anywhere: the **receipt** and **cross-slice impact
+preview**. The reason nobody built them is not imagination — file-based
+composition cannot answer those questions cheaply. The novelty is enabled by
+the substrate, which is the durable kind: it cannot be ported onto an existing
+stack without rebuilding the stack.
+
+## Every industry already hand-builds slices
+
+The same pattern as effectivity and the promotion ladder, for the third time:
+the concept exists everywhere in bespoke, baked form.
+
+| industry | their hand-built slice today |
+|---|---|
+| Manufacturing CAD | "simplified reps" and envelopes — hand-authored partial loads of large assemblies; DMU spatial queries ("within X mm of my part") are `near()` verbatim |
+| AEC | federated models split by discipline *because no slice mechanism exists*; Navisworks search and clash sets |
+| Games | Unreal World Partition regions and data layers — spatial and team slicing, hand-authored on a grid |
+| Robotics / sim | scenario scoping — the robot plus sensor range |
+| Film | per-department pruned shot builds, maintained by hand |
+
+An asymmetry that matters for sequencing: the hardest slice-correctness
+problem — renderer semantics, shadow casters — is a *film* problem. In
+manufacturing and AEC, spatial closure genuinely bounds correctness, because
+clearance and clash are spatial by definition. Slices will likely land in
+industry before film, consistent with `01-overview.md` on where the stronger
+case lives.
 
 ## The hard parts
 
