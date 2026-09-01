@@ -82,6 +82,17 @@ def cmd_build(args) -> int:
              g.build_seconds))
     if cache:
         print("cache: %d reused, %d walked" % (cache.hits, cache.misses))
+    if g.unreadable:
+        print("%d layer%s would not open:"
+              % (len(g.unreadable), "" if len(g.unreadable) == 1 else "s"))
+        for p in g.unreadable[:args.limit]:
+            print("    %s" % _rel(p, args.root))
+        if len(g.unreadable) > args.limit:
+            print("    … and %d more" % (len(g.unreadable) - args.limit))
+    if g.ambiguous:
+        print("%d namespace edge%s had several candidate layers and were left "
+              "unresolved" % (len(g.ambiguous),
+                              "" if len(g.ambiguous) == 1 else "s"))
     if s["unresolved"]:
         print("%d edges point at nothing on disk — see `deps orphans`"
               % s["unresolved"])
@@ -141,23 +152,36 @@ def cmd_needs(args) -> int:
         return 2
 
     closure = g.needs(ident, depth=args.depth)
+    layers, assets = g.split(closure)
+
     if args.json:
         print(json.dumps({
             "layer": _rel(ident, args.root),
-            "needs": sorted(_rel(d, args.root) for d in closure),
-            "total": len(closure),
+            "layers": sorted(_rel(d, args.root) for d in layers),
+            "assets": sorted(_rel(d, args.root) for d in assets),
+            "total_layers": len(layers),
+            "total_assets": len(assets),
         }, indent=2))
         return 0
 
-    total_mb = sum(g.records[c].size for c in closure if c in g.records) / 1e6
+    total_mb = sum(g.records[c].size for c in layers) / 1e6
     print("%s needs %d layer%s (%.1f MB)"
-          % (_rel(ident, args.root), len(closure),
-             "" if len(closure) == 1 else "s", total_mb))
+          % (_rel(ident, args.root), len(layers),
+             "" if len(layers) == 1 else "s", total_mb))
+    if assets:
+        print("  plus %d non-layer asset%s (textures, caches)"
+              % (len(assets), "" if len(assets) == 1 else "s"))
     print()
     direct = g.direct_needs(ident)
-    for d in sorted(closure):
+    for d in sorted(layers):
         mark = "*" if d in direct else " "
         print("  %s %s" % (mark, _rel(d, args.root)))
+    if assets and args.show_assets:
+        print()
+        for d in sorted(assets)[:args.limit]:
+            print("    %s" % _rel(d, args.root))
+        if len(assets) > args.limit:
+            print("    … and %d more" % (len(assets) - args.limit))
     print()
     print("* = referenced directly")
     return 0
@@ -302,6 +326,8 @@ def main(argv=None) -> int:
     p = sub.add_parser("needs", help="everything this layer depends on")
     p.add_argument("root"); p.add_argument("layer")
     p.add_argument("--depth", type=int, default=None, help="stop after N hops")
+    p.add_argument("--show-assets", action="store_true",
+                   help="also list textures and caches, not just layers")
     p.set_defaults(fn=cmd_needs)
 
     p = sub.add_parser("why", help="which opinion creates a dependency")

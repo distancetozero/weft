@@ -72,6 +72,8 @@ class Graph:
     # (source layer, target prim path, candidate layers) -- a namespace edge
     # several unrelated layers could satisfy. Reported, never guessed at.
     ambiguous: List[Tuple[str, str, List[str]]] = field(default_factory=list)
+    # Layers that would not open. Any real tree has some.
+    unreadable: List[str] = field(default_factory=list)
     build_seconds: float = 0.0
 
     # -- queries ----------------------------------------------------------
@@ -86,6 +88,20 @@ class Graph:
 
     def direct_needs(self, ident: str) -> Set[str]:
         return set(self.forward.get(ident, ()))
+
+    def split(self, paths: Iterable[str]) -> Tuple[Set[str], Set[str]]:
+        """Separate USD layers from other assets a closure pulls in.
+
+        An asset-valued attribute points at a texture or a point cache as
+        legitimately as a reference points at a layer, and both are real
+        dependencies -- but they are not the same thing. On a production scene
+        a single asset's closure is a handful of layers and two thousand PNGs,
+        so reporting one number for both is meaningless.
+        """
+        layers, assets = set(), set()
+        for p in paths:
+            (layers if p in self.records else assets).add(p)
+        return layers, assets
 
     def direct_dependents(self, ident: str) -> Set[str]:
         return set(self.reverse.get(ident, ()))
@@ -196,6 +212,7 @@ def build(paths: Sequence[str], cache: Optional["Cache"] = None,
         if rec is None:
             rec = walk_file(ident)
             if rec is None:
+                g.unreadable.append(ident)
                 continue
             rec.identifier = ident
             if cache:

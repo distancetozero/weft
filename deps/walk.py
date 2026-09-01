@@ -166,8 +166,26 @@ def walk_layer(layer: Sdf.Layer) -> LayerRecord:
     return rec
 
 
+class Unreadable(LayerRecord):
+    """A layer that would not open. Recorded, never fatal."""
+    error: str = ""
+
+
 def walk_file(path: str) -> Optional[LayerRecord]:
-    layer = Sdf.Layer.FindOrOpen(path)
+    """Walk one layer, or return None if it cannot be read.
+
+    A malformed layer must not abort a whole-tree walk. Any real repository
+    contains at least one file that does not parse -- a bad export, a partial
+    write, a deliberately invalid test fixture -- and a dependency tool that
+    dies on the first one is a tool nobody can run.
+    """
+    try:
+        layer = Sdf.Layer.FindOrOpen(path)
+    except Exception:
+        return None
     if not layer:
         return None
-    return walk_layer(layer)
+    try:
+        return walk_layer(layer)
+    except Exception:
+        return None

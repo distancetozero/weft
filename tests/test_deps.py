@@ -558,3 +558,26 @@ def test_in_context_candidate_wins(tmp_path):
     car = _find(g, "car.usda")
     assert g.direct_needs(car) == {_find(g, "mats.usda")}
     assert _find(g, "unrelated.usda") not in g.direct_needs(car)
+
+
+def test_one_bad_layer_does_not_abort_the_walk(tmp_path):
+    """Found against the ASWF corpus, which ships deliberately-invalid fixtures.
+
+    Any real repository contains at least one file that does not parse -- a bad
+    export, a partial write, a test fixture. A dependency tool that dies on the
+    first one is a tool nobody can run on their actual assets.
+    """
+    (tmp_path / "broken.usda").write_text(
+        "#usda 1.0\n(\n    framesPerSecond = -1\n)\n")
+    g = _tree(
+        tmp_path,
+        good='''
+            #usda 1.0
+
+            def Xform "Fine"
+            {
+            }
+        ''',
+    )
+    assert _find(g, "good.usda") in g.records
+    assert any(p.endswith("broken.usda") for p in g.unreadable)
