@@ -7,3 +7,4 @@ jitsd.lock
 build/
 dist/
 .deps-cache.json
+.claude/worktrees/
