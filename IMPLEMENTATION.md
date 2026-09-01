@@ -231,6 +231,62 @@ Compilation is unaffected by which backend is present: a stage compiled with
 pxr absent has the same digest as one compiled with it installed, and opens
 cleanly in USD.
 
+## Slices (docs/10-slices.md, plan step 1)
+
+`jitsd select` resolves a slice entirely in the relational plane and prints its
+receipt. Nothing materialises.
+
+```
+$ jitsd select wheelset --pin "glass_building: reflects into the shot"
+slice: wheelset  +needs  depth 4  ctx:review
+coordinate: floating on @approved
+
+members (3):
+  chassis        v001  closure  needs Mount@2 <- wheelset       gen:heavy
+  glass_building v001  pin      dana: reflects into the shot    3.0 MiB
+  wheelset       v001  seed     wheelset                        gen:moderate
+
+est. cost: 3.0 MiB stored payloads · 2 generators to run
+bounds:    (-1.87, -0.33, -0.88) .. (1.87, 1.41, 0.88)
+```
+
+Seeds: name/glob, `provides:C@N`, `requires:C@N`, `role:R`, `author:A`,
+`changed-since:BASELINE`, `box:x0,y0,z0,x1,y1,z1` (from declared bounds —
+blob-backed assets honestly cannot answer spatially). Closure: `needs` on by
+default following required edges; `substitutable`/`omittable` providers go to
+the **boundary list**, pulled only with `--include-optional`; `feeds` opt-in.
+
+Overlays are the algebra, not UI sugar: `--pin "asset: reason"` carries
+attribution and participates in closure; `--omit` excludes an asset from
+membership *and* from the closure graph, and the consequence is surfaced —
+omitting the chassis under a wheelset prints
+`wheelset requires Mount@2, but its provider chassis is omitted (dana: too
+heavy)` and exits non-zero. Every member answers "why am I here".
+
+`-o` emits the slice as an ordinary query document (the spec rides in
+`customLayerData`), so `jitsd compile` materialises it unchanged and
+`select --from` reloads it. Blob-backed members compile as **constants** — a
+payload arc into the object store — which closed a real gap: compile
+previously refused them, contradicting "constants are functions".
+
+### Closure, priced
+
+`bench/closure.py` builds a K-link chain (each link requires the next — the
+worst closure shape: maximally deep, one edge per hop) and selects link 0:
+
+| chain | select |
+|---|---|
+| 50 | 12 ms |
+| 200 | 34 ms |
+| 500 | 104 ms |
+| 1000 | 188 ms |
+
+The first implementation measured 1,474 ms at 1000 — quadratic, from the
+resolver scanning the whole catalogue per requirement and the edge set being
+built three times. Indexing offers by contract key and resolving once made it
+linear. The receipt stays interactive at four-digit asset counts; beyond that
+the resolution accessor from `06-storage.md` is the identified mechanism.
+
 ## Storage granularity — settled by measurement
 
 `bench/granularity.py` tests the storage claims against **real USD** rather

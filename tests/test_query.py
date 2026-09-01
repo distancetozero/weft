@@ -106,8 +106,33 @@ def test_a_stored_payload_cannot_be_parameterised(tmp_path):
     p.write_bytes(random.Random(1).randbytes(1000))
     r.save("chassis", p, "tester")           # replaces the generator revision
     r.promote("chassis", "v002", "approved", force=True)
-    with pytest.raises(ValueError, match="no generator"):
+    # shot.usda passes wheelbase to the chassis instance; a constant refuses it.
+    with pytest.raises(ValueError, match="cannot be parameterised"):
         compile_query(r, parse_query(parse(SHOT.read_text())))
+
+
+def test_a_stored_payload_compiles_as_a_constant(tmp_path):
+    """Constants are functions: a blob-backed member emits a payload arc."""
+    r = _repo(tmp_path)
+    p = tmp_path / "blob.bin"
+    p.write_bytes(random.Random(2).randbytes(1000))
+    rev = r.save("propA", p, "tester")
+    r.promote("propA", "v001", "approved")
+    src = """#usda 1.0
+(
+    customLayerData = { string jitsd__context = "proxy" }
+)
+def Xform "S"
+{
+    def Xform "propA" ( prepend apiSchemas = ["JitsdInstanceAPI"] )
+    {
+        uniform token jitsd:instance:asset = "propA"
+    }
+}
+"""
+    c = compile_query(r, parse_query(parse(src)))
+    assert c.ok
+    assert "prepend payload = @jitsd:obj/sha256:%s@" % rev.blob in c.stage
 
 
 def test_unknown_context_is_rejected():
