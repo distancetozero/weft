@@ -73,7 +73,11 @@ simulation is legitimate rather than a cheat.
 == bind: requirements -> offers, by contract and role only
    164 consumers bound to 437 offers; ok=True
 
+   shading sets from 158 real look layers; finish derived for 8 (8 translucent, 0 opaque)
    consumer tolerances derived for 159/164 props: proc_dev_circuit_fuse01 0.06 cm .. furniture_workbench01 44.96 cm
+
+== bind: requirements -> offers, by contract and role only
+   328 consumers bound to 601 offers; ok=True        (164 mounts + 164 representations)
 
 == cut baseline
    baseline 000001  merkle f51109e315d0b3f1
@@ -115,6 +119,49 @@ simulation is legitimate rather than a cheat.
 == verify
    blobs ok 333  corrupt 0  missing 0   stale generators 0
 ```
+
+## The contract runs both ways
+
+The prop consumes a mount. With `represent=True` it also **offers what it
+is**: a `Represents@1` offer whose `provides` set is derived from its own
+department sublayers — and on this corpus the set is genuinely informative:
+326 entities carry `{modelling, preview, surfacing}`, assemblies differ, one
+carries `rigging`. The bench **requires** each placed asset's representations,
+so the assembly is a consumer of its own props.
+
+```
+== two-sided: a prop republished without its preview department
+   REFUSED: chemistry_bottle01 dropped preview
+     unresolved lab_workbench01 rep_chemistry_bottle01: no provider of Represents@1
+   -- the ASSEMBLY is the broken consumer: the contract runs both ways
+```
+
+**Shading, from the real look layers.** The Asset Structure package ships
+placeholder looks; with the Techvar data overlaid, 158 assets yield a real
+shading set — and ALab names its materials uniformly (`usd_full`,
+`usd_preview`, `usd_preview_proxy`), which makes the names a *vocabulary*,
+not identity. That uniformity is exactly what a set attribute wants:
+
+```
+== shading is a binding attribute: tool_screw01 republished without usd_full
+   REFUSED: tool_screw01 dropped usd_full from its shading set
+     unresolved lab_workbench01 rep_tool_screw01: no provider of Represents@1
+   -- a shading change breaks exactly the consumers bound on shading
+```
+
+Material *identity* lives in the shader parameters, so one exact attribute is
+derived from them: `finish` — translucent or opaque, from authored
+`UsdPreviewSurface` opacity. Only 8 looks author opacity (all translucent —
+bottles and jars at 0.1); the other 150 get **no** finish attribute, because a
+rule that invents "opaque" for unauthored data would be a claim nobody made.
+
+**Interface sublayers.** With `into_assets`, each surface is written into the
+entity's own structure — `entity/<a>/interface/<a>_interface.usda`, sublayered
+into the entity root as one more department beside `modelling/`, `preview/`,
+`surfacing/` — rather than a sidecar. The surface is then versioned with the
+asset and visible to any USD tool. (`departments()` deliberately ignores the
+`interface` sublayer, or extraction would be self-polluting: every re-run
+would add "interface" to the very set the interface declares.)
 
 ## Pulling one thread
 

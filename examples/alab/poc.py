@@ -67,8 +67,57 @@ def main() -> int:
     # Consumer tolerances are DERIVED: a stated fraction of each prop's own
     # footprint from its extentsHint. A 6 cm bottle and a 1 cm screw do not
     # tolerate the same drift, and neither value is invented.
+    # into_assets: the interface-sublayer convention. Each surface is written
+    # INTO the entity's own structure (interface/<a>_interface.usda) and
+    # sublayered into its root -- one more department beside modelling/,
+    # preview/, surfacing/ -- rather than sitting in a sidecar directory.
+    # represent=True makes the contract two-sided: each prop offers its
+    # representation set, derived from its own sublayers, and the bench
+    # requires it.
+    asset_dirs = {a: str(A / "entity" / a) for a in ex.assets
+                  if (A / "entity" / a).is_dir()}
+    asset_dirs[PROVIDER] = str(A / "entity" / PROVIDER)
+
+    # Everything derived comes first; the interfaces are written from it.
+    # reps: the bench's representation requirements, held so every later
+    # republish of the bench keeps its two-sided surface -- the first version
+    # of this POC dropped them on the ok/mid/bad republishes, which silently
+    # stripped the bench's requirements from @approved.
+    from jitsd.extract import departments, finish as _finish, materials as _materials
+    reps = {}
+    for a, d in asset_dirs.items():
+        if a == PROVIDER:
+            continue
+        depts = departments(str(Path(d) / ("%s.usda" % a)))
+        if depts:
+            reps[a] = depts
+    # Shading representations and finish, from the real look layers (Techvar
+    # data). The names are uniform across the corpus -- usd_full, usd_preview,
+    # usd_preview_proxy -- which makes them a vocabulary, not identity:
+    # identity is in the parameters, and the one that separates the corpus is
+    # authored opacity (a bottle authors 0.1; a screw authors nothing).
+    look_by_asset = {}
+    for a in ex.assets:
+        lb = (A / "fragment" / "look" / "surfacing" / a / "render_high" / "binding"
+              / ("look_surfacing_%s_render_high_binding" % a) / "render_high.usda")
+        if lb.exists():
+            look_by_asset[a] = str(lb)
+    shading_map = {a: m for a in look_by_asset
+                   if (m := _materials(look_by_asset[a]))}
+    finish_map = {a: f for a in look_by_asset
+                  if (f := _finish(look_by_asset[a]))}
+
     ifaces = write_interfaces(ex, str(out / "iface"), envelope=ENVELOPE_CM,
-                              tolerance_fraction=TOLERANCE_FRACTION)
+                              tolerance_fraction=TOLERANCE_FRACTION,
+                              represent=True, into_assets=asset_dirs,
+                              look_by_asset=look_by_asset)
+    n_trans = sum(1 for f in finish_map.values() if f == "translucent")
+    print("   shading sets from %d real look layers; finish derived for %d "
+          "(%d translucent, %d opaque)"
+          % (len(shading_map), len(finish_map), n_trans, len(finish_map) - n_trans))
+    if "chemistry_bottle01" in finish_map and "tool_screw01" in finish_map:
+        print("   e.g. chemistry_bottle01=%s (opacity 0.1 authored), tool_screw01=%s"
+              % (finish_map["chemistry_bottle01"], finish_map["tool_screw01"]))
     print("   %d placements in %d groups -> %d offers, %d consumer surfaces  (%.0f ms)"
           % (len(ex.placements), len(ex.groups), len(ex.placements), len(ex.assets),
              (time.perf_counter() - t0) * 1000))
@@ -119,7 +168,8 @@ def main() -> int:
     step("republish workbench: %s raised 0.05 cm (inside every tolerance)" % GATE_GROUP)
     ok_iface = out / "iface" / ("%s.ok.usda" % PROVIDER)
     ok_iface.write_text(provider_interface(ex, envelope=ENVELOPE_CM,
-                                           nudge={GATE_GROUP: (0.0, 0.05, 0.0)}))
+                                           nudge={GATE_GROUP: (0.0, 0.05, 0.0)},
+                                           represents=reps, shading_required=shading_map))
     repo.save(PROVIDER, A / "entity" / PROVIDER / ("%s.usda" % PROVIDER), "alab",
               "%s +0.05cm" % GATE_GROUP, interface=ok_iface)
     rev, forced = repo.promote(PROVIDER, "@wip", "approved")
@@ -129,7 +179,8 @@ def main() -> int:
          "promise" % (GATE_GROUP, ENVELOPE_CM))
     mid_iface = out / "iface" / ("%s.mid.usda" % PROVIDER)
     mid_iface.write_text(provider_interface(ex, envelope=ENVELOPE_CM,
-                                            nudge={GATE_GROUP: (0.0, 0.7, 0.0)}))
+                                            nudge={GATE_GROUP: (0.0, 0.7, 0.0)},
+                                            represents=reps, shading_required=shading_map))
     repo.save(PROVIDER, A / "entity" / PROVIDER / ("%s.usda" % PROVIDER), "alab",
               "%s +0.7cm" % GATE_GROUP, interface=mid_iface)
     from jitsd.contracts import check_compatibility
@@ -162,7 +213,8 @@ def main() -> int:
     step("republish workbench: %s raised 3 cm (past the envelope)" % GATE_GROUP)
     bad_iface = out / "iface" / ("%s.bad.usda" % PROVIDER)
     bad_iface.write_text(provider_interface(ex, envelope=ENVELOPE_CM,
-                                            nudge={GATE_GROUP: (0.0, 3.0, 0.0)}))
+                                            nudge={GATE_GROUP: (0.0, 3.0, 0.0)},
+                                            represents=reps, shading_required=shading_map))
     repo.save(PROVIDER, A / "entity" / PROVIDER / ("%s.usda" % PROVIDER), "alab",
               "%s +3cm" % GATE_GROUP, interface=bad_iface)
     try:
@@ -198,6 +250,59 @@ def main() -> int:
           % (len(outside), ", ".join(outside[:5]), " ..." if len(outside) > 5 else ""))
     print("   -- the lighter sees what their edit breaks for other teams, without "
           "loading their slices")
+
+    step("two-sided: a prop republished without its preview department")
+    from jitsd.extract import consumer_interface, departments, footprint as _fp
+    victim = "chemistry_bottle01"
+    vdir = A / "entity" / victim
+    deps_now = departments(str(vdir / ("%s.usda" % victim)))
+    kept = [d for d in deps_now if d not in ("preview", "interface")]
+    fp = _fp(str(vdir / ("%s.usda" % victim)))
+    tol = round(fp * TOLERANCE_FRACTION, 4) if fp else None
+    stripped = out / "iface" / ("%s.stripped.usda" % victim)
+    stripped.write_text(consumer_interface(
+        victim, tolerance=tol,
+        tolerance_rule="%.0f%% of footprint" % (TOLERANCE_FRACTION * 100),
+        provides=kept))
+    repo.save(victim, vdir / ("%s.usda" % victim), "alab",
+              "dropped preview (simulated at the surface)", interface=stripped)
+    try:
+        repo.promote(victim, "@wip", "approved")
+        print("   PROMOTED -- the bench was not protected. Bug.")
+        return 1
+    except BreakingChange as e:
+        cons = [v for v in e.violations if getattr(v, "consumer", None)]
+        print("   REFUSED: %s dropped %s" % (victim, "preview"))
+        for v in cons[:3]:
+            print("     %s" % v)
+        print("   -- the ASSEMBLY is the broken consumer: the contract runs both ways")
+    print("   @approved still at %s" % repo.ledger.channels(victim)["approved"])
+
+    step("shading is a binding attribute: tool_screw01 republished without usd_full")
+    victim2 = "tool_screw01"
+    v2dir = A / "entity" / victim2
+    v2fp = _fp(str(v2dir / ("%s.usda" % victim2)))
+    v2tol = round(v2fp * TOLERANCE_FRACTION, 4) if v2fp else None
+    reduced = [s for s in shading_map.get(victim2, []) if s != "usd_full"]
+    noshade = out / "iface" / ("%s.noshade.usda" % victim2)
+    noshade.write_text(consumer_interface(
+        victim2, tolerance=v2tol,
+        tolerance_rule="%.0f%% of footprint" % (TOLERANCE_FRACTION * 100),
+        provides=[d for d in departments(str(v2dir / ("%s.usda" % victim2)))],
+        shading=reduced, surface_finish=finish_map.get(victim2)))
+    repo.save(victim2, v2dir / ("%s.usda" % victim2), "alab",
+              "dropped usd_full shading (simulated at the surface)", interface=noshade)
+    try:
+        repo.promote(victim2, "@wip", "approved")
+        print("   PROMOTED -- shading constraint did not protect the bench. Bug.")
+        return 1
+    except BreakingChange as e:
+        cons = [v for v in e.violations if getattr(v, "consumer", None)]
+        print("   REFUSED: %s dropped usd_full from its shading set" % victim2)
+        for v in cons[:2]:
+            print("     %s" % v)
+        print("   -- a shading change breaks exactly the consumers bound on shading")
+    print("   @approved still at %s" % repo.ledger.channels(victim2)["approved"])
 
     step("pull one thread: closure by relationship kind, and a team's rule set")
     from jitsd.slice import RuleSet, load_rules, save_rules
