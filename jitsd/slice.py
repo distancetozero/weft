@@ -98,10 +98,14 @@ class SliceResult:
     boundary: List[BoundaryItem]
     diagnostics: List[str]               # human-readable warnings/errors
     errors: int
+    untracked: List["_Untracked"] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
         return self.errors == 0
+
+    def untracked_bytes(self) -> int:
+        return sum(u.size for u in self.untracked)
 
     def bounds_union(self) -> Optional[Tuple]:
         acc = None
@@ -133,6 +137,7 @@ class _AssetInfo:
     params: Optional[Dict]
     surface: Surface
     bounds: Optional[Tuple]
+    source: Optional[str] = None
 
 
 def _load_universe(repo, pins: Dict[str, str]) -> Dict[str, _AssetInfo]:
@@ -151,6 +156,7 @@ def _load_universe(repo, pins: Dict[str, str]) -> Dict[str, _AssetInfo]:
             asset=asset, rev=rev, author=r.author, size=r.size,
             generator=r.generator, cost_class=cost_class, params=r.params,
             surface=Surface.from_dict(r.surface), bounds=bounds,
+            source=getattr(r, "source", None),
         )
     return out
 
@@ -198,6 +204,91 @@ class _Edge:
     policy: str          # required | substitutable | omittable
 
 
+REFERENCE_CONTRACT = "usd:reference"
+
+
+@dataclass
+class _Untracked:
+    """A file a member references that is not a tracked asset at this coordinate.
+
+    It is still required -- the reference will resolve or strand regardless of
+    whether jitsd knows about it -- so the receipt must count its bytes. Hiding
+    it is how the receipt reported 765 B for an asset that needs 11 layers.
+    """
+    consumer: str
+    path: str
+    size: int
+
+
+def _reference_edges(universe: Dict[str, _AssetInfo]):
+    """Closure edges from the USD reference graph, for assets without contracts.
+
+    Contract edges are the model; reference edges are what real assets have.
+    Measured on ALab: not one of 4,296 layers declares a contract, and every
+    one of them references, payloads or binds something. A closure that sees
+    only contracts pulls nothing and the receipt lies about cost.
+
+    Optional at runtime: needs pxr via `deps`. Absent, rung 1 behaves as it
+    did -- contract edges only -- and says nothing false, just less.
+    """
+    sources = {i.source: a for a, i in universe.items() if i.source}
+    if not sources:
+        return [], []
+    try:
+        from deps import build as _build_graph
+    except ImportError:
+        return [], []
+
+    # Walk to a fixpoint. `build` walks only the paths it is given, so an
+    # untracked layer a member references would contribute no edges of its
+    # own -- and the cost would stop one hop out. On ALab that reported 3
+    # files for an asset that needs 11 layers and 6 textures. Each round adds
+    # the USD layers discovered last round; textures and caches are counted
+    # but never opened.
+    layer_ext = (".usd", ".usda", ".usdc", ".usdz")
+    paths = set(sources)
+    g = _build_graph(sorted(paths))
+    for _ in range(32):
+        found = {t for p in paths for t in g.direct_needs(p)
+                 if t not in paths and t.lower().endswith(layer_ext)}
+        if not found:
+            break
+        paths |= found
+        g = _build_graph(sorted(paths))
+
+    # From each tracked asset, walk outward but STOP at the next tracked
+    # asset: that becomes an edge, and its own references are its business.
+    # Untracked files are expanded through, so an edge tracked -> untracked ->
+    # tracked is recorded as a direct requirement -- which it is -- while a
+    # chain of tracked assets keeps its hops, so `--depth` means what it says.
+    edges: List[_Edge] = []
+    untracked: Dict[str, _Untracked] = {}
+    for src, asset in sources.items():
+        seen = {src}
+        frontier = [src]
+        while frontier:
+            nxt: List[str] = []
+            for node in frontier:
+                for target in sorted(g.direct_needs(node)):
+                    if target in seen:
+                        continue
+                    seen.add(target)
+                    other = sources.get(target)
+                    if other is not None:
+                        if other != asset:
+                            edges.append(_Edge(asset, other, REFERENCE_CONTRACT, "required"))
+                        continue
+                    if target not in untracked:
+                        try:
+                            size = Path(target).stat().st_size
+                        except OSError:
+                            size = 0
+                        untracked[target] = _Untracked(asset, target, size)
+                    nxt.append(target)
+            frontier = nxt
+    return edges, list(untracked.values())
+
+
 def _build_edges(universe: Dict[str, _AssetInfo]):
     """One resolution pass; both the edge list and the Resolution are reused
     everywhere downstream. Building this three times made closure quadratic."""
@@ -212,7 +303,12 @@ def _build_edges(universe: Dict[str, _AssetInfo]):
         policy = policy_of.get((b.consumer, b.requirement), "required")
         for provider in {p.split("/", 1)[0] for p in b.providers}:
             edges.append(_Edge(b.consumer, provider, b.contract, policy))
-    return edges, res
+    ref_edges, untracked = _reference_edges(universe)
+    seen = {(e.consumer, e.provider, e.contract) for e in edges}
+    for e in ref_edges:
+        if (e.consumer, e.provider, e.contract) not in seen:
+            edges.append(e)
+    return edges, res, untracked
 
 
 # -- resolution ------------------------------------------------------------
@@ -259,7 +355,7 @@ def resolve_slice(repo, spec: SliceSpec) -> SliceResult:
 
     # closure -- omitted assets are excluded from the graph entirely, so they
     # can neither join nor pull anything in; the consequences surface below.
-    all_edges, resolution = _build_edges(universe)
+    all_edges, resolution, untracked = _build_edges(universe)
     edges = [e for e in all_edges
              if e.consumer not in omitted_assets and e.provider not in omitted_assets]
     needs_by_consumer: Dict[str, List[_Edge]] = {}
@@ -334,10 +430,15 @@ def resolve_slice(repo, spec: SliceSpec) -> SliceResult:
                 if r.failure_policy == "required":
                     errors += 1
 
+    # references from members to files that are not tracked assets: required,
+    # not pullable, and costed
+    untracked_refs = [u for u in untracked if u.consumer in members]
+
     ordered = sorted(members.values(), key=lambda m: m.asset)
     return SliceResult(spec=spec, coordinate=coordinate, members=ordered,
                        omitted=omitted, boundary=boundary,
-                       diagnostics=diagnostics, errors=errors)
+                       diagnostics=diagnostics, errors=errors,
+                       untracked=untracked_refs)
 
 
 # -- serialisation: a slice IS a query document ----------------------------
@@ -427,10 +528,26 @@ def receipt(result: SliceResult) -> str:
         for d in result.diagnostics:
             lines.append("  ! %s" % d)
     lines.append("")
+    if result.untracked:
+        by_consumer: Dict[str, List[_Untracked]] = {}
+        for u in result.untracked:
+            by_consumer.setdefault(u.consumer, []).append(u)
+        lines.append("")
+        lines.append("untracked references (%d):  required by members, not tracked "
+                     "as assets" % len(result.untracked))
+        for consumer in sorted(by_consumer):
+            us = by_consumer[consumer]
+            lines.append("  %-14s %d file%s, %s"
+                         % (consumer, len(us), "" if len(us) == 1 else "s",
+                            _human(sum(u.size for u in us))))
+    lines.append("")
     gens = sum(1 for m in result.members if m.generator)
     bb = result.bounds_union()
-    lines.append("est. cost: %s stored payloads · %d generator%s to run"
-                 % (_human(result.payload_bytes()), gens, "" if gens == 1 else "s"))
+    cost = "est. cost: %s stored payloads · %d generator%s to run" % (
+        _human(result.payload_bytes()), gens, "" if gens == 1 else "s")
+    if result.untracked:
+        cost += " · %s untracked" % _human(result.untracked_bytes())
+    lines.append(cost)
     if bb:
         lines.append("bounds:    (%.3g, %.3g, %.3g) .. (%.3g, %.3g, %.3g)"
                      % (bb[0] + bb[1]))

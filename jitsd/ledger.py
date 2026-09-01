@@ -117,6 +117,11 @@ class Revision:
     # coordinate can resolve to different geometry after a generator edit.
     generator_version: Optional[str] = None
     generator_hash: Optional[str] = None
+    # Where the payload was read from. The blob is what the revision IS; the
+    # source is where its relative references resolve from, which is what a
+    # slice needs to follow `references`, `payload` and `material:binding`
+    # edges on assets that declare no contracts -- i.e. every real USD asset.
+    source: Optional[str] = None
 
 
 @dataclass
@@ -406,6 +411,7 @@ class Repo:
             message=message,
             interface_blob=iface_blob,
             surface=surface,
+            source=os.path.normpath(os.path.abspath(str(path))),
         )
         self.ledger.write_revision(rev)
         self.ledger.set_channel(asset, "wip", rev.rev)
