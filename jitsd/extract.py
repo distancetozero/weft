@@ -41,6 +41,28 @@ class Placement:
     name: str          # placement prim name, e.g. chemistry_bottle01_0004
     asset: str         # placed asset name, e.g. chemistry_bottle01
     translate: Vec3
+    target: str = ""   # the placed layer, resolved
+
+
+def footprint(layer_path: str) -> Optional[float]:
+    """A placed asset's horizontal footprint from its authored extentsHint.
+
+    Used to derive a consumer's tolerance as a fraction of its own size -- a
+    stated rule, not a magic number. A 6 cm bottle and a 1 cm screw should not
+    tolerate the same drift. None when the asset states no extent, in which
+    case no tolerance is emitted and the provider's envelope governs.
+    """
+    try:
+        from pxr import Usd, UsdGeom
+        st = Usd.Stage.Open(layer_path, Usd.Stage.LoadNone)
+        root = st.GetDefaultPrim() or st.GetPrimAtPath("/root")
+        hint = UsdGeom.ModelAPI(root).GetExtentsHintAttr().Get() if root else None
+    except Exception:
+        return None
+    if not hint or len(hint) < 2:
+        return None
+    lo, hi = hint[0], hint[1]
+    return float(max(hi[0] - lo[0], hi[2] - lo[2]))
 
 
 @dataclass
@@ -94,7 +116,15 @@ def read_assembly(assembly: str, provider: str) -> Extraction:
         group = parts[1] if len(parts) > 2 else "root"
         name = parts[-1]
         asset = INSTANCE_SUFFIX.sub("", os.path.splitext(os.path.basename(e.target))[0])
-        out.placements.append(Placement(e.src_prim, group, name, asset, t))
+        # walk_file reports the authored asset path; resolve it here, relative
+        # to the assembly, so footprint() can open the placed layer.
+        if os.path.isabs(e.target):
+            target = os.path.normpath(e.target)
+        else:
+            target = os.path.normpath(os.path.join(os.path.dirname(assembly), e.target))
+        if not os.path.exists(target):
+            target = ""
+        out.placements.append(Placement(e.src_prim, group, name, asset, t, target=target))
     out.placements.sort(key=lambda p: (p.group, p.name))
     return out
 
@@ -124,6 +154,10 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
         "# placement; frames are the assembly's own translates. No consumer is",
         "# named, and no consumer names any of these paths.",
         "#",
+        "# The envelope is NOT derived from the data: it is a policy value the",
+        "# extractor was given, and each offer says so. A provider's real promise",
+        "# is a human decision; replace it deliberately.",
+        "#",
         "(",
         '    defaultPrim = "%s"' % ex.provider,
         ")",
@@ -133,6 +167,7 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
         ")",
         "{",
         '    uniform token jitsd:costClass = "%s"' % cost_class,
+        '    uniform token jitsd:envelope:source = "policy:extractor-default"',
     ]
     for group in ex.groups:
         lines += ["", '    def Scope "%s"' % group, "    {"]
@@ -157,9 +192,17 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
 
 
 def consumer_interface(asset: str, contract: str = DEFAULT_CONTRACT,
-                       cost_class: str = "trivial") -> str:
-    """A placed asset's surface: it needs a mount meant for it, wherever offered."""
-    return "\n".join([
+                       cost_class: str = "trivial",
+                       tolerance: Optional[float] = None,
+                       tolerance_rule: str = "") -> str:
+    """A placed asset's surface: it needs a mount meant for it, wherever offered.
+
+    `tolerance` is the consumer's own limit on drift, checked at
+    re-evaluation regardless of what the provider promised. Omitted when
+    unknown -- an unstated tolerance means the envelope governs, which is
+    honest; an invented one is not.
+    """
+    lines = [
         "#usda 1.0",
         "#",
         "# Contract surface for a placed asset. Names a contract and a role;",
@@ -179,23 +222,41 @@ def consumer_interface(asset: str, contract: str = DEFAULT_CONTRACT,
         '    uniform token jitsd:require:mount:role          = "%s"' % asset,
         '    uniform token jitsd:require:mount:cardinality   = "many"',
         '    uniform token jitsd:require:mount:failurePolicy = "required"',
-        "}",
-        "",
-    ])
+    ]
+    if tolerance is not None:
+        lines += [
+            "",
+            "    # derived: %s" % (tolerance_rule or "stated by the consumer"),
+            "    uniform double jitsd:require:mount:tolerance:linear = %s" % _f(tolerance),
+        ]
+    lines += ["}", ""]
+    return "\n".join(lines)
 
 
 def write_interfaces(ex: Extraction, out_dir: str, contract: str = DEFAULT_CONTRACT,
                      envelope: float = 1.0,
-                     nudge: Optional[Dict[str, Vec3]] = None) -> Dict[str, str]:
-    """Write provider + consumer interface layers. Returns {asset: path}."""
+                     nudge: Optional[Dict[str, Vec3]] = None,
+                     tolerance_fraction: Optional[float] = None) -> Dict[str, str]:
+    """Write provider + consumer interface layers. Returns {asset: path}.
+
+    With `tolerance_fraction`, each consumer's tolerance is that fraction of
+    its own footprint (from extentsHint), and the interface records the rule.
+    """
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     paths: Dict[str, str] = {}
     p = out / ("%s.iface.usda" % ex.provider)
     p.write_text(provider_interface(ex, contract, envelope, nudge))
     paths[ex.provider] = str(p)
+    targets = {q.asset: q.target for q in ex.placements if q.target}
     for asset in ex.assets:
+        tol, rule = None, ""
+        if tolerance_fraction is not None and targets.get(asset):
+            fp = footprint(targets[asset])
+            if fp:
+                tol = round(fp * tolerance_fraction, 4)
+                rule = "%.0f%% of a %s footprint" % (tolerance_fraction * 100, _f(fp))
         c = out / ("%s.iface.usda" % asset)
-        c.write_text(consumer_interface(asset, contract))
+        c.write_text(consumer_interface(asset, contract, tolerance=tol, tolerance_rule=rule))
         paths[asset] = str(c)
     return paths

@@ -228,6 +228,32 @@ def cmd_select(args) -> int:
         return 1
 
     print(_slice.receipt(result))
+
+    if args.impact:
+        # The blast-radius display from docs/10-slices.md: what a candidate
+        # revision would break, split by whether the consumer is in this slice.
+        asset, _, ref = args.impact.partition("@")
+        ref = ref or "@wip"
+        try:
+            rev = repo.ledger.resolve_ref(asset, ref)
+        except KeyError as e:
+            print("%s" % e, file=sys.stderr)
+            return 1
+        re = repo.reevaluate(asset, rev, channel=spec.channel)
+        members = {m.asset for m in result.members}
+        inside = sorted(c for c in re.changed if c in members)
+        outside = sorted(c for c in re.changed if c not in members)
+        print()
+        print("impact of %s %s: %d consumer%s re-evaluated, %d affected"
+              % (asset, rev, len(re.consumers), "" if len(re.consumers) == 1 else "s",
+                 len(re.changed)))
+        print("  inside this slice  (%d): %s" % (len(inside), ", ".join(inside) or "-"))
+        print("  outside this slice (%d): %s" % (len(outside), ", ".join(outside) or "-"))
+        for v in re.breaking[:8]:
+            print("    %s" % v)
+        if len(re.breaking) > 8:
+            print("    ... and %d more" % (len(re.breaking) - 8))
+
     if args.out:
         Path(args.out).write_text(_slice.emit_query_document(result))
         print("\nwritten: %s  (a query document -- `jitsd compile` materialises it)"
@@ -537,6 +563,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--label", default="")
     s.add_argument("--from", dest="from_file", help="reload a slice from an emitted query document")
     s.add_argument("-o", "--out", help="emit the slice as a query document")
+    s.add_argument("--impact", metavar="ASSET[@REV]",
+                   help="what promoting this candidate would break, inside and "
+                        "outside the slice (default REV: @wip)")
     s.set_defaults(fn=cmd_select)
 
     s = sub.add_parser("bind", help="resolve requirements to offers by contract")

@@ -42,6 +42,86 @@ def split_contract(ident: str) -> Tuple[str, int]:
     return ident, 0
 
 
+# -- binding attributes ---------------------------------------------------
+#
+# A relationship is not a position. It is a set of named attributes, and each
+# kind carries its own rule for what "still compatible" means. A view -- a
+# department, a context -- is which attributes a consumer reads. Lighting
+# binds on material and position; FX on collision purpose and position; an
+# engineer on power and never on material. Same parts, same contracts.
+#
+#   spatial   a point; compatible while it moved less than a tolerance
+#   angular   an orientation; compatible while it turned less than a tolerance
+#   exact     a token; compatible while unchanged
+#   set       tokens; compatible while everything required is still offered
+#
+# Threshold and aggregate kinds (power draw, busway capacity) are deliberately
+# absent: they need a solver, not a comparison, and are a separate piece.
+
+SPATIAL, ANGULAR, EXACT, SET = "spatial", "angular", "exact", "set"
+KINDS = (SPATIAL, ANGULAR, EXACT, SET)
+
+# Every offer has these two, synthesised from its frame and envelope, so all
+# comparison goes through one path.
+POSITION, ORIENTATION = "position", "orientation"
+
+
+@dataclass
+class Attribute:
+    kind: str
+    value: object
+    tolerance: Optional[float] = None   # spatial/angular only; None = unstated
+
+    def to_dict(self) -> Dict:
+        return {"kind": self.kind, "value": self.value, "tolerance": self.tolerance}
+
+    @classmethod
+    def from_dict(cls, d: Dict) -> "Attribute":
+        v = d.get("value")
+        if isinstance(v, list) and d.get("kind") in (SPATIAL, ANGULAR):
+            v = tuple(v)
+        return cls(kind=d["kind"], value=v, tolerance=d.get("tolerance"))
+
+
+def _infer_kind(value) -> Optional[str]:
+    if isinstance(value, (list, tuple)):
+        if len(value) == 3 and all(isinstance(x, (int, float)) for x in value):
+            return SPATIAL
+        if all(isinstance(x, str) for x in value):
+            return SET
+        return None
+    if isinstance(value, str):
+        return EXACT
+    return None
+
+
+def _read_binds(prim: Prim, prefix: str) -> Dict[str, Attribute]:
+    """`<prefix><name>`, with optional `<prefix><name>:kind` and `:tolerance`."""
+    out: Dict[str, Attribute] = {}
+    for k, v in prim.attrs.items():
+        if not k.startswith(prefix):
+            continue
+        rest = k[len(prefix):]
+        if ":" in rest or v is None:
+            continue
+        kind = prim.attrs.get("%s%s:kind" % (prefix, rest)) or _infer_kind(v)
+        if kind not in KINDS:
+            continue
+        tol = prim.attrs.get("%s%s:tolerance" % (prefix, rest))
+        val = tuple(float(x) for x in v) if kind in (SPATIAL, ANGULAR) else \
+              (sorted(str(x) for x in v) if kind == SET else str(v))
+        out[rest] = Attribute(kind, val, float(tol) if tol is not None else None)
+    return out
+
+
+def _binds_to_dict(b: Dict[str, Attribute]) -> Dict:
+    return {k: a.to_dict() for k, a in b.items()}
+
+
+def _binds_from_dict(d: Optional[Dict]) -> Dict[str, Attribute]:
+    return {k: Attribute.from_dict(a) for k, a in (d or {}).items()}
+
+
 @dataclass
 class Offer:
     path: str
@@ -53,10 +133,20 @@ class Offer:
     orient: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     envelope_linear: float = 0.0
     envelope_angular: float = 0.0
+    binds: Dict[str, Attribute] = field(default_factory=dict)
 
     @property
     def key(self) -> Tuple[str, int]:
         return split_contract(self.contract)
+
+    def attributes(self) -> Dict[str, Attribute]:
+        """Everything this offer binds on, position and orientation included."""
+        out = {
+            POSITION: Attribute(SPATIAL, tuple(self.frame), self.envelope_linear),
+            ORIENTATION: Attribute(ANGULAR, tuple(self.orient), self.envelope_angular),
+        }
+        out.update(self.binds)
+        return out
 
 
 @dataclass
@@ -67,10 +157,37 @@ class Requirement:
     role: str = ""
     cardinality: str = "one"          # one | many
     failure_policy: str = "required"  # required | substitutable | omittable
+    # What this consumer constrains and how much it tolerates. An exact/set
+    # attribute here must be satisfied by a candidate offer to bind at all.
+    # A spatial/angular tolerance here is the consumer's OWN limit, checked at
+    # re-evaluation -- the provider's envelope is what it asserts; this is what
+    # gets measured.
+    binds: Dict[str, Attribute] = field(default_factory=dict)
 
     @property
     def key(self) -> Tuple[str, int]:
         return split_contract(self.contract)
+
+    def tolerance(self, name: str) -> Optional[float]:
+        a = self.binds.get(name)
+        return a.tolerance if a else None
+
+    def satisfied_by(self, offer: Offer, view: Optional[Sequence[str]] = None) -> bool:
+        """Exact and set constraints, the ones that decide binding."""
+        have = offer.attributes()
+        for name, want in self.binds.items():
+            if view is not None and name not in view:
+                continue
+            if want.kind not in (EXACT, SET):
+                continue
+            got = have.get(name)
+            if got is None:
+                return False
+            if want.kind == EXACT and got.value != want.value:
+                return False
+            if want.kind == SET and not set(want.value).issubset(set(got.value)):
+                return False
+        return True
 
 
 @dataclass
@@ -80,10 +197,18 @@ class Surface:
     requires: List[Requirement] = field(default_factory=list)
 
     def to_dict(self) -> Dict:
-        return {
-            "offers": [asdict(o) for o in self.offers],
-            "requires": [asdict(r) for r in self.requires],
-        }
+        def offer(o: Offer) -> Dict:
+            d = asdict(o)
+            d["binds"] = _binds_to_dict(o.binds)
+            return d
+
+        def req(r: Requirement) -> Dict:
+            d = asdict(r)
+            d["binds"] = _binds_to_dict(r.binds)
+            return d
+
+        return {"offers": [offer(o) for o in self.offers],
+                "requires": [req(r) for r in self.requires]}
 
     @classmethod
     def from_dict(cls, d: Optional[Dict]) -> "Surface":
@@ -94,11 +219,14 @@ class Surface:
             o = dict(o)
             o["frame"] = tuple(o.get("frame", (0.0, 0.0, 0.0)))
             o["orient"] = tuple(o.get("orient", (0.0, 0.0, 0.0)))
+            o["binds"] = _binds_from_dict(o.get("binds"))
             offers.append(Offer(**o))
-        return cls(
-            offers=offers,
-            requires=[Requirement(**r) for r in d.get("requires", [])],
-        )
+        requires = []
+        for r in d.get("requires", []):
+            r = dict(r)
+            r["binds"] = _binds_from_dict(r.get("binds"))
+            requires.append(Requirement(**r))
+        return cls(offers=offers, requires=requires)
 
     def __bool__(self) -> bool:
         return bool(self.offers or self.requires)
@@ -179,12 +307,21 @@ def extract(layer: Layer) -> Surface:
                         orient=_orient_of(prim),
                         envelope_linear=float(prim.attrs.get("jitsd:envelope:linear") or 0.0),
                         envelope_angular=float(prim.attrs.get("jitsd:envelope:angular") or 0.0),
+                        binds=_read_binds(prim, "jitsd:bind:"),
                     )
                 )
         for inst in prim.api_instances(REQUIRE_API):
             pre = "jitsd:require:%s:" % inst
             contract = prim.attrs.get(pre + "contract")
             if contract:
+                binds = _read_binds(prim, pre + "bind:")
+                # The consumer's own spatial/angular tolerances, if declared.
+                tl = prim.attrs.get(pre + "tolerance:linear")
+                ta = prim.attrs.get(pre + "tolerance:angular")
+                if tl is not None:
+                    binds[POSITION] = Attribute(SPATIAL, None, float(tl))
+                if ta is not None:
+                    binds[ORIENTATION] = Attribute(ANGULAR, None, float(ta))
                 surface.requires.append(
                     Requirement(
                         path=prim.path,
@@ -193,6 +330,7 @@ def extract(layer: Layer) -> Surface:
                         role=str(prim.attrs.get(pre + "role") or ""),
                         cardinality=str(prim.attrs.get(pre + "cardinality") or "one"),
                         failure_policy=str(prim.attrs.get(pre + "failurePolicy") or "required"),
+                        binds=binds,
                     )
                 )
     return surface
@@ -233,8 +371,13 @@ class Resolution:
         return not any(d.severity == "error" for d in self.diagnostics)
 
 
-def resolve(surfaces: Dict[str, Surface]) -> Resolution:
-    """Bind every requirement to offers, by contract identity alone."""
+def resolve(surfaces: Dict[str, Surface],
+            view: Optional[Sequence[str]] = None) -> Resolution:
+    """Bind every requirement to offers, by contract identity and attributes.
+
+    `view` restricts which binding attributes participate -- a context reading
+    only the attributes it cares about. None means all of them.
+    """
     res = Resolution()
 
     # Indexed by contract key so each requirement is a lookup, not a scan of
@@ -255,6 +398,7 @@ def resolve(surfaces: Dict[str, Surface]) -> Resolution:
             candidates = [
                 (a, o) for a, o in by_key.get((name, major), [])
                 if a != consumer and (not req.role or o.role == req.role)
+                and req.satisfied_by(o, view)
             ]
 
             if not candidates:
@@ -374,6 +518,21 @@ def check_compatibility(old: Surface, new: Surface) -> List[Violation]:
                 "envelope-angular", o.path,
                 "rotated %.4g deg, envelope allows %.4g -- provider broke its "
                 "own promise" % (turned, o.envelope_angular)))
+
+        # Declared attributes are facts consumers bind on. Changing or dropping
+        # one is observationally a re-role for anyone constrained on it.
+        for aname, old_a in o.binds.items():
+            new_a = n.binds.get(aname)
+            if new_a is None:
+                out.append(Violation("attribute-removed", o.path,
+                                     "%s no longer declared" % aname))
+            elif old_a.kind == EXACT and new_a.value != old_a.value:
+                out.append(Violation("attribute-changed", o.path,
+                                     "%s %r -> %r" % (aname, old_a.value, new_a.value)))
+            elif old_a.kind == SET and not set(old_a.value).issubset(set(new_a.value)):
+                lost = sorted(set(old_a.value) - set(new_a.value))
+                out.append(Violation("attribute-narrowed", o.path,
+                                     "%s no longer offers %s" % (aname, ", ".join(lost))))
     return out
 
 
