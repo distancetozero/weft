@@ -43,14 +43,21 @@ def parse_seed(text: str) -> Seed:
         vals = t[len("within:"):].split(",")
         if len(vals) != 6:
             raise ValueError("within: wants x0,y0,z0,x1,y1,z1 (6 numbers)")
-        [float(v) for v in vals]  # raises ValueError on non-numbers
+        for v in vals:
+            try:
+                float(v)
+            except ValueError:
+                raise ValueError("within: wants x0,y0,z0,x1,y1,z1 (6 numbers)")
         return Seed("spatial", "within", ",".join(vals), t)
     if t.startswith("near:"):
         body = t[len("near:"):]
         if "," not in body:
             raise ValueError("near: wants SEED,RADIUS")
         inner, _, radius = body.rpartition(",")
-        float(radius)
+        try:
+            float(radius)
+        except ValueError:
+            raise ValueError("near: wants SEED,RADIUS with a numeric radius")
         return Seed("spatial", "near", body, t)
     if t.startswith("path:"):
         return Seed("path", "", t[len("path:"):], t)

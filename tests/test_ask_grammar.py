@@ -39,3 +39,10 @@ def test_spatial_seeds():
 
 def test_path_fallback():
     assert parse_seed("path:/root/shelf01/x").value == "/root/shelf01/x"
+
+
+def test_spatial_non_numeric_raises_wants():
+    with pytest.raises(ValueError, match="wants"):
+        parse_seed("within:0,0,0,10,3,abc")
+    with pytest.raises(ValueError, match="wants"):
+        parse_seed("near:id:rack-R42,abc")
