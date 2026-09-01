@@ -16,6 +16,7 @@ from .ledger import BreakingChange, ChannelRaced, Repo
 from . import generators as _gens
 from . import query as _query
 from .generators import vehicle as _vehicle  # noqa: F401  registers the built-ins
+from . import slice as _slice
 
 
 def _human(n: float) -> str:
@@ -191,6 +192,47 @@ def cmd_compile(args) -> int:
     print("  phase B    %7.2f ms   materialise -- geometry" % c.phase_b_ms)
     print("  digest     sha256:%s" % c.digest[:16])
     return 0
+
+
+def _parse_overlay(raw, default_author):
+    """--pin / --omit take "asset: reason"."""
+    asset, _, reason = raw.partition(":")
+    return _slice.Overlay(asset=asset.strip(), author=default_author,
+                          reason=reason.strip() or "(no reason given)")
+
+
+def cmd_select(args) -> int:
+    """Resolve a slice and print its receipt. Nothing materialises."""
+    repo = Repo.find()
+    if args.from_file:
+        spec = _slice.read_spec(Path(args.from_file))
+        spec.seeds += args.seeds or []
+    else:
+        spec = _slice.SliceSpec(seeds=args.seeds or [])
+    spec.closure = [] if args.closure == "none" else args.closure.split(",")
+    spec.depth = args.depth
+    spec.include_optional = args.include_optional
+    spec.baseline = args.baseline or spec.baseline
+    spec.channel = args.channel
+    spec.context = args.context or spec.context
+    if args.label:
+        spec.label = args.label
+    author = _author()
+    spec.pins += [_parse_overlay(x, author) for x in (args.pin or [])]
+    spec.omits += [_parse_overlay(x, author) for x in (args.omit or [])]
+
+    try:
+        result = _slice.resolve_slice(repo, spec)
+    except (KeyError, ValueError) as e:
+        print("%s" % e, file=sys.stderr)
+        return 1
+
+    print(_slice.receipt(result))
+    if args.out:
+        Path(args.out).write_text(_slice.emit_query_document(result))
+        print("\nwritten: %s  (a query document -- `jitsd compile` materialises it)"
+              % args.out)
+    return 0 if result.ok else 1
 
 
 def cmd_bind(args) -> int:
@@ -478,6 +520,24 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--resolve-only", action="store_true",
                    help="phase A only: contracts and bounds, no geometry")
     s.set_defaults(fn=cmd_compile)
+
+    s = sub.add_parser("select", help="resolve a slice and print its receipt")
+    s.add_argument("seeds", nargs="*",
+                   help="name/glob, provides:C@N, requires:C@N, role:R, "
+                        "author:A, changed-since:BASELINE, box:x0,y0,z0,x1,y1,z1")
+    s.add_argument("--closure", default="needs", help="needs | feeds | needs,feeds | none")
+    s.add_argument("--depth", type=int, default=_slice.DEFAULT_DEPTH)
+    s.add_argument("--include-optional", action="store_true",
+                   help="pull substitutable/omittable providers instead of listing them as boundary")
+    s.add_argument("--pin", action="append", metavar='"ASSET: reason"')
+    s.add_argument("--omit", action="append", metavar='"ASSET: reason"')
+    s.add_argument("--baseline")
+    s.add_argument("--channel", default="approved")
+    s.add_argument("--context", default=None)
+    s.add_argument("--label", default="")
+    s.add_argument("--from", dest="from_file", help="reload a slice from an emitted query document")
+    s.add_argument("-o", "--out", help="emit the slice as a query document")
+    s.set_defaults(fn=cmd_select)
 
     s = sub.add_parser("bind", help="resolve requirements to offers by contract")
     s.add_argument("--baseline")
