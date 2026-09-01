@@ -71,9 +71,43 @@ plus a context, nothing more.
 **Coordinate** — a baseline, or floating channels (which mints one). A slice
 re-resolved later shows drift as a diff, never as silent change.
 
+**Overlay** — human deviations from the computed result, first-class:
+
+- `pin(x)` — "I know this is relevant." Carries attribution and a reason
+  ("dana: reflects into shot"), because a pin encodes knowledge the relational
+  plane lacks, and that knowledge must not die with the session. Pins are
+  seeds by default (their `needs()` comes too); `pin --shallow` exists.
+- `omit(x)` — "closure pulled this; I do not want it." Same attribution.
+
+A slice is therefore a computed part plus a deviation record — exactly
+`baseline + overlay` from `03-versioning.md`, generalised. Two consequences:
+
+- **Membership provenance.** Every member answers "why am I here": seeded /
+  closure via this edge / pinned by X / omitted by Y. The receipt is an
+  explanation, not a list.
+- **Pins are training data.** Three lighters pinning the same glass building
+  into three shots is a visible signal that the closure rule is missing an
+  edge. "What do people habitually add that closure misses?" is a query, and
+  it is how rules improve — the exemplar feedback loop at the UI layer.
+
+**Rule sets** — user- and team-authored closure rules, with one hard
+constraint: **rules read only the relational plane** — parameters, contracts,
+bounds, tags, ownership — never geometry. A rule that needs geometry is not a
+rule; it is the render demand loop below. The constraint keeps phase A fast,
+rules deterministic, receipts reproducible.
+
+Rule sets are *content*: revisioned, channeled, owned, promoted like any asset.
+"The lighting closure rule v12" is a publishable artifact; a team's way of
+seeing the scene is versioned and shareable. The ledger already provides all of
+this.
+
 A slice serialises to a query document and back. **The UI is a query-document
 editor that never feels like one.** Nothing the UI can express is outside the
 text form, so every slice is pasteable, diffable, and scriptable.
+
+The full form:
+
+    slice = (seeds + rules)^closure ± overlay, at one coordinate, in one context
 
 ## The interaction loop
 
@@ -185,15 +219,74 @@ clearance and clash are spatial by definition. Slices will likely land in
 industry before film, consistent with `01-overview.md` on where the stronger
 case lives.
 
+## Slices of slices
+
+A review session is lighting ∪ FX ∪ layout. The decisions that keep
+composition sane:
+
+**A superset references member slices; it never copies them.** And there are
+two things to reference: the slice *name* (live — the member's current
+definition) or the slice *receipt* (exact — precisely what they materialised).
+Name is a channel; receipt is a revision. Slices get the same three-layer
+structure as everything else in this system — immutable definitions, movable
+names, receipts — the fourth recurrence of that shape, and by now its
+signature.
+
+**One materialised world, one coordinate.** Members may sit at different
+baselines; the superset re-resolves everyone at its own coordinate and
+surfaces disagreement as drift on the receipt. Two revisions of one asset are
+never silently mixed into a composed scene; a member pin deliberately holding
+an older revision surfaces as an overlay conflict to inspect, not to
+auto-resolve.
+
+**Overlays scope to their member.** Lighting's omit removes only from
+lighting's contribution; a superset-level overlay wins over member overlays.
+Deterministic precedence, stated once.
+
+**Intersection is a coordination tool.** The overlap between two teams' slices
+is exactly the set of things those teams need to talk about. Nobody has that
+list today; here it is a set operation.
+
+**The guardrail.** The risk in this flexibility is rebuilding the ad-hoc scene
+assembly it replaces. The complexity budget is three additions total —
+overlays, rule sets as content, slice references. The penumbra is a
+materialisation strategy, not a concept. Everything reduces to the one algebra
+and stays explicable through the receipt. The moment something can be in a
+slice without a "why am I here" answer, the mystery scene file has been
+recreated.
+
 ## The hard parts
 
-**Completeness anxiety.** "Am I seeing everything that matters?" is the deepest
-trap, because for some aspects correctness depends on things outside any naive
-closure — shadow casters, reflection sources. Requires-edges cannot express
-renderer semantics. Position: closure rules are *aspect-dependent* — the
-lighting aspect's default closure is "in frustum + N metres", a conservative
-spatial over-approximation — and the receipt always states the rule used, so
-what was excluded is legible. Declared absence beats false completeness.
+**Completeness anxiety — dissolved by the penumbra, not mitigated by rules.**
+"Am I seeing everything that matters?" is unanswerable by requires-edges,
+because renderer semantics (shadow casters, reflection sources) are not
+relational. The answer is to change the correctness contract:
+
+- The slice materialises what was asked for.
+- Everything else is present as the **penumbra**: bounds-only procedural
+  placeholders, straight from phase A. Kilobytes at any scale. Renderers have
+  shipped this mechanism for twenty years — RenderMan delayed archives, Arnold
+  procedurals, Hydra generative procedurals: "here is a box; call me if a ray
+  hits it."
+- A shadow or reflection ray striking a penumbra box expands it on demand, at
+  fidelity appropriate to its role — a shadow caster 200 m away materialises
+  as a proxy. Things no ray touches are never loaded.
+- The **demand log** lands on the receipt ("the render also needed these 7: 5
+  as shadow proxies, 2 in reflections") and demands can be promoted to pins.
+  **The slice converges to render-complete through use.** Frame N's demand log
+  prefetches frame N+1.
+
+The renderer has awareness of the slice but not its contents: the bounds field
+*is* the awareness. Costs, honestly: a mid-render demand blocks a bucket on a
+network-plus-generator call, so proxy-by-default fidelity, prefetch from the
+previous frame, and a declared budget with a fallback (beyond N demands,
+bounds become occluders) are all required. The invariant to protect: the loop
+must be *semantically invisible* — a render with it should equal a render with
+everything loaded. Proxy-fidelity shadows violate that, so demand fidelity is
+a declared quality knob on the receipt, never a silent approximation. Tier-3
+authorization applies to demands too — a vendor's render may need the shadow
+of a redacted object without ever receiving the object, which is a real job
+for a declassifying generator.
 
 **Closure explosion.** `feeds()` off by default, depth limits, and the receipt
 prices everything before materialisation. An unbounded closure is never
@@ -228,13 +321,15 @@ deliberately early because it is the visible payoff of bounds-as-contract.
 
 ## Open questions
 
-- **Slice composition.** Union and intersection of slices, and whose closure
-  rules win when two teams' slices merge for a review session.
 - **Edit scope.** May you edit something closure pulled in but you did not
   seed? Proposal: seeded things are editable, closure-pulled things are
   reference-only by default, with explicit promotion — mirrors ownership.
-- **The lighting closure rule.** "In frustum + N metres" needs validation
-  against a real lighting workflow; N is doing a lot of work.
+- **Demand-loop latency budget.** What N demands per frame is acceptable, what
+  the prefetch hit rate is across a sequence, and whether bounds-as-occluders
+  is a tolerable fallback. Needs a real renderer in the loop to answer.
+- **Promotion policy for demands.** Auto-pin everything the renderer pulled,
+  or curate? Auto-pin grows slices monotonically; curation adds friction at
+  exactly the moment nobody wants it.
 - **Receipt cost model.** Sizes come from stored blobs today; generator-backed
   assets need a declared cost estimate per context — cost class exists but is
   not yet quantified.
