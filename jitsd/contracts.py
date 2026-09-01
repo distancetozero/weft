@@ -50,6 +50,7 @@ class Offer:
     role: str = ""
     public: bool = True
     frame: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    orient: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     envelope_linear: float = 0.0
     envelope_angular: float = 0.0
 
@@ -88,8 +89,14 @@ class Surface:
     def from_dict(cls, d: Optional[Dict]) -> "Surface":
         if not d:
             return cls()
+        offers = []
+        for o in d.get("offers", []):
+            o = dict(o)
+            o["frame"] = tuple(o.get("frame", (0.0, 0.0, 0.0)))
+            o["orient"] = tuple(o.get("orient", (0.0, 0.0, 0.0)))
+            offers.append(Offer(**o))
         return cls(
-            offers=[Offer(**{**o, "frame": tuple(o["frame"])}) for o in d.get("offers", [])],
+            offers=offers,
             requires=[Requirement(**r) for r in d.get("requires", [])],
         )
 
@@ -109,6 +116,51 @@ def _frame_of(prim: Prim) -> Tuple[float, float, float]:
     return (0.0, 0.0, 0.0)
 
 
+def _orient_of(prim: Prim) -> Tuple[float, float, float]:
+    """The offer's orientation, as XYZ degrees.
+
+    A mount is a frame, not a point. Reading only the translation means a hub
+    can rotate 180 degrees and promote clean, which is exactly the breakage the
+    envelope exists to catch.
+    """
+    r = prim.attrs.get("xformOp:rotateXYZ")
+    if isinstance(r, (tuple, list)) and len(r) == 3:
+        return tuple(float(x) for x in r)
+    m = prim.attrs.get("xformOp:transform")
+    if isinstance(m, (tuple, list)) and len(m) == 4:
+        return _euler_from_matrix(m)
+    return (0.0, 0.0, 0.0)
+
+
+def _euler_from_matrix(m) -> Tuple[float, float, float]:
+    """XYZ Euler degrees from the upper-left 3x3 of a row-major USD matrix."""
+    try:
+        r0, r1, r2 = (list(m[0])[:3], list(m[1])[:3], list(m[2])[:3])
+    except (TypeError, IndexError):
+        return (0.0, 0.0, 0.0)
+    # USD matrices are row-major with basis vectors in rows.
+    sy = math.sqrt(r0[0] * r0[0] + r0[1] * r0[1])
+    if sy > 1e-9:
+        x = math.atan2(r1[2], r2[2])
+        y = math.atan2(-r0[2], sy)
+        z = math.atan2(r0[1], r0[0])
+    else:
+        x = math.atan2(-r2[1], r1[1])
+        y = math.atan2(-r0[2], sy)
+        z = 0.0
+    return tuple(math.degrees(v) for v in (x, y, z))
+
+
+def _angular_delta(a: Tuple[float, float, float],
+                   b: Tuple[float, float, float]) -> float:
+    """Largest per-axis rotation difference in degrees, wrapped to +/-180."""
+    worst = 0.0
+    for u, v in zip(a, b):
+        d = abs((u - v + 180.0) % 360.0 - 180.0)
+        worst = max(worst, d)
+    return worst
+
+
 def extract(layer: Layer) -> Surface:
     """Read a contract surface out of a parsed layer."""
     surface = Surface()
@@ -124,6 +176,7 @@ def extract(layer: Layer) -> Surface:
                         role=str(prim.attrs.get("jitsd:mount:role") or ""),
                         public=bool(prim.attrs.get("jitsd:offer:public", True)),
                         frame=_frame_of(prim),
+                        orient=_orient_of(prim),
                         envelope_linear=float(prim.attrs.get("jitsd:envelope:linear") or 0.0),
                         envelope_angular=float(prim.attrs.get("jitsd:envelope:angular") or 0.0),
                     )
@@ -265,6 +318,24 @@ def check_compatibility(old: Surface, new: Surface) -> List[Violation]:
                                  "offer %s no longer provided" % o.contract))
             continue
 
+        # Withdrawing an offer from the public catalogue, or re-roling it, is
+        # observationally identical to deleting it: resolve() filters on
+        # `public` and narrows on `role`, so either change silently removes a
+        # provider while the gate reports "compatible".
+        if o.public and not n.public:
+            out.append(Violation(
+                "unpublished", o.path,
+                "offer %s is no longer public; consumers can no longer bind it"
+                % o.contract))
+            continue
+
+        if o.role != n.role:
+            out.append(Violation(
+                "role-changed", o.path,
+                "role %r -> %r; requirements narrowed by role stop matching"
+                % (o.role or "(none)", n.role or "(none)")))
+            continue
+
         oname, omaj = o.key
         nname, nmaj = n.key
         if (oname, omaj) != (nname, nmaj):
@@ -278,14 +349,25 @@ def check_compatibility(old: Surface, new: Surface) -> List[Violation]:
                 "linear envelope %.4g -> %.4g; consumers relying on the old "
                 "room lose it" % (o.envelope_linear, n.envelope_linear)))
 
+        if n.envelope_angular < o.envelope_angular:
+            out.append(Violation(
+                "envelope-tightened", o.path,
+                "angular envelope %.4g -> %.4g deg; consumers relying on the old "
+                "room lose it" % (o.envelope_angular, n.envelope_angular)))
+
         moved = math.dist(o.frame, n.frame)
-        if moved > 0:
-            allowed = o.envelope_linear
-            if moved > allowed:
-                out.append(Violation(
-                    "envelope", o.path,
-                    "moved %.4g, envelope allows %.4g -- provider broke its own "
-                    "promise" % (moved, allowed)))
+        if moved > o.envelope_linear:
+            out.append(Violation(
+                "envelope", o.path,
+                "moved %.4g, envelope allows %.4g -- provider broke its own "
+                "promise" % (moved, o.envelope_linear)))
+
+        turned = _angular_delta(o.orient, n.orient)
+        if turned > o.envelope_angular:
+            out.append(Violation(
+                "envelope-angular", o.path,
+                "rotated %.4g deg, envelope allows %.4g -- provider broke its "
+                "own promise" % (turned, o.envelope_angular)))
     return out
 
 

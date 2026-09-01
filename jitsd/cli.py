@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import List, Optional
 
 from .contracts import Surface
-from .ledger import BreakingChange, Repo
+from .store import CorruptObject
+from .ledger import BreakingChange, ChannelRaced, Repo
 from . import generators as _gens
 from . import query as _query
 from .generators import vehicle as _vehicle  # noqa: F401  registers the built-ins
@@ -103,7 +104,7 @@ def cmd_channels(args) -> int:
 def cmd_promote(args) -> int:
     repo = Repo.find()
     try:
-        rev = repo.promote(args.asset, args.rev, args.to, force=args.force)
+        rev, forced = repo.promote(args.asset, args.rev, args.to, force=args.force)
     except BreakingChange as e:
         print("REFUSED: %s %s -> @%s is a breaking change" % (e.asset, e.rev, e.channel),
               file=sys.stderr)
@@ -111,10 +112,19 @@ def cmd_promote(args) -> int:
             print("  %s" % v, file=sys.stderr)
         print("\nBump the contract major, or --force to promote anyway.", file=sys.stderr)
         return 1
-    checked = repo.check_promotion(args.asset, rev, args.to)
-    note = "  (forced over %d violation%s)" % (len(checked), "" if len(checked) == 1 else "s") \
-        if (checked and args.force) else ""
+    except ChannelRaced as e:
+        print("REFUSED: %s" % e, file=sys.stderr)
+        return 1
+    # The violations are the ones measured BEFORE the pointer moved. Re-checking
+    # afterwards always returns empty -- the channel now holds the revision it
+    # was compared against -- so a forced breaking promotion printed as clean.
+    note = ""
+    if forced:
+        note = "  (forced over %d violation%s)" % (
+            len(forced), "" if len(forced) == 1 else "s")
     print("@%s -> %s %s%s" % (args.to, args.asset, rev, note))
+    for v in forced:
+        print("  %s" % v, file=sys.stderr)
     return 0
 
 
@@ -238,7 +248,21 @@ def cmd_checkout(args) -> int:
     repo = Repo.find()
     rev = repo.ledger.resolve_ref(args.asset, args.rev)
     r = repo.ledger.read_revision(args.asset, rev)
-    repo.store.checkout(r.blob, Path(args.dest))
+    if r.blob is None:
+        print("%s %s is generator-backed (%s); there is no stored payload to "
+              "check out.\nUse `jitsd compile` to materialise it."
+              % (args.asset, rev, r.generator), file=sys.stderr)
+        return 1
+    try:
+        repo.store.checkout(r.blob, Path(args.dest))
+    except CorruptObject as e:
+        print("REFUSED: %s" % e, file=sys.stderr)
+        print("Nothing was written. Run `jitsd verify` to survey the store.",
+              file=sys.stderr)
+        return 1
+    except KeyError as e:
+        print("REFUSED: %s" % e, file=sys.stderr)
+        return 1
     print("%s %s -> %s  (%s)" % (args.asset, rev, args.dest, _human(r.size)))
     return 0
 
@@ -312,6 +336,28 @@ def cmd_diff(args) -> int:
     repo = Repo.find()
     a = repo.ledger.read_revision(args.asset, repo.ledger.resolve_ref(args.asset, args.a))
     b = repo.ledger.read_revision(args.asset, repo.ledger.resolve_ref(args.asset, args.b))
+
+    # A generator-backed revision has no blob, so comparing blobs calls every
+    # pair identical -- including two declarations with different parameters,
+    # which describe different geometry. Compare what actually defines them.
+    if a.blob is None or b.blob is None:
+        same_gen = (a.generator == b.generator
+                    and a.generator_hash == b.generator_hash)
+        if same_gen and (a.params or {}) == (b.params or {}):
+            print("%s %s == %s  (same generator and parameters)"
+                  % (args.asset, a.rev, b.rev))
+            return 0
+        print("%s %s -> %s" % (args.asset, a.rev, b.rev))
+        if a.generator != b.generator:
+            print("  generator  %s -> %s" % (a.generator, b.generator))
+        elif a.generator_hash != b.generator_hash:
+            print("  generator  %s (code changed)" % a.generator)
+        pa, pb = a.params or {}, b.params or {}
+        for k in sorted(set(pa) | set(pb)):
+            if pa.get(k) != pb.get(k):
+                print("  %-10s %s -> %s" % (k, pa.get(k, "(unset)"), pb.get(k, "(unset)")))
+        return 0
+
     if a.blob == b.blob:
         print("%s %s == %s  (identical payload)" % (args.asset, a.rev, b.rev))
         return 0
@@ -345,7 +391,7 @@ def cmd_stat(args) -> int:
 
 def cmd_gc(args) -> int:
     repo = Repo.find()
-    keep = repo.reachable_blobs()
+    keep = repo.reachable_blobs(prune_history=args.prune_history)
     if args.dry_run:
         st = repo.store.stats()
         print("would keep %d of %d blobs" % (len(keep), st.blobs))
@@ -354,6 +400,33 @@ def cmd_gc(args) -> int:
     print("dropped %d blobs, %d chunks, freed %s"
           % (res["blobs"], res["chunks"], _human(res["bytes"])))
     return 0
+
+
+def cmd_verify(args) -> int:
+    """Re-hash every stored blob, and check every pinned generator.
+
+    A content-addressed store can prove its own integrity for the cost of one
+    hash per blob. Nothing else in the system will notice a flipped byte.
+    """
+    repo = Repo.find()
+    res = repo.store.verify()
+    ok, corrupt, missing = res["ok"], res["corrupt"], res["missing_chunks"]
+    print("blobs      %d ok" % len(ok))
+    for bid in corrupt:
+        print("  CORRUPT        %s  (bytes do not match the id)" % bid[:16], file=sys.stderr)
+    for bid in missing:
+        print("  MISSING CHUNK  %s" % bid[:16], file=sys.stderr)
+
+    stale = repo.stale_generators()
+    if stale:
+        print("generators %d stale" % len(stale))
+        for s in stale:
+            print("  %s %s  %s: %s" % (s["asset"], s["rev"], s["generator"], s["why"]),
+                  file=sys.stderr)
+    else:
+        print("generators all match their recorded code hash")
+
+    return 1 if (corrupt or missing or stale) else 0
 
 
 # -- parser ---------------------------------------------------------------
@@ -457,7 +530,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("gc", help="drop unreachable blobs and chunks")
     s.add_argument("--dry-run", action="store_true")
+    s.add_argument("--prune-history", action="store_true",
+                   help="also collect revisions no channel or baseline points "
+                        "at -- this DELETES history that `log` still lists")
     s.set_defaults(fn=cmd_gc)
+
+    s = sub.add_parser("verify", help="check stored bytes against their hashes")
+    s.set_defaults(fn=cmd_verify)
 
     return p
 

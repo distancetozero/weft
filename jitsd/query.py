@@ -52,6 +52,12 @@ def context_for(name: str) -> Context:
 
 @dataclass
 class Instance:
+    # `key` is the full prim path and is what every per-instance map is keyed
+    # on. `name` is the leaf, for display only: two instance prims under
+    # different parents can share a leaf name, and keying on it silently
+    # discards the first instance's parameters and generates its geometry from
+    # the second's.
+    key: str
     name: str
     asset: str
     params: Dict[str, float] = field(default_factory=dict)
@@ -83,7 +89,8 @@ def parse_query(layer: Layer) -> Query:
             for k, v in prim.attrs.items()
             if k.startswith("jitsd:param:")
         }
-        q.instances.append(Instance(name=prim.name, asset=str(asset), params=params))
+        q.instances.append(Instance(key=prim.path, name=prim.name,
+                                    asset=str(asset), params=params))
     return q
 
 
@@ -144,10 +151,10 @@ def compile_query(repo, query: Query, context: Optional[str] = None,
                              "payload cannot be parameterised" % (inst.asset, rev))
         gen = get_generator(r.generator)
         params = gen.bind_params({**(r.params or {}), **inst.params})
-        gens[inst.name] = gen
-        bound[inst.name] = params
-        surfaces[inst.name] = gen.surface(params)
-        bounds[inst.name] = gen.bounds(params)
+        gens[inst.key] = gen
+        bound[inst.key] = params
+        surfaces[inst.key] = gen.surface(params)
+        bounds[inst.key] = gen.bounds(params)
 
     res = resolve(surfaces)
 
@@ -175,8 +182,8 @@ def compile_query(repo, query: Query, context: Optional[str] = None,
     if geometry and res.ok:
         parts = []
         for inst in query.instances:
-            parts.append(gens[inst.name].generate(
-                bound[inst.name], ctx, bindings_by_instance.get(inst.name, {})))
+            parts.append(gens[inst.key].generate(
+                bound[inst.key], ctx, bindings_by_instance.get(inst.key, {})))
         body = "".join(parts)
     phase_b = (time.perf_counter() - t1) * 1000.0
 
