@@ -199,6 +199,31 @@ def main() -> int:
     print("   -- the lighter sees what their edit breaks for other teams, without "
           "loading their slices")
 
+    step("pull one thread: closure by relationship kind, and a team's rule set")
+    from jitsd.slice import RuleSet, load_rules, save_rules
+    everything = resolve_slice(repo, SliceSpec(seeds=["chemistry_bottle01"], channel="approved"))
+    mounts = resolve_slice(repo, SliceSpec(seeds=["chemistry_bottle01"], channel="approved",
+                                           follow=["Mount"]))
+    print("   seed chemistry_bottle01, follow everything: %d members  (the bench references "
+          "every prop)" % len(everything.members))
+    print("   seed chemistry_bottle01, follow Mount only: %d members  -> %s"
+          % (len(mounts.members), ", ".join(m.asset for m in mounts.members)))
+    held = [x for x in mounts.boundary if "not followed" in x.why_excluded]
+    print("   declared at the boundary, not pulled: %d threads (%s)"
+          % (len(held), ", ".join(sorted({x.why_excluded for x in held}))))
+    rev = save_rules(repo, "lookdev.rules",
+                     RuleSet(follow=["Mount"], depth=1, view=["position"], label="lookdev"),
+                     "dana", "lookdev pulls mounts only, one hop, position in view")
+    repo.promote("lookdev.rules", rev, "approved")
+    rules, applied = load_rules(repo, "lookdev.rules")
+    spec = SliceSpec(seeds=["chemistry_test_tube02"], channel="approved")
+    rules.apply(spec, {k: None for k in ("closure", "follow", "depth", "include_optional",
+                                         "view", "context")})
+    spec.rules = applied
+    via_rules = resolve_slice(repo, spec)
+    print("   rule set %s saved and promoted; applied to a different seed: %d members"
+          % (applied, len(via_rules.members)))
+
     step("drift since baseline %s" % b.number)
     pins = repo.resolve(channel="approved")
     now = repo.merkle_root(pins)

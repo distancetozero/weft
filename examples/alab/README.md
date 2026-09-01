@@ -103,12 +103,41 @@ simulation is legitimate rather than a cheat.
      outside the slice (31): chemistry_microscope01, chemistry_test_tube02, ...
    -- the lighter sees what their edit breaks for other teams, without loading their slices
 
+== pull one thread: closure by relationship kind, and a team's rule set
+   seed chemistry_bottle01, follow everything: 165 members  (the bench references every prop)
+   seed chemistry_bottle01, follow Mount only: 2 members  -> chemistry_bottle01, lab_workbench01
+   declared at the boundary, not pulled: 163 threads (usd:arc not followed)
+   rule set lookdev.rules@v001 saved and promoted; applied to a different seed: 2 members
+
 == drift since baseline 000001
    baseline f51109e315d0b3f1   now d44304852ec16712   DRIFTED
 
 == verify
    blobs ok 333  corrupt 0  missing 0   stale generators 0
 ```
+
+## Pulling one thread
+
+The premise of the whole system is pulling on threads explicitly, by rule,
+without loading the whole thing. Closure that follows *every* relationship
+reconverges on the whole thing: seed one bottle and you get all 165 assets,
+because the bottle needs the bench and the bench's assembly references every
+prop. Correct, and useless.
+
+`follow` makes which threads to pull a choice. Every edge carries the kind of
+relationship it is — a contract name like `Mount`, or a USD kind like
+`usd:binding`, `usd:arc`, `usd:inherit` — and closure follows only the kinds
+named. What is not followed is **declared at the boundary**, never silently
+dropped: *163 threads, usd:arc not followed*.
+
+A **rule set** is the reusable half of a slice — closure, follow, depth,
+attributes in view, context — stored as an asset revision, promoted through
+channels like anything else. `lookdev.rules@v001` above is one: *mounts only,
+one hop, position in view*. A team shares a way of seeing, not a scene file.
+
+    jitsd select chemistry_bottle01 --follow Mount
+    jitsd select chemistry_bottle01 --rules lookdev.rules
+    jitsd select 'chemistry_*' --follow Mount,usd:binding --save-rules lighting.rules
 
 Whole run: **3.5 s** (2.6 s of it opening 164 entity layers for `extentsHint`).
 

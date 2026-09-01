@@ -209,12 +209,30 @@ def cmd_select(args) -> int:
         spec.seeds += args.seeds or []
     else:
         spec = _slice.SliceSpec(seeds=args.seeds or [])
-    spec.closure = [] if args.closure == "none" else args.closure.split(",")
-    spec.depth = args.depth
-    spec.include_optional = args.include_optional
+
+    # Precedence: an explicit flag > the rule set > the spec's own defaults.
+    given = {
+        "closure": ([] if args.closure == "none" else args.closure.split(","))
+                   if args.closure is not None else None,
+        "follow": args.follow.split(",") if args.follow else None,
+        "depth": args.depth,
+        "include_optional": True if args.include_optional else None,
+        "view": args.view.split(",") if args.view else None,
+        "context": args.context,
+    }
+    if args.rules:
+        try:
+            rules, applied = _slice.load_rules(repo, args.rules)
+        except (KeyError, ValueError) as e:
+            print("rules: %s" % e, file=sys.stderr)
+            return 1
+        rules.apply(spec, given)
+        spec.rules = applied
+    for name, value in given.items():
+        if value is not None:
+            setattr(spec, name, value)
     spec.baseline = args.baseline or spec.baseline
     spec.channel = args.channel
-    spec.context = args.context or spec.context
     if args.label:
         spec.label = args.label
     author = _author()
@@ -229,6 +247,12 @@ def cmd_select(args) -> int:
 
     print(_slice.receipt(result))
 
+    if args.save_rules:
+        rs = _slice.RuleSet.from_spec(spec, author=author, note=args.message or "")
+        rev = _slice.save_rules(repo, args.save_rules, rs, author, args.message or "")
+        print("\nrules saved: %s %s  (promote to share; apply with --rules %s)"
+              % (args.save_rules, rev, args.save_rules))
+
     if args.impact:
         # The blast-radius display from docs/10-slices.md: what a candidate
         # revision would break, split by whether the consumer is in this slice.
@@ -239,7 +263,7 @@ def cmd_select(args) -> int:
         except KeyError as e:
             print("%s" % e, file=sys.stderr)
             return 1
-        re = repo.reevaluate(asset, rev, channel=spec.channel)
+        re = repo.reevaluate(asset, rev, channel=spec.channel, view=spec.view or None)
         members = {m.asset for m in result.members}
         inside = sorted(c for c in re.changed if c in members)
         outside = sorted(c for c in re.changed if c not in members)
@@ -551,8 +575,19 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("seeds", nargs="*",
                    help="name/glob, provides:C@N, requires:C@N, role:R, "
                         "author:A, changed-since:BASELINE, box:x0,y0,z0,x1,y1,z1")
-    s.add_argument("--closure", default="needs", help="needs | feeds | needs,feeds | none")
-    s.add_argument("--depth", type=int, default=_slice.DEFAULT_DEPTH)
+    s.add_argument("--closure", default=None, help="needs | feeds | needs,feeds | none")
+    s.add_argument("--follow", default=None, metavar="KINDS",
+                   help="relationship kinds closure may follow, e.g. Mount,usd:binding "
+                        "(contract names or usd:arc|binding|rel|conn|inherit|collection|asset); "
+                        "default: all")
+    s.add_argument("--view", default=None, metavar="ATTRS",
+                   help="binding attributes in view for --impact, e.g. position,material")
+    s.add_argument("--rules", default=None, metavar="NAME[@REF]",
+                   help="apply a saved rule set; explicit flags still win")
+    s.add_argument("--save-rules", default=None, metavar="NAME",
+                   help="save this slice's rules (not its seeds) as an asset revision")
+    s.add_argument("-m", "--message", default=None, help="note for --save-rules")
+    s.add_argument("--depth", type=int, default=None)
     s.add_argument("--include-optional", action="store_true",
                    help="pull substitutable/omittable providers instead of listing them as boundary")
     s.add_argument("--pin", action="append", metavar='"ASSET: reason"')
