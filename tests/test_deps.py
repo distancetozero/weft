@@ -581,3 +581,45 @@ def test_one_bad_layer_does_not_abort_the_walk(tmp_path):
     )
     assert _find(g, "good.usda") in g.records
     assert any(p.endswith("broken.usda") for p in g.unreadable)
+
+
+def test_inherit_to_an_undefined_class_is_not_an_orphan(tmp_path):
+    """The standard USD hook: inherit from a class nobody defines, so a
+    stronger layer can inject opinions through it later.
+
+    Found on ALab, where 361 of 364 reported "orphans" were this idiom. A tool
+    that buries three real findings under 361 false ones does not get used
+    twice.
+    """
+    g = _tree(
+        tmp_path,
+        asset='''
+            #usda 1.0
+
+            def Xform "widget" (
+                prepend inherits = </__class__/widget>
+            )
+            {
+            }
+        ''',
+    )
+    assert g.unresolved, "the edge should still be recorded"
+    assert all(u.class_hook for u in g.unresolved)
+    assert not [u for u in g.unresolved if not u.class_hook]
+
+
+def test_a_real_dangling_edge_is_still_reported(tmp_path):
+    """The hook exemption must not swallow genuine breakage."""
+    g = _tree(
+        tmp_path,
+        asset='''
+            #usda 1.0
+
+            def Mesh "geo"
+            {
+                rel material:binding = </Nowhere/Missing>
+            }
+        ''',
+    )
+    real = [u for u in g.unresolved if not u.class_hook]
+    assert len(real) == 1 and real[0].target == "/Nowhere/Missing"

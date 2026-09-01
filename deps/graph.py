@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
-from .walk import ARC, ASSET_ATTR, Edge, LayerRecord, walk_file
+from .walk import ARC, ASSET_ATTR, INHERIT, Edge, LayerRecord, walk_file
 
 CACHE_VERSION = 1
 
@@ -58,6 +58,7 @@ class Unresolved:
     name: str
     target: str
     shadowable: bool = True   # is this layer referenced by anything?
+    class_hook: bool = False  # an inherit to a class nobody defines: idiomatic
 
 
 @dataclass
@@ -257,8 +258,15 @@ def build(paths: Sequence[str], cache: Optional["Cache"] = None,
             owners = {o for o in _longest_defining_prefix(edge.target, g.defines)
                       if o != ident}
             if not owners:
+                # An inherit to a class nobody defines is not a broken edge --
+                # it is the standard USD hook: inherit from an absent class so a
+                # stronger layer can inject opinions through it later. Verified
+                # on ALab, where 361 entity layers inherit /__class__/<name> and
+                # nothing anywhere defines one. Reporting these as dangling
+                # buries the three real findings under 361 false ones.
                 g.unresolved.append(Unresolved(
-                    ident, edge.src_prim, edge.kind, edge.name, edge.target))
+                    ident, edge.src_prim, edge.kind, edge.name, edge.target,
+                    class_hook=(edge.kind == INHERIT)))
                 continue
 
             # 2. Defined by something this layer actually composes. The only

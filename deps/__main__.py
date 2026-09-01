@@ -220,8 +220,10 @@ def cmd_orphans(args) -> int:
     g, _ = _load(args)
     if g is None:
         return 2
-    unshadowed = [u for u in g.unresolved if not u.shadowable]
-    shadowable = [u for u in g.unresolved if u.shadowable]
+    hooks = [u for u in g.unresolved if u.class_hook]
+    rest = [u for u in g.unresolved if not u.class_hook]
+    unshadowed = [u for u in rest if not u.shadowable]
+    shadowable = [u for u in rest if u.shadowable]
 
     if args.json:
         print(json.dumps({
@@ -233,6 +235,7 @@ def cmd_orphans(args) -> int:
                 "source": _rel(u.source, args.root), "prim": u.src_prim,
                 "kind": u.kind, "name": u.name, "target": u.target,
             } for u in shadowable],
+            "class_hooks": len(hooks),
         }, indent=2))
         return 1 if unshadowed else 0
 
@@ -270,6 +273,11 @@ def cmd_orphans(args) -> int:
              "  override the edge — a DCC-exported geo layer binding to a path\n"
              "  its asset layer re-points is normal. Verify on a composed stage\n"
              "  before acting.")
+    if hooks:
+        print()
+        print("Ignored %d inherit%s to an undefined class -- the standard USD "
+              "hook idiom,\nnot a broken edge."
+              % (len(hooks), "" if len(hooks) == 1 else "s"))
     return 1 if unshadowed else 0
 
 
