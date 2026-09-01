@@ -73,6 +73,89 @@ def departments(entity_layer: str) -> List[str]:
     return sorted(out)
 
 
+def materials(look_layer: str) -> List[str]:
+    """Material names an asset's look layer defines or binds.
+
+    Walks specs (variants included), reads every list-op slot -- ALab authors
+    bindings with `prepend`, and a reader that checks only explicitItems sees
+    an empty look. Returns sorted material NAMES (the prim name, not the whole
+    path): the name is the stable identity across the look layer's internal
+    reorganisations, which is the property a binding attribute needs.
+    """
+    try:
+        from pxr import Sdf
+        layer = Sdf.Layer.FindOrOpen(look_layer)
+    except Exception:
+        return []
+    if not layer:
+        return []
+
+    def items(lo):
+        out = []
+        for slot in ("explicitItems", "prependedItems", "appendedItems",
+                     "addedItems", "orderedItems"):
+            out += list(getattr(lo, slot, ()) or ())
+        return out
+
+    names = set()
+
+    def walk(spec):
+        if spec.typeName == "Material":
+            names.add(spec.name)
+        for rel in spec.relationships:
+            if rel.name.startswith("material:binding"):
+                for t in items(rel.targetPathList):
+                    names.add(Sdf.Path(t).GetPrimPath().name)
+        for vset in spec.variantSets:
+            for var in vset.variants:
+                walk(var.primSpec)
+        for child in spec.nameChildren:
+            walk(child)
+
+    for root in layer.rootPrims:
+        walk(root)
+    return sorted(n for n in names if n)
+
+
+def finish(look_layer: str) -> Optional[str]:
+    """"translucent" or "opaque", derived from the look's authored opacity.
+
+    ALab names its materials uniformly (usd_full, usd_preview, ...), so the
+    NAME carries representation, not identity -- identity is in the shader
+    parameters. The one parameter that cleanly separates the corpus is
+    opacity: a bottle authors 0.1, a screw authors nothing (opaque default).
+    A stated rule over authored data, not a taxonomy invented for the demo.
+    """
+    try:
+        from pxr import Sdf
+        layer = Sdf.Layer.FindOrOpen(look_layer)
+    except Exception:
+        return None
+    if not layer:
+        return None
+
+    opacity: List[float] = []
+
+    def walk(spec):
+        if spec.typeName == "Shader":
+            ident = spec.attributes.get("info:id")
+            if ident is not None and ident.default == "UsdPreviewSurface":
+                op = spec.attributes.get("inputs:opacity")
+                if op is not None and op.default is not None:
+                    opacity.append(float(op.default))
+        for vset in spec.variantSets:
+            for var in vset.variants:
+                walk(var.primSpec)
+        for child in spec.nameChildren:
+            walk(child)
+
+    for root in layer.rootPrims:
+        walk(root)
+    if not opacity:
+        return None
+    return "translucent" if min(opacity) < 0.999 else "opaque"
+
+
 def footprint(layer_path: str) -> Optional[float]:
     """A placed asset's horizontal footprint from its authored extentsHint.
 
@@ -168,7 +251,8 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
                        envelope: float = 1.0,
                        nudge: Optional[Dict[str, Vec3]] = None,
                        cost_class: str = "heavy",
-                       represents: Optional[Dict[str, List[str]]] = None) -> str:
+                       represents: Optional[Dict[str, List[str]]] = None,
+                       shading_required: Optional[Dict[str, List[str]]] = None) -> str:
     """The provider's surface: one offer per placement, grouped as authored.
 
     `nudge` shifts every offer in a group by a vector. It stands in for the
@@ -218,6 +302,12 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
             "    uniform token[] jitsd:require:rep_%s:bind:provides = [%s]"
             % (a, ", ".join('"%s"' % d for d in sorted(deps_))),
         ]
+        sh = (shading_required or {}).get(a)
+        if sh:
+            lines += [
+                "    uniform token[] jitsd:require:rep_%s:bind:shading  = [%s]"
+                % (a, ", ".join('"%s"' % m for m in sorted(sh))),
+            ]
     for group in ex.groups:
         lines += ["", '    def Scope "%s"' % group, "    {"]
         d = nudge.get(group, (0.0, 0.0, 0.0))
@@ -248,7 +338,8 @@ def consumer_interface(asset: str, contract: str = DEFAULT_CONTRACT,
                        tolerance: Optional[float] = None,
                        tolerance_rule: str = "",
                        provides: Optional[List[str]] = None,
-                       materials: Optional[List[str]] = None) -> str:
+                       shading: Optional[List[str]] = None,
+                       surface_finish: Optional[str] = None) -> str:
     """A placed asset's surface: it needs a mount meant for it, wherever offered.
 
     `tolerance` is the consumer's own limit on drift, checked at
@@ -302,10 +393,14 @@ def consumer_interface(asset: str, contract: str = DEFAULT_CONTRACT,
             "        uniform token[] jitsd:bind:provides   = [%s]"
             % ", ".join('"%s"' % d for d in sorted(provides)),
         ]
-        if materials:
+        if shading:
             lines += [
-                "        uniform token[] jitsd:bind:materials  = [%s]"
-                % ", ".join('"%s"' % m for m in sorted(materials)),
+                "        uniform token[] jitsd:bind:shading    = [%s]"
+                % ", ".join('"%s"' % m for m in sorted(shading)),
+            ]
+        if surface_finish:
+            lines += [
+                '        uniform token   jitsd:bind:finish     = "%s"' % surface_finish,
             ]
         lines += ["    }"]
     lines += ["}", ""]
@@ -336,7 +431,7 @@ def write_interfaces(ex: Extraction, out_dir: str, contract: str = DEFAULT_CONTR
                      nudge: Optional[Dict[str, Vec3]] = None,
                      tolerance_fraction: Optional[float] = None,
                      represent: bool = False,
-                     materials_by_asset: Optional[Dict[str, List[str]]] = None,
+                     look_by_asset: Optional[Dict[str, str]] = None,
                      into_assets: Optional[Dict[str, str]] = None) -> Dict[str, str]:
     """Write provider + consumer interface layers. Returns {asset: path}.
 
@@ -356,15 +451,24 @@ def write_interfaces(ex: Extraction, out_dir: str, contract: str = DEFAULT_CONTR
     out.mkdir(parents=True, exist_ok=True)
     paths: Dict[str, str] = {}
     targets = {q.asset: q.target for q in ex.placements if q.target}
-    mats = materials_by_asset or {}
 
     provides: Dict[str, List[str]] = {}
+    shading: Dict[str, List[str]] = {}
+    finishes: Dict[str, str] = {}
     if represent:
         for asset in ex.assets:
             if targets.get(asset):
                 d = departments(targets[asset])
                 if d:
                     provides[asset] = d
+            look = (look_by_asset or {}).get(asset)
+            if look:
+                m = materials(look)
+                if m:
+                    shading[asset] = m
+                f = finish(look)
+                if f:
+                    finishes[asset] = f
 
     def _place(asset: str, text: str, default_name: str) -> str:
         if into_assets and asset in into_assets:
@@ -383,7 +487,8 @@ def write_interfaces(ex: Extraction, out_dir: str, contract: str = DEFAULT_CONTR
     paths[ex.provider] = _place(
         ex.provider,
         provider_interface(ex, contract, envelope, nudge,
-                           represents=provides if represent else None),
+                           represents=provides if represent else None,
+                           shading_required=shading if represent else None),
         "%s.iface.usda" % ex.provider)
 
     for asset in ex.assets:
@@ -395,6 +500,7 @@ def write_interfaces(ex: Extraction, out_dir: str, contract: str = DEFAULT_CONTR
                 rule = "%.0f%% of a %s footprint" % (tolerance_fraction * 100, _f(fp))
         text = consumer_interface(asset, contract, tolerance=tol, tolerance_rule=rule,
                                   provides=provides.get(asset),
-                                  materials=mats.get(asset))
+                                  shading=shading.get(asset),
+                                  surface_finish=finishes.get(asset))
         paths[asset] = _place(asset, text, "%s.iface.usda" % asset)
     return paths

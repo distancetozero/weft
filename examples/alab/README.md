@@ -73,7 +73,11 @@ simulation is legitimate rather than a cheat.
 == bind: requirements -> offers, by contract and role only
    164 consumers bound to 437 offers; ok=True
 
+   shading sets from 158 real look layers; finish derived for 8 (8 translucent, 0 opaque)
    consumer tolerances derived for 159/164 props: proc_dev_circuit_fuse01 0.06 cm .. furniture_workbench01 44.96 cm
+
+== bind: requirements -> offers, by contract and role only
+   328 consumers bound to 601 offers; ok=True        (164 mounts + 164 representations)
 
 == cut baseline
    baseline 000001  merkle f51109e315d0b3f1
@@ -132,10 +136,24 @@ so the assembly is a consumer of its own props.
    -- the ASSEMBLY is the broken consumer: the contract runs both ways
 ```
 
-Materials belong on the same offer (`jitsd:bind:materials`, a set) but the
-Asset Structure package ships **placeholder** look layers — "to be replaced
-with the techvar_assets package" — so material extraction needs the Techvar
-download and is wired but not exercised here.
+**Shading, from the real look layers.** The Asset Structure package ships
+placeholder looks; with the Techvar data overlaid, 158 assets yield a real
+shading set — and ALab names its materials uniformly (`usd_full`,
+`usd_preview`, `usd_preview_proxy`), which makes the names a *vocabulary*,
+not identity. That uniformity is exactly what a set attribute wants:
+
+```
+== shading is a binding attribute: tool_screw01 republished without usd_full
+   REFUSED: tool_screw01 dropped usd_full from its shading set
+     unresolved lab_workbench01 rep_tool_screw01: no provider of Represents@1
+   -- a shading change breaks exactly the consumers bound on shading
+```
+
+Material *identity* lives in the shader parameters, so one exact attribute is
+derived from them: `finish` — translucent or opaque, from authored
+`UsdPreviewSurface` opacity. Only 8 looks author opacity (all translucent —
+bottles and jars at 0.1); the other 150 get **no** finish attribute, because a
+rule that invents "opaque" for unauthored data would be a claim nobody made.
 
 **Interface sublayers.** With `into_assets`, each surface is written into the
 entity's own structure — `entity/<a>/interface/<a>_interface.usda`, sublayered

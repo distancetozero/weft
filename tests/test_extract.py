@@ -218,3 +218,78 @@ def Xform "root"
                      into_assets={"bottle01": str(d)})
     layer = Sdf.Layer.FindOrOpen(str(d / "bottle01.usda"))
     assert list(layer.subLayerPaths).count("interface/bottle01_interface.usda") == 1
+
+
+def test_materials_reads_defs_and_prepended_bindings(tmp_path):
+    """ALab authors bindings with `prepend`; explicitItems-only readers see an
+    empty look. Both definition and binding contribute names."""
+    from jitsd.extract import materials
+    p = tmp_path / "look.usda"
+    p.write_text('''#usda 1.0
+
+def "root" (
+    variantSets = "lod"
+    variants = {
+        string lod = "high"
+    }
+)
+{
+    def Scope "mtl"
+    {
+        def Material "glass_clear"
+        {
+        }
+    }
+    variantSet "lod" = {
+        "high" {
+            def Mesh "geo"
+            {
+                prepend rel material:binding = </root/mtl/steel_brushed>
+            }
+        }
+    }
+}
+''')
+    assert materials(str(p)) == ["glass_clear", "steel_brushed"]
+
+
+def test_shading_and_finish_flow_onto_the_represents_offer(tmp_path):
+    from jitsd.contracts import extract_text
+    from jitsd.extract import consumer_interface
+    s = extract_text(consumer_interface(
+        "bottle01", provides=["modelling"],
+        shading=["usd_full", "usd_preview"], surface_finish="translucent"))
+    (offer,) = s.offers
+    assert offer.binds["shading"].value == ["usd_full", "usd_preview"]
+    assert offer.binds["finish"].value == "translucent"
+    assert offer.binds["finish"].kind == "exact"
+
+
+def test_finish_derived_from_authored_opacity(tmp_path):
+    from jitsd.extract import finish
+    glass = tmp_path / "glass.usda"
+    glass.write_text("""#usda 1.0
+
+def Material "usd_full"
+{
+    def Shader "s"
+    {
+        uniform token info:id = "UsdPreviewSurface"
+        float inputs:opacity = 0.1
+    }
+}
+""")
+    metal = tmp_path / "metal.usda"
+    metal.write_text("""#usda 1.0
+
+def Material "usd_full"
+{
+    def Shader "s"
+    {
+        uniform token info:id = "UsdPreviewSurface"
+        float inputs:roughness = 0.4
+    }
+}
+""")
+    assert finish(str(glass)) == "translucent"
+    assert finish(str(metal)) is None   # nothing authored: no claim invented
