@@ -38,31 +38,37 @@ contracts and zero servers:
 
 ```
 $ jitsd init                       # creates .jitsd/ — that is it
-$ jitsd open car.usda              # or just work in Maya/Houdini/Blender
-  … autosave every 30s → immutable revisions, deduped …
+$ jitsd save car car.usda -m "before topology redo"
 $ jitsd log car
-  v041   2m ago    ← wip
-  v040   18m ago   "before topology redo"
-$ jitsd back car v040              # instant
+  v041  2026-09-01T17:02:11Z  16.2 MiB you  <- @wip
+  v040  2026-09-01T16:44:03Z  16.1 MiB you
+        before topology redo
+$ jitsd back car v040              # instant — a pointer move
 ```
+
+(Auto-versioning on save — a file watcher calling `jitsd save` — is the
+intended day-one experience and is not built; today the save is explicit.)
 
 ## Everyday commands
 
+Real output, from the ALab proof of concept (`examples/alab/`):
+
 ```
-$ jitsd promote hero_car v038 --to review
-  ✓ contracts unchanged (MountAPI v2)
-  ✓ 14 downstream exemplars re-evaluated, 14 match
-  → review now points at v038
+$ jitsd promote lab_workbench01 @wip --to approved
+  REFUSED: lab_workbench01 v003 -> @approved is a breaking change
+    moved   chemistry_test_tube02 /c:mount on lab_workbench01/...:
+            position moved 0.65, consumer tolerates 0.2225
+    ... 19 consumers would break, though the provider kept its 1 cm promise
 
-$ jitsd open shots/sh0120
-  sh0120 · baseline 118 · lighting
-  hero_car v37   env_desert v12   rig_key v4
+$ jitsd select 'chemistry_bottle*' --follow Mount
+  slice: chemistry_bottle*  +needs  depth 4  ctx:review
+  follow: Mount
+  members (4): ...
+  est. cost: 2.7 KiB stored payloads · 0 generators to run
 
-  ! hero_car v38 is now on @approved (baseline 119 available)
-
-$ jitsd try hero_car@wip        # temporary overlay — lock untouched
-$ jitsd update hero_car         # take just this one
-$ jitsd update --baseline 119   # take the whole new world
+$ jitsd select bottle01 --rules lookdev.rules   # a team's saved way of seeing
+$ jitsd resolve                                 # pin the world, write the lock
+$ jitsd drift 000118                            # what moved since the client cut?
 ```
 
 ## vs. plain USD

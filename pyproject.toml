@@ -14,7 +14,9 @@ dependencies = []
 #            the pxr tests skip.
 fast = ["numpy>=1.24"]
 usd = ["usd-core>=24.0"]
-dev = ["numpy>=1.24", "usd-core>=24.0", "pytest>=7"]
+# jinja2 is usdGenSchema's own dependency; CI regenerates the contract schema
+# and diffs, so dev environments need to be able to run the generator.
+dev = ["numpy>=1.24", "usd-core>=24.0", "pytest>=7", "jinja2>=3"]
 
 [project.scripts]
 jitsd = "jitsd.cli:main"
