@@ -94,6 +94,18 @@ def identity_of(prim, keys=DEFAULT_IDENTITY_KEYS) -> Optional[str]:
     return str(v) if v else None
 
 
+def _value_matches(authored, text: str) -> bool:
+    """Canonical-typed equality: parse text to the authored value's type."""
+    if isinstance(authored, bool):
+        return text.lower() in ("true", "1") if authored else text.lower() in ("false", "0")
+    if isinstance(authored, (int, float)):
+        try:
+            return float(text) == float(authored)
+        except ValueError:
+            return False
+    return str(authored) == text
+
+
 def _authored(prim, name):
     """Authored value for `name`: attribute (plain or jitsd:bind:), then
     customData. Returns (found, value)."""
@@ -145,7 +157,10 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
             r.mode = "identity"
             r.paths = sorted(ids.get(s.value, []))
             if len(r.paths) > 1:
-                r.note = "id matches %d prims: %s" % (len(r.paths), ", ".join(r.paths))
+                if s.key == "occ":
+                    r.note = "occurrence id matches %d prims — ambiguous: %s" % (len(r.paths), ", ".join(r.paths))
+                else:
+                    r.note = "type identity: %d placements" % len(r.paths)
         elif s.plane == "path":
             r.mode = "path"
             prim = stage.GetPrimAtPath(s.value)
@@ -161,7 +176,7 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
                     absent += 1
                     continue
                 values = v if isinstance(v, (list, tuple)) else [v]
-                if any(str(x) == s.value for x in values):
+                if any(_value_matches(x, s.value) for x in values):
                     hits.append(p.GetPath().pathString)
             r.paths, r.complement = sorted(hits), absent
         elif s.plane == "spatial":

@@ -33,6 +33,23 @@ def Xform "root"
         def Xform "crate_0001"
         {
         }
+        def Xform "mount" (
+            customData = { string "absent:id" = "bolt-m8" }
+        )
+        {
+            uniform token jitsd:offer:contract = "Mount@1"
+            uniform token jitsd:offer:role = "propSocket"
+        }
+        def Xform "fastener" (
+            customData = { string "absent:id" = "bolt-m8" }
+        )
+        {
+        }
+        def Xform "sealed_container"
+        {
+            uniform token jitsd:bind:finish = "glossy"
+            float rating = 1.5
+        }
     }
 }
 """
@@ -90,3 +107,41 @@ def test_path_below_payload_kept_with_note(stage):
 def test_seed_matching_nothing_is_declared(stage):
     (r,) = resolve_seeds(stage, ["id:no-such"])
     assert r.paths == [] and "matched nothing" in r.note
+
+
+def test_contract_offers_resolution(stage):
+    (r,) = resolve_seeds(stage, ["offers:Mount"])
+    assert r.paths == ["/root/shelf01/mount"]
+    assert r.mode == "contract"
+
+
+def test_contract_role_resolution(stage):
+    (r,) = resolve_seeds(stage, ["role:propSocket"])
+    assert r.paths == ["/root/shelf01/mount"]
+    assert r.mode == "contract"
+
+
+def test_where_via_jitsd_bind_fallback(stage):
+    (r,) = resolve_seeds(stage, ["where:finish=glossy"])
+    assert r.paths == ["/root/shelf01/sealed_container"]
+    assert r.mode == "attribute"
+
+
+def test_type_identity_multi_match_note(stage):
+    (r,) = resolve_seeds(stage, ["id:bolt-m8"])
+    assert len(r.paths) == 2
+    assert "type identity: 2" in r.note
+    assert "placements" in r.note
+
+
+def test_occurrence_ambiguity_note(stage):
+    (r,) = resolve_seeds(stage, ["id:occ:bolt-m8"])
+    assert len(r.paths) == 2
+    assert "ambiguous" in r.note
+    assert "occurrence id matches" in r.note
+
+
+def test_typed_equality_float_match(stage):
+    (r,) = resolve_seeds(stage, ["where:rating=1.50"])
+    assert r.paths == ["/root/shelf01/sealed_container"]
+    assert r.mode == "attribute"
