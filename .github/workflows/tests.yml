@@ -22,6 +22,17 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: pytest -q
 
+      - name: schema builds, and the generated pair is committed
+        # The contract schema went two review rounds unable to pass
+        # usdGenSchema at all (multipleApply + prefixed properties is a hard
+        # error), and nothing noticed because generation was never run. This
+        # regenerates and fails on any diff, so schema.usda cannot drift from
+        # the pair USD actually loads.
+        run: |
+          python "$(python -c 'import pxr, pathlib; print(pathlib.Path(pxr.__path__[0])/"Usd"/"usdGenSchema.py")')" \
+            specs/jitsdContracts/schema.usda specs/jitsdContracts
+          git diff --exit-code specs/jitsdContracts/
+
   bare:
     # The job that matters. docs/07-adoption.md, the README and pyproject all
     # promise rung 1 runs with no optional dependency installed. That promise

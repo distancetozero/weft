@@ -202,8 +202,8 @@ exists to validate the model, not to ship.
 
 ## Validated against real USD
 
-`pip install -e ".[dev]"` brings in `usd-core`. The suite then runs 74 tests
-instead of 54; without pxr the extra ones skip and everything else still
+`pip install -e ".[dev]"` brings in `usd-core`. The suite then runs 169 tests
+instead of 107; without pxr the extra ones skip and everything else still
 passes, because rung 1 must run with nothing installed.
 
 `tests/test_pxr.py` opens **everything jitsd writes** in real USD — revision
@@ -337,15 +337,17 @@ Measures three edit patterns, because they do not behave alike: a localised
 rework, several scattered edits, and a global re-export that perturbs every
 value.
 
-Measured — 64 MiB asset, 30 saves, 0.5% of the asset edited per save:
+Measured — 64 MiB asset, 30 saves, 0.5% of the asset edited per save, at the
+shipped 64 KiB chunk default (an earlier version of this table carried numbers
+from the old 1 MiB default; re-measured 2026-09-01):
 
 | pattern | as separate files | on disk | dedup | vs. one copy |
 |---|---|---|---|---|
-| local | 1.9 GiB | 121.8 MiB | 15.8x | 1.90x |
-| scattered | 1.9 GiB | 341.1 MiB | 5.6x | 5.33x |
+| local | 1.9 GiB | 76.9 MiB | 25.0x | 1.20x |
+| scattered | 1.9 GiB | 90.1 MiB | 21.3x | 1.41x |
 | global | 1.9 GiB | 1.9 GiB | **1.0x** | **30.00x** |
 
-Per additional save: 2.0 MiB local, 9.6 MiB scattered, 64.0 MiB global.
+Per additional save: 456.7 KiB local, 920.5 KiB scattered, 64.0 MiB global.
 
 **The storage claim holds for localised editing and fails completely for
 re-export.** Thirty versions of an asset costing 1.9x one copy is the claim in
