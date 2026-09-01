@@ -67,8 +67,32 @@ def main() -> int:
     # Consumer tolerances are DERIVED: a stated fraction of each prop's own
     # footprint from its extentsHint. A 6 cm bottle and a 1 cm screw do not
     # tolerate the same drift, and neither value is invented.
+    # into_assets: the interface-sublayer convention. Each surface is written
+    # INTO the entity's own structure (interface/<a>_interface.usda) and
+    # sublayered into its root -- one more department beside modelling/,
+    # preview/, surfacing/ -- rather than sitting in a sidecar directory.
+    # represent=True makes the contract two-sided: each prop offers its
+    # representation set, derived from its own sublayers, and the bench
+    # requires it.
+    asset_dirs = {a: str(A / "entity" / a) for a in ex.assets
+                  if (A / "entity" / a).is_dir()}
+    asset_dirs[PROVIDER] = str(A / "entity" / PROVIDER)
     ifaces = write_interfaces(ex, str(out / "iface"), envelope=ENVELOPE_CM,
-                              tolerance_fraction=TOLERANCE_FRACTION)
+                              tolerance_fraction=TOLERANCE_FRACTION,
+                              represent=True, into_assets=asset_dirs)
+    # The bench's representation requirements, held so every later republish
+    # of the bench keeps its two-sided surface. The first version of this POC
+    # dropped them on the ok/mid/bad republishes, which silently stripped the
+    # bench's requirements from @approved -- and the two-sided refusal then
+    # came from the provider self-check alone, not from the bench breaking.
+    from jitsd.extract import departments
+    reps = {}
+    for a, d in asset_dirs.items():
+        if a == PROVIDER:
+            continue
+        depts = departments(str(Path(d) / ("%s.usda" % a)))
+        if depts:
+            reps[a] = depts
     print("   %d placements in %d groups -> %d offers, %d consumer surfaces  (%.0f ms)"
           % (len(ex.placements), len(ex.groups), len(ex.placements), len(ex.assets),
              (time.perf_counter() - t0) * 1000))
@@ -119,7 +143,8 @@ def main() -> int:
     step("republish workbench: %s raised 0.05 cm (inside every tolerance)" % GATE_GROUP)
     ok_iface = out / "iface" / ("%s.ok.usda" % PROVIDER)
     ok_iface.write_text(provider_interface(ex, envelope=ENVELOPE_CM,
-                                           nudge={GATE_GROUP: (0.0, 0.05, 0.0)}))
+                                           nudge={GATE_GROUP: (0.0, 0.05, 0.0)},
+                                           represents=reps))
     repo.save(PROVIDER, A / "entity" / PROVIDER / ("%s.usda" % PROVIDER), "alab",
               "%s +0.05cm" % GATE_GROUP, interface=ok_iface)
     rev, forced = repo.promote(PROVIDER, "@wip", "approved")
@@ -129,7 +154,8 @@ def main() -> int:
          "promise" % (GATE_GROUP, ENVELOPE_CM))
     mid_iface = out / "iface" / ("%s.mid.usda" % PROVIDER)
     mid_iface.write_text(provider_interface(ex, envelope=ENVELOPE_CM,
-                                            nudge={GATE_GROUP: (0.0, 0.7, 0.0)}))
+                                            nudge={GATE_GROUP: (0.0, 0.7, 0.0)},
+                                            represents=reps))
     repo.save(PROVIDER, A / "entity" / PROVIDER / ("%s.usda" % PROVIDER), "alab",
               "%s +0.7cm" % GATE_GROUP, interface=mid_iface)
     from jitsd.contracts import check_compatibility
@@ -162,7 +188,8 @@ def main() -> int:
     step("republish workbench: %s raised 3 cm (past the envelope)" % GATE_GROUP)
     bad_iface = out / "iface" / ("%s.bad.usda" % PROVIDER)
     bad_iface.write_text(provider_interface(ex, envelope=ENVELOPE_CM,
-                                            nudge={GATE_GROUP: (0.0, 3.0, 0.0)}))
+                                            nudge={GATE_GROUP: (0.0, 3.0, 0.0)},
+                                            represents=reps))
     repo.save(PROVIDER, A / "entity" / PROVIDER / ("%s.usda" % PROVIDER), "alab",
               "%s +3cm" % GATE_GROUP, interface=bad_iface)
     try:
@@ -198,6 +225,33 @@ def main() -> int:
           % (len(outside), ", ".join(outside[:5]), " ..." if len(outside) > 5 else ""))
     print("   -- the lighter sees what their edit breaks for other teams, without "
           "loading their slices")
+
+    step("two-sided: a prop republished without its preview department")
+    from jitsd.extract import consumer_interface, departments, footprint as _fp
+    victim = "chemistry_bottle01"
+    vdir = A / "entity" / victim
+    deps_now = departments(str(vdir / ("%s.usda" % victim)))
+    kept = [d for d in deps_now if d not in ("preview", "interface")]
+    fp = _fp(str(vdir / ("%s.usda" % victim)))
+    tol = round(fp * TOLERANCE_FRACTION, 4) if fp else None
+    stripped = out / "iface" / ("%s.stripped.usda" % victim)
+    stripped.write_text(consumer_interface(
+        victim, tolerance=tol,
+        tolerance_rule="%.0f%% of footprint" % (TOLERANCE_FRACTION * 100),
+        provides=kept))
+    repo.save(victim, vdir / ("%s.usda" % victim), "alab",
+              "dropped preview (simulated at the surface)", interface=stripped)
+    try:
+        repo.promote(victim, "@wip", "approved")
+        print("   PROMOTED -- the bench was not protected. Bug.")
+        return 1
+    except BreakingChange as e:
+        cons = [v for v in e.violations if getattr(v, "consumer", None)]
+        print("   REFUSED: %s dropped %s" % (victim, "preview"))
+        for v in cons[:3]:
+            print("     %s" % v)
+        print("   -- the ASSEMBLY is the broken consumer: the contract runs both ways")
+    print("   @approved still at %s" % repo.ledger.channels(victim)["approved"])
 
     step("pull one thread: closure by relationship kind, and a team's rule set")
     from jitsd.slice import RuleSet, load_rules, save_rules

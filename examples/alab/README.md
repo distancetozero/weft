@@ -116,6 +116,35 @@ simulation is legitimate rather than a cheat.
    blobs ok 333  corrupt 0  missing 0   stale generators 0
 ```
 
+## The contract runs both ways
+
+The prop consumes a mount. With `represent=True` it also **offers what it
+is**: a `Represents@1` offer whose `provides` set is derived from its own
+department sublayers — and on this corpus the set is genuinely informative:
+326 entities carry `{modelling, preview, surfacing}`, assemblies differ, one
+carries `rigging`. The bench **requires** each placed asset's representations,
+so the assembly is a consumer of its own props.
+
+```
+== two-sided: a prop republished without its preview department
+   REFUSED: chemistry_bottle01 dropped preview
+     unresolved lab_workbench01 rep_chemistry_bottle01: no provider of Represents@1
+   -- the ASSEMBLY is the broken consumer: the contract runs both ways
+```
+
+Materials belong on the same offer (`jitsd:bind:materials`, a set) but the
+Asset Structure package ships **placeholder** look layers — "to be replaced
+with the techvar_assets package" — so material extraction needs the Techvar
+download and is wired but not exercised here.
+
+**Interface sublayers.** With `into_assets`, each surface is written into the
+entity's own structure — `entity/<a>/interface/<a>_interface.usda`, sublayered
+into the entity root as one more department beside `modelling/`, `preview/`,
+`surfacing/` — rather than a sidecar. The surface is then versioned with the
+asset and visible to any USD tool. (`departments()` deliberately ignores the
+`interface` sublayer, or extraction would be self-polluting: every re-run
+would add "interface" to the very set the interface declares.)
+
 ## Pulling one thread
 
 The premise of the whole system is pulling on threads explicitly, by rule,
