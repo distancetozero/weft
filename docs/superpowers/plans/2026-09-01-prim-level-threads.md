@@ -1693,7 +1693,9 @@ git add jitsd/registry.py jitsd/pull.py tests/test_pull_soundness.py
 git commit -m "pull: instance widening, omission classes, physics whole-or-declared, fitness"
 ```
 
----### Task 8: registered edge extractors
+---
+
+### Task 8: registered edge extractors
 
 Spec §5: attribute-encoded references become real edges via a registered,
 versioned extractor table; completeness claims scoped to it.
