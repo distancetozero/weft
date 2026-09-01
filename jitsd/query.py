@@ -26,6 +26,24 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from .contracts import Offer, Resolution, Surface, resolve
+
+
+class _Constant:
+    """A stored payload wearing the generator interface: emits a payload arc
+    to the object store instead of geometry. Context cannot vary it."""
+
+    def __init__(self, revision):
+        self._rev = revision
+
+    def generate(self, params, ctx, bindings) -> str:
+        return (
+            '    def Xform "%s" (\n'
+            '        prepend payload = @jitsd:obj/sha256:%s@\n'
+            '    )\n'
+            '    {\n'
+            '        uniform int64 jitsd:payloadSize = %d\n'
+            '    }\n' % (self._rev.asset, self._rev.blob, self._rev.size)
+        )
 from .generators import Context, Vec3
 from .generators import get as get_generator
 from .usda import Layer, parse
@@ -146,15 +164,24 @@ def compile_query(repo, query: Query, context: Optional[str] = None,
         if rev is None:
             raise KeyError("query names asset %r, which no baseline pins" % inst.asset)
         r = repo.ledger.read_revision(inst.asset, rev)
-        if not r.generator:
-            raise ValueError("asset %r revision %s has no generator; a stored "
-                             "payload cannot be parameterised" % (inst.asset, rev))
-        gen = get_generator(r.generator)
-        params = gen.bind_params({**(r.params or {}), **inst.params})
-        gens[inst.key] = gen
-        bound[inst.key] = params
-        surfaces[inst.key] = gen.surface(params)
-        bounds[inst.key] = gen.bounds(params)
+        if r.generator:
+            gen = get_generator(r.generator)
+            params = gen.bind_params({**(r.params or {}), **inst.params})
+            gens[inst.key] = gen
+            bound[inst.key] = params
+            surfaces[inst.key] = gen.surface(params)
+            bounds[inst.key] = gen.bounds(params)
+        else:
+            # A constant is a generator with no parameters (docs/04). A stored
+            # payload is a valid member; it just cannot be parameterised.
+            if inst.params:
+                raise ValueError(
+                    "asset %r revision %s is a stored payload and cannot be "
+                    "parameterised (params given: %s)"
+                    % (inst.asset, rev, ", ".join(sorted(inst.params))))
+            gens[inst.key] = _Constant(r)
+            bound[inst.key] = {}
+            surfaces[inst.key] = Surface.from_dict(r.surface)
 
     res = resolve(surfaces)
 

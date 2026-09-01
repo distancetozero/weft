@@ -237,24 +237,30 @@ def resolve(surfaces: Dict[str, Surface]) -> Resolution:
     """Bind every requirement to offers, by contract identity alone."""
     res = Resolution()
 
-    catalogue: List[Tuple[str, Offer]] = [
-        (asset, o) for asset, s in sorted(surfaces.items()) for o in s.offers if o.public
-    ]
+    # Indexed by contract key so each requirement is a lookup, not a scan of
+    # the whole catalogue -- the difference between closure being linear and
+    # quadratic in the number of assets (bench/closure.py).
+    by_key: Dict[Tuple[str, int], List[Tuple[str, Offer]]] = {}
+    by_name: Dict[str, List[Tuple[str, Offer]]] = {}
+    for asset, s in sorted(surfaces.items()):
+        for o in s.offers:
+            if o.public:
+                by_key.setdefault(o.key, []).append((asset, o))
+                by_name.setdefault(o.key[0], []).append((asset, o))
 
     for consumer, surface in sorted(surfaces.items()):
         for req in surface.requires:
             ref = "%s:%s" % (req.path, req.instance)
             name, major = req.key
             candidates = [
-                (a, o) for a, o in catalogue
-                if a != consumer and o.key == (name, major)
-                and (not req.role or o.role == req.role)
+                (a, o) for a, o in by_key.get((name, major), [])
+                if a != consumer and (not req.role or o.role == req.role)
             ]
 
             if not candidates:
                 # Failure policy is declared, not exceptional.
-                loose = [(a, o) for a, o in catalogue
-                         if a != consumer and o.key[0] == name and o.key[1] != major]
+                loose = [(a, o) for a, o in by_name.get(name, [])
+                         if a != consumer and o.key[1] != major]
                 if loose:
                     have = ", ".join(sorted({o.contract for _, o in loose}))
                     msg = "no provider of %s (found incompatible major: %s)" % (req.contract, have)
