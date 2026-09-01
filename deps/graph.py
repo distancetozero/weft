@@ -31,7 +31,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 from .walk import ARC, ASSET_ATTR, INHERIT, Edge, LayerRecord, walk_file
 
-CACHE_VERSION = 1
+CACHE_VERSION = 2
 
 
 @dataclass
@@ -228,6 +228,8 @@ def build(paths: Sequence[str], cache: Optional["Cache"] = None,
     # own and establish each layer's composition context for pass 3.
     for ident, rec in g.records.items():
         for edge in rec.edges:
+            if getattr(edge, "deleted", False):
+                continue
             if not edge.is_asset_edge:
                 continue
             target = _resolve_asset(edge.target, ident)
@@ -247,6 +249,8 @@ def build(paths: Sequence[str], cache: Optional["Cache"] = None,
     for ident, rec in g.records.items():
         context = _closure(ident, g.forward, None)   # what this layer composes
         for edge in rec.edges:
+            if getattr(edge, "deleted", False):
+                continue
             if edge.is_asset_edge:
                 continue
 

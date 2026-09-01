@@ -34,6 +34,7 @@ REL = "rel"                # relationship target: bindings, skel, proxyPrim, phy
 CONN = "conn"              # attribute connection: shader networks
 INHERIT = "inherit"        # inherits / specializes: class arcs, often invisible
 COLLECTION = "collection"  # collection includes/excludes
+INTERNAL = "internal"      # reference/payload whose target is a prim path here
 
 
 @dataclass
@@ -43,6 +44,7 @@ class Edge:
     name: str                  # property name, or "" for arcs
     target: str                # asset path (ARC/ASSET_ATTR) or prim path
     resolved: Optional[str] = None   # filled in by graph.py for namespace edges
+    deleted: bool = False      # True for list-op deleted items
 
     @property
     def is_asset_edge(self) -> bool:
@@ -104,6 +106,12 @@ def _list_op_items(list_op) -> List:
     return out
 
 
+def _deleted_items(list_op) -> List:
+    if list_op is None:
+        return []
+    return list(getattr(list_op, "deletedItems", ()) or ())
+
+
 def walk_layer(layer: Sdf.Layer) -> LayerRecord:
     """Every edge this layer authors, and every prim path it defines."""
     mtime, size = _stat(layer.realPath or layer.identifier)
@@ -130,9 +138,15 @@ def walk_layer(layer: Sdf.Layer) -> LayerRecord:
             for ref in _list_op_items(spec.referenceList):
                 if ref.assetPath:
                     rec.edges.append(Edge(ARC, path, "references", ref.assetPath))
+                elif ref.primPath:
+                    rec.edges.append(
+                        Edge(INTERNAL, path, "references", str(ref.primPath)))
             for pay in _list_op_items(spec.payloadList):
                 if pay.assetPath:
                     rec.edges.append(Edge(ARC, path, "payload", pay.assetPath))
+                elif pay.primPath:
+                    rec.edges.append(
+                        Edge(INTERNAL, path, "payload", str(pay.primPath)))
 
             # Class arcs. These fail the most invisibly of anything in USD --
             # an inherit to a missing class contributes nothing, with no
@@ -147,6 +161,9 @@ def walk_layer(layer: Sdf.Layer) -> LayerRecord:
                 for target in _list_op_items(rel.targetPathList):
                     rec.edges.append(
                         Edge(kind, path, rel.name, str(target.GetPrimPath())))
+                for target in _deleted_items(rel.targetPathList):
+                    rec.edges.append(Edge(kind, path, rel.name,
+                                          str(target.GetPrimPath()), deleted=True))
 
             for attr in spec.attributes:
                 for conn in _list_op_items(attr.connectionPathList):
@@ -162,6 +179,14 @@ def walk_layer(layer: Sdf.Layer) -> LayerRecord:
                         p = getattr(item, "path", None)
                         if p:
                             rec.edges.append(Edge(ASSET_ATTR, path, attr.name, str(p)))
+
+            clips = spec.GetInfo("clips") if spec.HasInfo("clips") else None
+            if clips:
+                for clipset in clips.values():
+                    for ap in (clipset.get("assetPaths") or []):
+                        p = getattr(ap, "path", None) or str(ap)
+                        if p:
+                            rec.edges.append(Edge(ASSET_ATTR, path, "clips", p))
 
     return rec
 
