@@ -1,0 +1,16 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "weftViewer",
+            "Info": {
+                "Types": {
+                    "weftViewer.WeftViewerContainer": {
+                        "bases": ["pxr.Usdviewq.plugin.PluginContainer"],
+                        "displayName": "Weft: the ask bar in the viewer"
+                    }
+                }
+            }
+        }
+    ]
+}

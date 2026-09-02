@@ -62,6 +62,35 @@ arcs) and answers the reverse question USD can't. `absent` finds the
 silences USD ships with — stale overrides, bindings to deactivated
 materials — that none of its 28 validators catch.
 
+## usdview plugin
+
+The same `pull`/`who` reasoning, live in the viewer: a "Weft" menu adds
+**Ask…** (resolve a seed against the open stage and select the results),
+**Solo threads** (pull the current selection's threads and deactivate
+everything outside the mask — a *view solo*, not a population mask), **Restore
+world** (undo it), and **Who depends on this?** (incoming edges onto the
+selection, browsable by depth). A docked receipt panel shows the last pull's
+resolutions, members, and boundary, with buttons to copy the member mask or
+save a full manifest.
+
+```
+$ export PXR_PLUGINPATH_NAME=/path/to/weft/extras/usdview:$PXR_PLUGINPATH_NAME
+$ export PYTHONPATH=/path/to/weft/extras/usdview:/path/to/weft:$PYTHONPATH
+$ usdview shot.usda
+```
+
+Both `PXR_PLUGINPATH_NAME` (so libplug finds `extras/usdview/plugInfo.json`)
+and `PYTHONPATH` (so `import weftViewer` — its declared module name —
+resolves) need `extras/usdview` itself, since the plugin's `__init__.py`
+lives one level inside it, in `extras/usdview/weftViewer/`; `PYTHONPATH`
+additionally needs the weft repo root, since the plugin imports `weft.ask`
+and `weft.pull` directly against the live stage. Code, not memory: a python
+usdview plugin is loaded with a plain `import <Name>` off `PYTHONPATH`
+(`pxr/base/plug/plugin.cpp`, `PlugPlugin::_Load()`), so `plugInfo.json`'s own
+directory plays no part in the import — only in libplug's discovery of the
+JSON file itself, via `PXR_PLUGINPATH_NAME`
+(`pxr/usdImaging/usdviewq/plugin.py`'s `loadPlugins()`).
+
 ## The engine
 
 For teams that want ground truth, not just queries: a content-addressed
