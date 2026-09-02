@@ -171,12 +171,20 @@ def _apply_physics_rules(stage, members: Dict[str, "PullMember"], p: "Pull") -> 
     from multiple overlapping members is judged (and reported) exactly
     once rather than once per covering member."""
     from pxr import Usd
+    # Same predicate as ask.resolve_seeds / _reverse_index: on a LoadNone
+    # context stage the default PrimRange predicate (UsdPrimIsLoaded) would
+    # silently skip a joint behind an unloaded payload arc or inside an
+    # instanced prototype -- exactly the bug fixed there, but worse here: a
+    # joint reached that way would go unjudged instead of undercounted, an
+    # UNDECLARED meaning-changing omission.
+    range_predicate = Usd.TraverseInstanceProxies(
+        Usd.PrimIsActive & Usd.PrimIsDefined & ~Usd.PrimIsAbstract)
     excluded: Dict[str, str] = {}
     for mpath in list(members):
         prim = stage.GetPrimAtPath(mpath)
         if not prim:
             continue
-        for joint in Usd.PrimRange(prim):
+        for joint in Usd.PrimRange(prim, range_predicate):
             jp = joint.GetPath().pathString
             if jp in excluded:
                 continue
@@ -469,9 +477,12 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
     # counts, since PrimRange walks the whole subtree, not just the member
     # prim), so consumers can't mistake "populated" for "simulatable".
     from pxr import Usd
-    # As in _reverse_index: LoadNone means the default predicate's
-    # UsdPrimIsLoaded requirement would miss a PhysicsScene sitting behind
-    # an unloaded payload arc or inside an instanced prototype.
+    # As in _reverse_index / _apply_physics_rules: LoadNone means the
+    # default predicate's UsdPrimIsLoaded requirement would miss a
+    # PhysicsScene, or a member's own physics: properties, sitting behind
+    # an unloaded payload arc or inside an instanced prototype. Same
+    # predicate for both the top-level Traverse and the per-member
+    # PrimRange below.
     scene_predicate = Usd.TraverseInstanceProxies(
         Usd.PrimIsActive & Usd.PrimIsDefined & ~Usd.PrimIsAbstract)
     scene_populated = any(
@@ -482,7 +493,7 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
         if not prim:
             continue
         if any(any(n.startswith("physics:") for n in sub.GetAuthoredPropertyNames())
-               for sub in Usd.PrimRange(prim)):
+               for sub in Usd.PrimRange(prim, scene_predicate)):
             contact_unevaluated += 1
     p.fitness = {
         "physics_scene_populated": scene_populated,

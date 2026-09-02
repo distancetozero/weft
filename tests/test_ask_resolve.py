@@ -145,3 +145,89 @@ def test_typed_equality_float_match(stage):
     (r,) = resolve_seeds(stage, ["where:rating=1.50"])
     assert r.paths == ["/root/shelf01/sealed_container"]
     assert r.mode == "attribute"
+
+
+def test_seed_and_reverse_edge_resolve_behind_unloaded_payload(tmp_path):
+    """A prim that is genuinely COMPOSED (a non-payload layer authors an
+    `over` opinion for it directly -- unlike `test_path_below_payload_kept
+    _with_note` above, which never gets a real prim at all) can still have
+    `IsLoaded() == False`, because ITS OWN path also carries an unloaded
+    payload arc from another contributing layer. That is the ALab shape
+    (Task 13 acceptance): an instanceable placement's composed root gets
+    one opinion from the assembly (translate, attributes -- always
+    available) and another from a payload-bearing modelling/variant layer
+    contributing to the SAME path (heavy geometry -- gated on load). Usd's
+    default traversal predicate requires UsdPrimIsLoaded, so plain
+    `stage.Traverse()` drops such a prim entirely, silently, even though
+    `GetPrimAtPath` resolves it fine and its non-payload attributes are
+    fully composed. `resolve_seeds` (name and attribute planes) and
+    `who()`'s reverse index (over `pull._reverse_index`) must find it
+    anyway. Reverting the traversal predicate in `jitsd/ask.py` and
+    `jitsd/pull.py` back to plain `stage.Traverse()` makes every assertion
+    here fail (verified by hand; see task-13-report.md)."""
+    from jitsd.pull import who
+
+    (tmp_path / "inner.usda").write_text("""#usda 1.0
+def "geo"
+{
+}
+""")
+    # A sublayer, weaker than ctx.usda's own root-level opinions but still
+    # composing onto the SAME prim path as the payload-bearing "def" below
+    # -- `over`, because the prim is already `def`'d elsewhere.
+    (tmp_path / "extra.usda").write_text("""#usda 1.0
+
+over "parent"
+{
+    over "child"
+    {
+        string myattr = "findme"
+        rel custom:pairedWith = </external/target>
+    }
+}
+""")
+    ctx = tmp_path / "ctx.usda"
+    ctx.write_text("""#usda 1.0
+(
+    subLayers = [
+        @extra.usda@
+    ]
+)
+
+def "parent" (
+    prepend payload = @inner.usda@
+)
+{
+    def "child"
+    {
+    }
+}
+
+def "external"
+{
+    def "target"
+    {
+    }
+}
+""")
+
+    stage = Usd.Stage.Open(str(ctx), Usd.Stage.LoadNone)
+    child = stage.GetPrimAtPath("/parent/child")
+    # Sanity: this fixture reproduces the exact bug shape -- a real,
+    # composed, non-abstract, defined, active prim that is still
+    # IsLoaded() == False.
+    assert child and child.IsDefined() and not child.IsLoaded()
+    assert child.GetAttribute("myattr").Get() == "findme"
+
+    (r,) = resolve_seeds(stage, ["child"])
+    assert r.paths == ["/parent/child"], (
+        "name seed must find a composed-but-unloaded prim")
+
+    (r2,) = resolve_seeds(stage, ["where:myattr=findme"])
+    assert r2.paths == ["/parent/child"], (
+        "attribute seed must find a composed-but-unloaded prim")
+
+    edges = who(str(ctx), ["path:/external/target"])
+    assert ("/parent/child", "custom:pairedWith", "/external/target") in edges, (
+        "_reverse_index must see an edge authored on a composed-but-"
+        "unloaded source prim")

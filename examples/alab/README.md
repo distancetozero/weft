@@ -290,10 +290,14 @@ the 26 hits:
     Recording time code: EARLIEST
 
 26 members — exactly the 26 paths an earlier exploratory spike recorded by
-hand, matched exactly, not just in count. The render shows 26 pieces of
-glassware — beakers, bottles, a soda bottle, set squares — floating at
-their production transforms in otherwise empty space. Nothing else on the
-lab bench, and none of its non-translucent props, was ever composed.
+hand. `tests/test_alab_pull.py::test_ask_translucent_matches_spike_mask`
+embeds that spike's mask as `SPIKE_TRANSLUCENT_MASK` and asserts
+`set(paths) == set(SPIKE_TRANSLUCENT_MASK)` — an enforced invariant this
+suite checks on every acceptance run, not a one-off observation. The
+render shows 26 pieces of glassware — beakers, bottles, a soda bottle, set
+squares — floating at their production transforms in otherwise empty
+space. Nothing else on the lab bench, and none of its non-translucent
+props, was ever composed.
 
 **Who depends on this prim.**
 
