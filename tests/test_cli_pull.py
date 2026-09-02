@@ -3,6 +3,8 @@ import pytest
 pxr = pytest.importorskip("pxr")
 
 from jitsd.cli import main
+from jitsd.ledger import Repo
+from jitsd.generators import vehicle as _vehicle  # noqa: F401  registers built-ins
 
 CTX = """#usda 1.0
 (
@@ -57,3 +59,27 @@ def test_who_reports_chain(tmp_path, capsys):
     rc = main(["who", "name:glass", "--context", str(ctx)])
     assert rc == 0
     assert "material:binding" in capsys.readouterr().out
+
+
+def test_pull_rejects_generator_backed_context(tmp_path, capsys, monkeypatch):
+    """Pull must fail cleanly when context is generator-backed, not raise exception."""
+    import os
+
+    # Create a repo and declare a generator-backed asset
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    repo = Repo(repo_dir)
+    repo.init()
+
+    # Declare a generator-backed revision (no blob)
+    rev = repo.declare("chassis", "chassis", {"wheelbase": 2.8}, "tester")
+    repo.promote("chassis", rev.rev, "approved")
+
+    # Change to repo directory so Repo.find() works
+    monkeypatch.chdir(repo_dir)
+
+    # Try to use it as a pull context
+    rc = main(["pull", "x", "--context", "chassis"])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "generator-backed" in err

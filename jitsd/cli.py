@@ -321,6 +321,9 @@ def _context_file(raw: str) -> str:
     repo = Repo.find()
     rev = repo.ledger.resolve_ref(raw, "approved")
     r = repo.ledger.read_revision(raw, rev)
+    if r.blob is None:
+        raise ValueError("context %s@%s is generator-backed; materialise it with jitsd checkout first"
+                         % (raw, rev))
     import tempfile
     out = Path(tempfile.mkdtemp(prefix="jitsd-ctx-")) / ("%s.usda" % raw)
     repo.store.checkout(r.blob, out)
@@ -345,7 +348,11 @@ def cmd_pull(args) -> int:
     extractors = []
     if args.extractors:
         extractors = parse_extractors(Path(args.extractors).read_text())
-    ctx = _context_file(args.context)
+    try:
+        ctx = _context_file(args.context)
+    except (ValueError, KeyError) as e:
+        print("pull: %s" % e, file=sys.stderr)
+        return 1
     p = _pull.pull(ctx, args.seeds, follow=args.follow, depth=args.depth,
                    extractors=extractors)
     _manifest.layer_hashes(p)
@@ -386,7 +393,11 @@ def cmd_pull(args) -> int:
 
 def cmd_who(args) -> int:
     from . import pull as _pull
-    ctx = _context_file(args.context)
+    try:
+        ctx = _context_file(args.context)
+    except (ValueError, KeyError) as e:
+        print("who: %s" % e, file=sys.stderr)
+        return 1
     kinds = args.kinds.split(",") if args.kinds else None
     for src, kind, member in _pull.who(ctx, args.seeds, kinds=kinds):
         print("  %-44s %-24s -> %s" % (src, kind, member))
