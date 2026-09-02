@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from dataclasses import asdict
 from pathlib import Path
@@ -46,9 +47,18 @@ def layer_hashes(p: Pull) -> None:
 
 
 def _payload(p: Pull, usd_version: str) -> dict:
+    # The context path is recorded absolute so a manifest verified from a
+    # different cwd than the one it was pulled in still finds the file --
+    # a relative path is only ever meaningful relative to the cwd it was
+    # written under. The layers list mirrors this for the one entry that
+    # IS the context (same identifier, same file); every other layer
+    # identifier is left exactly as recorded.
+    context_path = os.path.abspath(p.context)
+    layers = [[context_path if ident == p.context else ident, h]
+              for ident, h in p.layers]
     return {
         "manifestVersion": MANIFEST_VERSION,
-        "context": {"path": p.context,
+        "context": {"path": context_path,
                     "hash": dict(p.layers).get(p.context, "")},
         "usdVersion": usd_version,
         "asks": [r.seed.raw for r in p.resolutions],
@@ -60,7 +70,7 @@ def _payload(p: Pull, usd_version: str) -> dict:
         "variantSelections": list(p.variant_selections),
         "members": [asdict(m) for m in p.members],
         "boundary": [asdict(b) for b in p.boundary],
-        "layers": [list(l) for l in p.layers],
+        "layers": layers,
         "accounting": dict(p.accounting),
         "fitness": dict(p.fitness),
         "declarations": list(p.declarations),
@@ -116,7 +126,6 @@ def write_mask(p: Pull, path) -> None:
 
 def verify(document_text: str) -> List[str]:
     """The mandatory verification pass (spec section 8)."""
-    import os
     from pxr import Usd
     d = read_document(document_text)
     findings: List[str] = []

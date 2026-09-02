@@ -208,12 +208,18 @@ def _apply_physics_rules(stage, members: Dict[str, "PullMember"], p: "Pull") -> 
         # when a joint rides inside a member's subtree it cannot be carved
         # out by a mask, so the declaration records it and the boundary
         # entry below stands — the consumer decides.
+        was_member = jp in members
         members.pop(jp, None)
         p.boundary.append(PullBoundary(
             jp, "physics:joint", reason, omission=MEANING_CHANGING))
-        p.declarations.append(
-            "joint %s excluded from population (a joint with an absent body "
-            "silently becomes a joint to the world frame)" % jp)
+        if was_member:
+            p.declarations.append(
+                "joint %s excluded from population (a joint with an absent body "
+                "silently becomes a joint to the world frame)" % jp)
+        else:
+            p.declarations.append(
+                "joint %s rides inside a populated member; its bodies are not "
+                "all populated -- treat as unsound" % jp)
 
 
 def _record_variants(prim, p: Pull) -> None:

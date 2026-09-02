@@ -90,6 +90,43 @@ def Xform "root"
     assert p.fitness["contact_unevaluated"] >= 1
 
 
+def test_joint_riding_inside_a_member_gets_branch_specific_wording(tmp_path):
+    """When the excluded joint was never a member key in its own right --
+    it only rides inside a populated member's subtree -- the declaration
+    must not claim it was "excluded from population" (nothing pulled it in
+    to begin with); it must say the member's bodies are not all populated."""
+    ctx = _write(tmp_path, "sim.usda", """#usda 1.0
+(
+    defaultPrim = "root"
+)
+
+def Xform "root"
+{
+    def Xform "gripper"
+    {
+        def PhysicsRevoluteJoint "hinge"
+        {
+            rel physics:body0 = </root/gripper>
+            rel physics:body1 = </root/wrist>
+        }
+    }
+    def Xform "wrist"
+    {
+    }
+}
+""")
+    p = pull(ctx, ["name:gripper"], follow=[])
+    hinge_declarations = [d for d in p.declarations if "/root/gripper/hinge" in d]
+    assert len(hinge_declarations) == 1
+    assert "rides inside a populated member" in hinge_declarations[0]
+    assert "treat as unsound" in hinge_declarations[0]
+    assert "excluded from population" not in hinge_declarations[0]
+    # the boundary entry itself is unchanged
+    hinge_boundaries = [b for b in p.boundary if b.target == "/root/gripper/hinge"]
+    assert len(hinge_boundaries) == 1
+    assert hinge_boundaries[0].omission == MEANING_CHANGING
+
+
 def test_joint_exclusion_deduplicated_across_overlapping_members(tmp_path):
     ctx = _write(tmp_path, "sim.usda", """#usda 1.0
 (

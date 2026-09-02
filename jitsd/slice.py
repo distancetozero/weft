@@ -559,8 +559,13 @@ def resolve_slice(repo, spec: SliceSpec) -> SliceResult:
             continue
         from . import manifest as _manifest
         from .pull import pull as _pull_fn
-        p = _pull_fn(info.source, [ask], follow=spec.follow or None,
-                     depth=spec.depth)
+        try:
+            p = _pull_fn(info.source, [ask], follow=spec.follow or None,
+                         depth=spec.depth)
+        except ValueError as e:
+            diagnostics.append("prim seed %r: %s" % (seed, e))
+            errors += 1
+            continue
         _manifest.layer_hashes(p)
         sel = Selection(context=ctx_name, rev=info.rev, ask=ask,
                         paths=[m.path for m in p.members],

@@ -336,9 +336,16 @@ def _context_file(raw: str) -> str:
 
 
 def cmd_pull(args) -> int:
-    from . import manifest as _manifest
-    from . import pull as _pull
-    from .registry import parse_extractors
+    # manifest.py imports pull.py (Pull, PullMember) at its own module top,
+    # and pull.py imports deps.walk -> pxr at ITS module top -- so importing
+    # manifest is where a bare (no usd-core) environment actually fails, and
+    # it is needed unconditionally, even for --verify.
+    try:
+        from . import manifest as _manifest
+    except ImportError:
+        print("pull: usd-core is required for prim-level pulls (pip install usd-core)",
+              file=sys.stderr)
+        return 1
 
     if args.verify:
         findings = _manifest.verify(Path(args.verify).read_text())
@@ -350,16 +357,28 @@ def cmd_pull(args) -> int:
     if not args.context:
         print("pull: --context FILE_OR_ASSET is required", file=sys.stderr)
         return 1
+
+    from . import pull as _pull   # already imported transitively via manifest above
+    from .registry import parse_extractors
+
     extractors = []
     if args.extractors:
-        extractors = parse_extractors(Path(args.extractors).read_text())
+        try:
+            extractors = parse_extractors(Path(args.extractors).read_text())
+        except ValueError as e:
+            print("pull: %s" % e, file=sys.stderr)
+            return 1
     try:
         ctx = _context_file(args.context)
     except (ValueError, KeyError) as e:
         print("pull: %s" % e, file=sys.stderr)
         return 1
-    p = _pull.pull(ctx, args.seeds, follow=args.follow, depth=args.depth,
-                   extractors=extractors)
+    try:
+        p = _pull.pull(ctx, args.seeds, follow=args.follow, depth=args.depth,
+                       extractors=extractors)
+    except ValueError as e:
+        print("pull: %s" % e, file=sys.stderr)
+        return 1
     _manifest.layer_hashes(p)
 
     for r in p.resolutions:
@@ -397,14 +416,24 @@ def cmd_pull(args) -> int:
 
 
 def cmd_who(args) -> int:
-    from . import pull as _pull
+    try:
+        from . import pull as _pull
+    except ImportError:
+        print("pull: usd-core is required for prim-level pulls (pip install usd-core)",
+              file=sys.stderr)
+        return 1
     try:
         ctx = _context_file(args.context)
     except (ValueError, KeyError) as e:
         print("who: %s" % e, file=sys.stderr)
         return 1
     kinds = args.kinds.split(",") if args.kinds else None
-    for src, kind, member in _pull.who(ctx, args.seeds, kinds=kinds):
+    try:
+        results = _pull.who(ctx, args.seeds, kinds=kinds, depth=args.depth)
+    except ValueError as e:
+        print("who: %s" % e, file=sys.stderr)
+        return 1
+    for src, kind, member in results:
         print("  %-44s %-24s -> %s" % (src, kind, member))
     return 0
 
@@ -777,6 +806,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("seeds", nargs="+")
     s.add_argument("--context", required=True, metavar="FILE_OR_ASSET")
     s.add_argument("--kinds", default=None)
+    s.add_argument("--depth", type=int, default=1, help="how many reverse hops to follow")
     s.set_defaults(fn=cmd_who)
 
     return p

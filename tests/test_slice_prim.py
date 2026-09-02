@@ -137,6 +137,18 @@ def test_prim_seed_context_with_no_source_is_an_error(tmp_path):
     assert any("has no source file" in d for d in result.diagnostics)
 
 
+def test_prim_seed_malformed_ask_is_a_diagnostic_not_a_crash(tmp_path):
+    """The slice contract: failures are diagnostics, never crashes. A
+    malformed ask (near: wants SEED,RADIUS) must not propagate a ValueError
+    out of resolve_slice."""
+    r, _src = _bench_repo(tmp_path)
+    result = resolve_slice(r, SliceSpec(seeds=["bench:near:/root/x"]))
+    assert not result.ok
+    assert result.selections == []
+    assert any("prim seed" in d and "near: wants SEED,RADIUS" in d
+               for d in result.diagnostics)
+
+
 def test_prim_seed_context_source_missing_on_disk_is_an_error(tmp_path):
     """The recorded source path exists in the revision but the file itself
     is gone from disk -- must be handled the same as a None source."""

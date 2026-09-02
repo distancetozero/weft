@@ -81,6 +81,22 @@ def test_mask_file(ctx, tmp_path):
     assert f.read_text().splitlines() == mask_paths(p)
 
 
+def test_manifest_context_path_is_portable_across_cwd(tmp_path, monkeypatch):
+    """A manifest emitted while cwd is where the context was pulled from
+    must still verify cleanly after cwd changes -- the recorded context
+    path must not be relative to a cwd that no longer applies."""
+    (tmp_path / "ctx.usda").write_text(CTX)
+    monkeypatch.chdir(tmp_path)
+    p = pull("ctx.usda", ["bottle_*"], follow=["material:binding"])
+    layer_hashes(p)
+    doc = to_document(p)
+
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    assert verify(doc) == []
+
+
 def test_verify_reports_missing_context_instead_of_crashing(ctx, tmp_path):
     p = pull(ctx, ["bottle_*"])
     layer_hashes(p)
