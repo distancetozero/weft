@@ -16,6 +16,7 @@ from deps.walk import ARC, walk_file
 
 from .ask import DEFAULT_IDENTITY_KEYS, ResolvedSeed, resolve_seeds
 from .follow import FollowTerm, format_term, parse_follow
+from .registry import omission_class
 
 
 @dataclass
@@ -109,6 +110,81 @@ def _admission(kind: str, direction: str, terms: List[FollowTerm],
     return max(t.depth if t.depth is not None else depth for t in admitting)
 
 
+def _admit(stage, path: str, via_kind: str, from_member: str,
+           members: Dict[str, "PullMember"], p: "Pull",
+           note: str = "") -> Optional[str]:
+    """Admit a composed path as a member, widening per the instancing rule
+    (spec section 4): a path resolving through an instance proxy is masked
+    up to its instance root, since USD instancing populates prototypes
+    whole-or-not-at-all — there is no such thing as "half an instance".
+
+    Provenance: `note` carries the caller's own note (e.g. a seed's raw
+    ask). When widening happens, the widening note takes precedence; the
+    caller's note, if any, is appended after "; " so neither is lost.
+
+    Returns the admitted path (may differ from `path`), or None."""
+    prim = stage.GetPrimAtPath(path)
+    widened = path
+    wnote = ""
+    if prim and prim.IsInstanceProxy():
+        anc = prim
+        while anc and anc.IsInstanceProxy():
+            anc = anc.GetParent()
+        widened = anc.GetPath().pathString
+        wnote = ("widened to instance root %s: masks populate prototypes whole"
+                 % widened)
+        p.declarations.append("%s %s" % (path, wnote))
+    if widened in members:
+        return widened
+    if wnote and note:
+        final_note = wnote + "; " + note
+    else:
+        final_note = wnote or note
+    members[widened] = PullMember(widened, via_kind, from_member, final_note)
+    return widened
+
+
+def _apply_physics_rules(stage, members: Dict[str, "PullMember"], p: "Pull") -> None:
+    """Joint whole-or-declared (spec section 6): a joint whose body target
+    is not populated silently becomes a joint to the world frame if left
+    in place, so its exclusion must be declared meaning-changing rather
+    than silently dropped or silently kept."""
+    from pxr import Usd
+    drop: List[str] = []
+    for mpath in list(members):
+        prim = stage.GetPrimAtPath(mpath)
+        if not prim:
+            continue
+        for joint in Usd.PrimRange(prim):
+            names = joint.GetAuthoredPropertyNames()
+            bodies = []
+            for rn in ("physics:body0", "physics:body1"):
+                if rn in names:
+                    rel = joint.GetRelationship(rn)
+                    bodies += [t.GetPrimPath().pathString for t in rel.GetTargets()]
+            if not bodies:
+                continue
+            missing = [b for b in bodies
+                       if b not in members
+                       and not any(b.startswith(m + "/") or m.startswith(b + "/")
+                                   for m in members)]
+            if missing:
+                jp = joint.GetPath().pathString
+                drop.append(jp)
+                p.boundary.append(PullBoundary(
+                    jp, "physics:joint", "excluded: body %s not populated"
+                    % ", ".join(missing), omission=omission_class("physics:joint")))
+    for jp in drop:
+        # Excluded joints are removed from members when directly admitted;
+        # when a joint rides inside a member's subtree it cannot be carved
+        # out by a mask, so the declaration records it and the boundary
+        # entry above stands — the consumer decides.
+        members.pop(jp, None)
+        p.declarations.append(
+            "joint %s excluded from population (a joint with an absent body "
+            "silently becomes a joint to the world frame)" % jp)
+
+
 def _record_variants(prim, p: Pull) -> None:
     vsets = prim.GetVariantSets()
     for name in vsets.GetNames():
@@ -119,14 +195,19 @@ def _record_variants(prim, p: Pull) -> None:
                 p.variant_selections.append(entry)
 
 
-def _unselected_variant_edges(prim, staged: Dict[Tuple[str, str], str]) -> None:
+def _unselected_variant_edges(
+        prim, staged: Dict[Tuple[str, str], Tuple[str, str]]) -> None:
     """Stage edges authored in variants NOT selected (spec section 4).
 
-    Staged into `(target, kind) -> reason`, keyed exactly like the
+    Staged into `(target, variant-label-kind) -> (reason, underlying rel
+    kind)`. The target/label pair is keyed exactly like the
     `not_followed`/`depth_cut` maps in `pull()`, so the caller can flush to
     `p.boundary` only once the final member set is known (R13) — a target
     admitted on a later BFS wave must not carry a stale boundary entry, and
-    repeated authored content must not duplicate one."""
+    repeated authored content must not duplicate one. The underlying rel
+    kind rides along separately so the boundary's omission class reflects
+    what the edge actually is (e.g. `physics:`), while the boundary's own
+    `kind` field stays the variant label for consumers walking selections."""
     vsets = prim.GetVariantSets()
     for spec in prim.GetPrimStack():
         for vset in spec.variantSets:
@@ -136,10 +217,11 @@ def _unselected_variant_edges(prim, staged: Dict[Tuple[str, str], str]) -> None:
                     continue
                 for vspec in _iter_specs(variant.primSpec):
                     for rel in vspec.relationships:
+                        under_kind = edge_kind_of(rel.name)
                         for t in _rel_targets(rel):
                             staged.setdefault(
                                 (t, "usd:variant(%s=%s)" % (vset.name, variant.name)),
-                                "not in selected world")
+                                ("not in selected world", under_kind))
 
 
 def _iter_specs(spec):
@@ -217,7 +299,7 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
     members: Dict[str, PullMember] = {}
     for r in p.resolutions:
         for path in r.paths:
-            members.setdefault(path, PullMember(path, "seed", "", r.seed.raw))
+            _admit(stage, path, "seed", "", members, p, note=r.seed.raw)
 
     # Seed paths arriving invalid on this LoadNone stage (e.g. a `path:`
     # seed under an unloaded payload) get one pull-side chance: cross the
@@ -260,8 +342,10 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
                 if d >= cap:
                     depth_cut.setdefault((target, kind), "beyond depth %d" % cap)
                     continue
-                members[target] = PullMember(target, kind, mpath)
-                nxt.append(target)
+                before = len(members)
+                admitted = _admit(stage, target, kind, mpath, members, p)
+                if len(members) > before:
+                    nxt.append(admitted)
         if not nxt:
             break
         frontier = nxt
@@ -285,13 +369,20 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
                     continue
                 depth_cut.setdefault((target, kind), "beyond depth %d" % cap)
 
+    # Joint whole-or-declared (spec section 6): runs after closure is fully
+    # settled, before boundary assembly, so a joint whose body is missing
+    # from the FINAL member set is judged against that final set (not an
+    # intermediate frontier), and any resulting exclusion is on record
+    # before the variant/boundary passes below walk the member set.
+    _apply_physics_rules(stage, members, p)
+
     # Variant recording and unselected-variant staging run once per FINAL
     # member (R14), after closure is fully settled — not per-wave inside the
     # loop above, so a member admitted on the last BFS wave (or only reached
     # by the exhaustion sweep) is not skipped. `_record_variants` is
     # naturally idempotent (guards on `entry not in ...`); staging into a
     # dict makes `_unselected_variant_edges` idempotent the same way.
-    unselected_variant: Dict[Tuple[str, str], str] = {}
+    unselected_variant: Dict[Tuple[str, str], Tuple[str, str]] = {}
     for mpath in members:
         prim = stage.GetPrimAtPath(mpath)
         if not prim:
@@ -299,15 +390,18 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
         _record_variants(prim, p)
         _unselected_variant_edges(prim, unselected_variant)
 
-    for (target, kind), reason in sorted(unselected_variant.items()):
+    for (target, kind), (reason, under_kind) in sorted(unselected_variant.items()):
         if target not in members:
-            p.boundary.append(PullBoundary(target, kind, reason))
+            p.boundary.append(PullBoundary(
+                target, kind, reason, omission=omission_class(under_kind)))
     for (target, kind), _via in sorted(not_followed.items()):
         if target not in members:
-            p.boundary.append(PullBoundary(target, kind, "not followed"))
+            p.boundary.append(PullBoundary(
+                target, kind, "not followed", omission=omission_class(kind)))
     for (target, kind), reason in sorted(depth_cut.items()):
         if target not in members:
-            p.boundary.append(PullBoundary(target, kind, reason))
+            p.boundary.append(PullBoundary(
+                target, kind, reason, omission=omission_class(kind)))
 
     p.members = sorted(members.values(), key=lambda m: m.path)
 
@@ -330,6 +424,30 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
                 p.layers.append((ident, ""))
 
     p.accounting["members"] = len(p.members)
+
+    # Fitness (spec section 6): a pull is never a physics-simulation-ready
+    # extract — it is a soundness-preserving mask. `contact_unevaluated`
+    # counts members whose subtree authors ANY physics: property (a joint,
+    # collider, or body carried a level below the member itself still
+    # counts, since PrimRange walks the whole subtree, not just the member
+    # prim), so consumers can't mistake "populated" for "simulatable".
+    from pxr import Usd
+    scene_populated = any(
+        prim.GetTypeName() == "PhysicsScene" for prim in stage.Traverse())
+    contact_unevaluated = 0
+    for m in p.members:
+        prim = stage.GetPrimAtPath(m.path)
+        if not prim:
+            continue
+        if any(any(n.startswith("physics:") for n in sub.GetAuthoredPropertyNames())
+               for sub in Usd.PrimRange(prim)):
+            contact_unevaluated += 1
+    p.fitness = {
+        "physics_scene_populated": scene_populated,
+        "contact_unevaluated": contact_unevaluated,
+        "statement": "contact-incomplete by construction",
+    }
+
     return p
 
 
