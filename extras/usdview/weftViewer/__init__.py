@@ -38,7 +38,20 @@ except ImportError as _e:
     PluginContainer = object
     QtCore = QtGui = QtWidgets = None
 
-_MARKER_KEY = "weft:solo"
+
+def _guard(api, label, fn):
+    """Wrap a Qt slot so ANY exception it raises -- not just the ValueError
+    a malformed weft ask/follow term raises -- becomes a PrintStatus message
+    instead of an uncaught exception inside Qt's event loop. Every nested
+    function connected to a signal (not just the four top-level registered
+    commands, which are already wrapped by their own `_onX` methods) is
+    wired through this."""
+    def wrapped(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            api.PrintStatus("%s: %s" % (label, e))
+    return wrapped
 
 
 class WeftViewerContainer(PluginContainer):
@@ -110,6 +123,16 @@ class WeftViewerContainer(PluginContainer):
         buttons.accepted.connect(dialog.close)
         layout.addWidget(buttons)
 
+        # The classic Qt default-button trap: QDialogButtonBox makes its
+        # Close button auto-default, so pressing Enter in `edit` activates
+        # Close (-> dialog.close()) instead of -- or as well as --
+        # `edit.returnPressed`. The dialog vanishes before `runAsk` below
+        # produces anything a user can see. Strip both flags so Enter is
+        # ONLY `edit.returnPressed`.
+        closeBtn = buttons.button(QtWidgets.QDialogButtonBox.Close)
+        closeBtn.setAutoDefault(False)
+        closeBtn.setDefault(False)
+
         def runAsk():
             from . import core as _core
 
@@ -127,6 +150,10 @@ class WeftViewerContainer(PluginContainer):
             declLabel.setText(declaration)
             for path in paths:
                 listWidget.addItem(path)
+            # Enter alone both resolves AND selects: selectAll() fires
+            # itemSelectionChanged, which onSelectionChanged below turns
+            # into a live viewport selection -- type, Enter, things light up.
+            listWidget.selectAll()
             api.PrintStatus("Weft Ask: %s" % declaration)
 
         def onSelectionChanged():
@@ -138,13 +165,14 @@ class WeftViewerContainer(PluginContainer):
                     api.AddPrimToSelection(prim)
             api.UpdateGUI()
 
-        edit.returnPressed.connect(runAsk)
-        listWidget.itemSelectionChanged.connect(onSelectionChanged)
+        edit.returnPressed.connect(_guard(api, "Weft Ask", runAsk))
+        listWidget.itemSelectionChanged.connect(
+            _guard(api, "Weft Ask", onSelectionChanged))
 
         dialog.resize(560, 420)
         dialog.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        dialog.destroyed.connect(lambda *_: self._openDialogs.remove(dialog)
-                                  if dialog in self._openDialogs else None)
+        dialog.destroyed.connect(_guard(api, "Weft Ask", lambda *_: (
+            self._openDialogs.remove(dialog) if dialog in self._openDialogs else None)))
         self._openDialogs.append(dialog)
         dialog.show()
 
@@ -174,7 +202,7 @@ class WeftViewerContainer(PluginContainer):
         kinds = _core.edge_kinds(api.stage, seedPaths)
         follow = self._showFollowChecklist(api, kinds)
         if follow is None:
-            return  # cancelled
+            return  # cancelled, stage untouched
 
         try:
             from weft import manifest as _manifest
@@ -182,6 +210,17 @@ class WeftViewerContainer(PluginContainer):
         except ImportError:
             api.PrintStatus("Weft Solo threads: usd-core is required (pip install usd-core)")
             return
+
+        # Restore-before-solo, so a second Solo threads call is always safe
+        # without an intervening Restore world: deactivation_set's
+        # GetChildren() walk uses the default (active-only) predicate, so it
+        # cannot see -- and therefore cannot correctly route a spine
+        # through -- prims a PREVIOUS solo already deactivated (it could
+        # even silently drop a new member whose ancestor is still
+        # deactivated). Reuse the exact restore code path Restore world
+        # uses, so pull() and deactivation_set below always start from a
+        # fully-active stage.
+        priorRestored = self._runRestore(api)
 
         try:
             seeds = ["path:%s" % p for p in seedPaths]
@@ -202,17 +241,22 @@ class WeftViewerContainer(PluginContainer):
                 prim = api.stage.GetPrimAtPath(path)
                 if prim and prim.IsActive():
                     prim.SetActive(False)
-                    prim.SetCustomDataByKey(_MARKER_KEY, True)
+                    prim.SetCustomDataByKey(_core.MARKER_KEY, True)
                     deactivated.add(path)
+        # A full restore just ran above, so there is nothing stale left to
+        # union with here -- this replaces an already-empty tracking entry.
         self._deactivated[stageId] = deactivated
 
         self._showReceipt(api, p)
         api.UpdateGUI()
+        priorNote = (" (%d prior deactivation%s cleared first)"
+                     % (len(priorRestored), "" if len(priorRestored) == 1 else "s")
+                     if priorRestored else "")
         api.PrintStatus(
             "Weft Solo threads (view solo -- deactivation, not a population mask): "
-            "%d member%s, %d prim%s deactivated"
+            "%d member%s, %d prim%s deactivated%s"
             % (len(p.members), "" if len(p.members) == 1 else "s",
-               len(deactivated), "" if len(deactivated) == 1 else "s"))
+               len(deactivated), "" if len(deactivated) == 1 else "s", priorNote))
 
     def _showFollowChecklist(self, api, kinds):
         """A small modal checklist of the kinds found on the selection's own
@@ -257,47 +301,44 @@ class WeftViewerContainer(PluginContainer):
 
     def _onRestore(self, api):
         try:
-            self._runRestore(api)
+            restored = self._runRestore(api)
+            api.UpdateGUI()
+            api.PrintStatus("Weft Restore world: %d prim%s reactivated"
+                             % (len(restored), "" if len(restored) == 1 else "s"))
         except Exception as e:
             api.PrintStatus("Weft Restore world: %s" % e)
 
     def _runRestore(self, api):
+        """Reactivate everything Solo threads deactivated on this stage:
+        this container's own tracking, plus a defensive sweep (via
+        `core.restore_set`) for any prim carrying our marker that this
+        instance never tracked -- a previous usdview process, a stage
+        reopened after a crash, .... Returns the set of paths reactivated.
+        No PrintStatus/UpdateGUI here: this is also the exact code path
+        Solo threads calls FIRST on every run (see `_runSolo`), and a
+        mid-solo status message would be confusing noise."""
         from pxr import Usd
+        from . import core as _core
 
         stageId = api.stageIdentifier
         session = api.stage.GetSessionLayer()
-        restored = set()
 
+        tracked = self._deactivated.pop(stageId, set())
+        # core.restore_set reads the CURRENT marker set fresh off the live
+        # stage -- it is not `tracked`'s complement, it can overlap it
+        # entirely (the common case) or extend past it (the defensive case
+        # above), so the two are unioned, not chained.
+        toRestore = tracked | set(_core.restore_set(api.stage))
+
+        restored = set()
         with Usd.EditContext(api.stage, session):
-            for path in self._deactivated.pop(stageId, set()):
+            for path in toRestore:
                 prim = api.stage.GetPrimAtPath(path)
                 if prim:
                     prim.ClearActive()
-                    prim.ClearCustomDataByKey(_MARKER_KEY)
+                    prim.ClearCustomDataByKey(_core.MARKER_KEY)
                     restored.add(path)
-
-            # Defensive sweep: reactivate any prim carrying our marker, even
-            # one this container instance never tracked (a previous usdview
-            # process, a stage reopened after a crash, ...).
-            # Usd.PrimAllPrimsPredicate -- unlike the stage's default
-            # traversal predicate -- includes inactive prims, so a prim we
-            # (or an earlier run) deactivated is still found here.
-            # GetCustomDataByKey composes correctly through the ":" in our
-            # marker key (customData nests namespaced keys: "weft:solo" is
-            # stored as {"weft": {"solo": True}}, not a flat "weft:solo"
-            # entry) -- reading raw Sdf.PrimSpec.customData would have to
-            # reimplement that nesting; the composed Usd.Prim API already
-            # does it.
-            for prim in api.stage.Traverse(Usd.PrimAllPrimsPredicate):
-                if not prim.GetCustomDataByKey(_MARKER_KEY):
-                    continue
-                prim.ClearActive()
-                prim.ClearCustomDataByKey(_MARKER_KEY)
-                restored.add(prim.GetPath().pathString)
-
-        api.UpdateGUI()
-        api.PrintStatus("Weft Restore world: %d prim%s reactivated"
-                         % (len(restored), "" if len(restored) == 1 else "s"))
+        return restored
 
     # -- Who depends on this? --------------------------------------------
 
@@ -366,24 +407,36 @@ class WeftViewerContainer(PluginContainer):
                 api.AddPrimToSelection(prim)
             api.UpdateGUI()
 
-        table.cellClicked.connect(onCellClicked)
-        depthSpin.valueChanged.connect(lambda _v: refresh())
+        label = "Weft Who depends on this?"
+        table.cellClicked.connect(_guard(api, label, onCellClicked))
+        depthSpin.valueChanged.connect(_guard(api, label, lambda _v: refresh()))
 
         buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Close)
         buttons.rejected.connect(dialog.close)
         buttons.accepted.connect(dialog.close)
         layout.addWidget(buttons)
 
+        # Same default-button trap as the Ask dialog (see _showAskDialog):
+        # strip auto-default/default from Close so Enter elsewhere in this
+        # dialog (e.g. while the depth spinbox has focus) doesn't silently
+        # close it.
+        closeBtn = buttons.button(QtWidgets.QDialogButtonBox.Close)
+        closeBtn.setAutoDefault(False)
+        closeBtn.setDefault(False)
+
+        # Not wrapped in _guard: this first call happens during dialog
+        # construction, not from a live signal, and an ImportError here
+        # means the dialog should never be shown at all.
         try:
             refresh()
         except ImportError:
-            api.PrintStatus("Weft Who depends on this?: usd-core is required (pip install usd-core)")
+            api.PrintStatus("%s: usd-core is required (pip install usd-core)" % label)
             return
 
         dialog.resize(680, 420)
         dialog.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        dialog.destroyed.connect(lambda *_: self._openDialogs.remove(dialog)
-                                  if dialog in self._openDialogs else None)
+        dialog.destroyed.connect(_guard(api, label, lambda *_: (
+            self._openDialogs.remove(dialog) if dialog in self._openDialogs else None)))
         self._openDialogs.append(dialog)
         dialog.show()
 

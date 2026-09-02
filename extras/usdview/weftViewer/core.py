@@ -11,6 +11,17 @@ from typing import List, Sequence, Tuple
 from weft.ask import resolve_seeds
 from weft.pull import edge_kind_of, who as _who
 
+# The customData key authored on every prim Solo threads deactivates (spec:
+# "set customData key 'weft:solo' = true on the overs we author so restore
+# is robust across invocations"). NOTE: Usd namespaces customData keys on
+# the ":" the same way it namespaces attributes, so this key is NOT stored
+# as a flat {"weft:solo": True} entry -- it composes to
+# {"weft": {"solo": True}}. Always read/write it through the *composed*
+# Usd.Prim API (GetCustomDataByKey/SetCustomDataByKey/ClearCustomDataByKey),
+# which resolves that nesting correctly; parsing raw Sdf.PrimSpec.customData
+# by hand will silently miss it.
+MARKER_KEY = "weft:solo"
+
 
 def deactivation_set(stage, member_paths: Sequence[str]) -> List[str]:
     """The minimal "view solo" frontier.
@@ -26,6 +37,15 @@ def deactivation_set(stage, member_paths: Sequence[str]) -> List[str]:
       siblings-of-the-next-level get judged), never added to the frontier
       itself -- deactivating an ancestor would hide the member along with
       everything else under that ancestor.
+
+    Caller's responsibility, not this function's: `stage` must be fully
+    active (no leftover `weft:solo` deactivations) before calling this.
+    `GetChildren()` uses the default (active-only) predicate, so it cannot
+    see -- and therefore cannot correctly route a spine through -- a prim a
+    PREVIOUS call already deactivated. A second Solo threads run without an
+    intervening restore would silently compute the wrong frontier (or drop
+    the new member's own subtree entirely, if the member sits below an
+    already-deactivated ancestor). Call `restore_set` + reactivate first.
     """
     from pxr import Sdf
 
@@ -51,6 +71,25 @@ def deactivation_set(stage, member_paths: Sequence[str]) -> List[str]:
 
     visit(stage.GetPseudoRoot())
     return sorted(frontier)
+
+
+def restore_set(stage) -> List[str]:
+    """Every prim path currently carrying the `weft:solo` deactivation
+    marker -- what "Restore world" reactivates, and what a fresh Solo
+    threads run must reactivate FIRST (see `deactivation_set`'s docstring)
+    before computing a new frontier on a clean stage.
+
+    `Usd.PrimAllPrimsPredicate` is required, not the stage's default
+    traversal predicate: a marked prim is, by definition, inactive, and the
+    default predicate excludes inactive prims entirely -- Traverse()ing with
+    it would never find anything to restore."""
+    from pxr import Usd
+
+    return sorted(
+        prim.GetPath().pathString
+        for prim in stage.Traverse(Usd.PrimAllPrimsPredicate)
+        if prim.GetCustomDataByKey(MARKER_KEY)
+    )
 
 
 def edge_kinds(stage, paths: Sequence[str]) -> List[str]:

@@ -18,7 +18,8 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from extras.usdview.weftViewer.core import (  # noqa: E402
-    ask_rows, deactivation_set, edge_kinds, receipt_text, who_rows,
+    MARKER_KEY, ask_rows, deactivation_set, edge_kinds, receipt_text,
+    restore_set, who_rows,
 )
 from weft.pull import pull  # noqa: E402
 
@@ -106,6 +107,205 @@ def test_deactivation_set_unrelated_branch_deactivated_as_one_unit(hier_stage):
 def test_deactivation_set_single_member(hier_stage):
     got = deactivation_set(hier_stage, ["/World/A/Member1"])
     assert got == ["/World/A/Sibling1", "/World/B", "/World/C"]
+
+
+# -- restore-before-solo (review Finding 1) ----------------------------------
+#
+# deactivation_set's GetChildren() walk uses the default (active-only)
+# predicate, so a prim a PREVIOUS Solo threads call deactivated is invisible
+# to a second call -- it can't be recognised as spine, so the walk cannot
+# route through it, and any member living beneath it silently vanishes from
+# the composed stage instead of raising. The fix is that a Solo threads run
+# ALWAYS restores first (the exact code path Restore world uses) before
+# computing a fresh deactivation_set. This section pins that invariant at
+# the pure-logic level: the same sequence of authoring calls _runSolo and
+# _runRestore make, without any Qt involved.
+
+CROSS = """#usda 1.0
+(
+    defaultPrim = "World"
+)
+
+def Xform "World"
+{
+    def Xform "X"
+    {
+        def Xform "A"
+        {
+        }
+        def Xform "Sibling1"
+        {
+        }
+    }
+    def Xform "Y"
+    {
+        def Xform "B"
+        {
+        }
+        def Xform "Sibling2"
+        {
+        }
+    }
+}
+"""
+
+
+@pytest.fixture
+def cross_stage(tmp_path):
+    from pxr import Usd
+    p = tmp_path / "cross.usda"
+    p.write_text(CROSS)
+    return Usd.Stage.Open(str(p))
+
+
+def _author_solo(stage, member_paths):
+    """The same authoring `_runSolo` does: compute the frontier, deactivate
+    it, mark it."""
+    from pxr import Usd
+    session = stage.GetSessionLayer()
+    frontier = deactivation_set(stage, member_paths)
+    with Usd.EditContext(stage, session):
+        for path in frontier:
+            prim = stage.GetPrimAtPath(path)
+            if prim and prim.IsActive():
+                prim.SetActive(False)
+                prim.SetCustomDataByKey(MARKER_KEY, True)
+    return frontier
+
+
+def _author_restore(stage):
+    """The same authoring `_runRestore` does: reactivate everything
+    `restore_set` currently reports."""
+    from pxr import Usd
+    session = stage.GetSessionLayer()
+    marked = restore_set(stage)
+    with Usd.EditContext(stage, session):
+        for path in marked:
+            prim = stage.GetPrimAtPath(path)
+            if prim:
+                prim.ClearActive()
+                prim.ClearCustomDataByKey(MARKER_KEY)
+    return marked
+
+
+def test_second_solo_without_restore_first_loses_the_new_member(cross_stage):
+    """Demonstrates the bug the fix closes: skip the restore, and B --
+    living under /World/Y, which the FIRST solo deactivated as an unrelated
+    branch -- never even composes for the second solo to find."""
+    stage = cross_stage
+    _author_solo(stage, ["/World/X/A"])
+    # /World/Y (and therefore B beneath it) is gone from the composed stage.
+    assert not stage.GetPrimAtPath("/World/Y/B").IsValid()
+
+    # A second solo for B, WITHOUT restoring first: deactivation_set can't
+    # even see the inactive /World/Y branch, let alone route a spine
+    # through it to protect B.
+    frontier = deactivation_set(stage, ["/World/Y/B"])
+    assert "/World/Y" not in frontier  # never visited -- invisible, not "kept"
+    assert stage.GetPrimAtPath("/World/Y/B").IsValid() is False  # still broken
+
+
+def test_second_solo_restores_first_and_computes_correctly(cross_stage):
+    stage = cross_stage
+
+    # First solo: member A, under /World/X.
+    first = _author_solo(stage, ["/World/X/A"])
+    assert first == ["/World/X/Sibling1", "/World/Y"]
+    assert not stage.GetPrimAtPath("/World/Y/B").IsValid()
+
+    # _runSolo's restore-before-solo step: a full restore, same code path
+    # Restore world uses, before computing anything new.
+    restored = _author_restore(stage)
+    assert set(restored) == {"/World/X/Sibling1", "/World/Y"}
+    assert restore_set(stage) == []  # A's markers are gone
+
+    # B composes again now that Y is reactivated, and a fresh solo for B
+    # computes the correct frontier.
+    b = stage.GetPrimAtPath("/World/Y/B")
+    assert b.IsValid() and b.IsActive()
+    second = _author_solo(stage, ["/World/Y/B"])
+    assert second == ["/World/X", "/World/Y/Sibling2"]
+
+    b = stage.GetPrimAtPath("/World/Y/B")
+    assert b.IsValid() and b.IsActive()
+    x = stage.GetPrimAtPath("/World/X")
+    assert x.IsValid() and not x.IsActive()
+    # No leftover marker from the first solo -- restore_set only reports
+    # what's CURRENTLY marked.
+    assert set(restore_set(stage)) == {"/World/X", "/World/Y/Sibling2"}
+
+
+# -- instance-proxy widening (review included Minor) -------------------------
+#
+# Pins the emergent invariant the review identified: pull()'s `_admit`
+# widens any instance-proxy path up to its instance root (USD instances
+# populate prototypes whole-or-not-at-all), and deactivation_set's
+# GetChildren() walk -- default predicate -- never descends INTO an
+# instance's own prototype, so it can never emit an instance-proxy path
+# either. The two invariants have to agree, or a member path from pull()
+# could name a prim deactivation_set would never treat as a member.
+
+INSTANCED = """#usda 1.0
+(
+    defaultPrim = "World"
+)
+
+def Xform "World"
+{
+    class Xform "_class_Widget"
+    {
+        def Xform "Inner"
+        {
+        }
+    }
+
+    def Xform "Instance" (
+        instanceable = true
+        inherits = </World/_class_Widget>
+    )
+    {
+    }
+
+    def Xform "Sibling"
+    {
+    }
+}
+"""
+
+
+@pytest.fixture
+def instanced_ctx(tmp_path):
+    p = tmp_path / "instanced.usda"
+    p.write_text(INSTANCED)
+    return str(p)
+
+
+def test_ask_and_pull_widen_instance_proxy_to_instance_root(instanced_ctx):
+    from pxr import Usd
+
+    stage = Usd.Stage.Open(instanced_ctx)
+    inner = stage.GetPrimAtPath("/World/Instance/Inner")
+    assert inner.IsValid() and inner.IsInstanceProxy()
+
+    # An ask seeding the instance-proxy path directly (as "Who depends on
+    # this?"/Solo threads would build from a live selection under the
+    # instance).
+    rows, _declaration = ask_rows(stage, "path:/World/Instance/Inner")
+    assert rows == ["/World/Instance/Inner"]
+
+    # Fed through pull() as a path: seed, the member that actually lands is
+    # the widened instance ROOT, not the proxy path.
+    p = pull(instanced_ctx, ["path:/World/Instance/Inner"], follow=[])
+    member_paths = [m.path for m in p.members]
+    assert member_paths == ["/World/Instance"]
+    assert "/World/Instance/Inner" not in member_paths
+
+    # deactivation_set over that (correct) member set never emits an
+    # instance-proxy path -- there is nothing under an instance's own
+    # prototype for its default-predicate GetChildren() walk to reach.
+    frontier = deactivation_set(stage, member_paths)
+    assert frontier == ["/World/Sibling"]
+    assert not any(stage.GetPrimAtPath(p).IsInstanceProxy() for p in frontier)
 
 
 # -- ask_rows / who_rows / receipt_text -------------------------------------
