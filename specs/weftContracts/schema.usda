@@ -27,8 +27,8 @@
 
 over "GLOBAL" (
     customData = {
-        string libraryName        = "jitsdContracts"
-        string libraryPrefix      = "Jitsd"
+        string libraryName        = "weftContracts"
+        string libraryPrefix      = "Weft"
         bool   skipCodeGeneration = true
     }
 ) {}
@@ -42,7 +42,7 @@ over "GLOBAL" (
 # USD does not already provide.
 # ===========================================================================
 
-class "JitsdOfferAPI" (
+class "WeftOfferAPI" (
     inherits = </APISchemaBase>
     customData = { token apiSchemaType = "singleApply" }
     doc = """Marks a prim as OFFERING an interface: publishable with no
@@ -51,40 +51,40 @@ class "JitsdOfferAPI" (
              carries the data (UsdPhysics, primvars, Xformable, ...)."""
 )
 {
-    uniform token jitsd:offer:contract (
+    uniform token weft:offer:contract (
         doc = """The contract this prim satisfies, e.g. "Mount@2". Consumers
                  declare a requirement against this identifier, never against a
                  prim path."""
     )
-    uniform token jitsd:offer:archetype (
+    uniform token weft:offer:archetype (
         allowedTokens = ["mount", "field", "clearance", "articulation"]
     )
-    uniform bool jitsd:offer:public = true (
+    uniform bool weft:offer:public = true (
         doc = """False marks an internal surface: visible to the resolver for
                  provenance, not offered for binding."""
     )
-    # Binding attributes: `jitsd:bind:<name>`, any name, kind inferred from
+    # Binding attributes: `weft:bind:<name>`, any name, kind inferred from
     # the value type (token -> exact, token[] -> set, double3 -> spatial) or
-    # forced with `jitsd:bind:<name>:kind`; spatial/angular may carry
-    # `jitsd:bind:<name>:tolerance`. A relationship is a set of these, not a
+    # forced with `weft:bind:<name>:kind`; spatial/angular may carry
+    # `weft:bind:<name>:tolerance`. A relationship is a set of these, not a
     # position: material, purposes offered, a datum frame. A view is which of
     # them a consumer reads. Position and orientation are always present,
-    # synthesised from the xform and JitsdEnvelopeAPI.
-    uniform token jitsd:bind:material (
-        doc = "Example of a binding attribute. Any `jitsd:bind:<name>` is one."
+    # synthesised from the xform and WeftEnvelopeAPI.
+    uniform token weft:bind:material (
+        doc = "Example of a binding attribute. Any `weft:bind:<name>` is one."
     )
 }
 
-class "JitsdRequireAPI" (
+class "WeftRequireAPI" (
     inherits = </APISchemaBase>
     customData = {
         token apiSchemaType = "multipleApply"
         # Multiple-apply schemas MUST declare their namespace prefix and author
         # their properties UNPREFIXED -- usdGenSchema inserts the instance name
-        # itself: `contract` becomes jitsd:require:<instance>:contract. With
+        # itself: `contract` becomes weft:require:<instance>:contract. With
         # prefixed properties the generator hard-errors and emits nothing,
         # which is why this schema never built until now.
-        token propertyNamespacePrefix = "jitsd:require"
+        token propertyNamespacePrefix = "weft:require"
     }
     doc = """Declares a requirement satisfied by some offer. Multiple-apply so
              one prim may require several. The resolver matches on contract
@@ -105,12 +105,12 @@ class "JitsdRequireAPI" (
                  measured at re-evaluation. Unstated means trust the envelope."""
     )
     uniform double tolerance:angular
-    # Constraints on binding attributes: `jitsd:require:<inst>:bind:<name>`.
+    # Constraints on binding attributes: `weft:require:<inst>:bind:<name>`.
     # An exact or set constraint must be satisfied by an offer to bind at all;
     # a spatial/angular one carries the consumer's tolerance for it.
 }
 
-class "JitsdEnvelopeAPI" (
+class "WeftEnvelopeAPI" (
     inherits = </APISchemaBase>
     customData = { token apiSchemaType = "singleApply" }
     doc = """The admissible envelope around an offered value. This is what
@@ -119,10 +119,10 @@ class "JitsdEnvelopeAPI" (
              violations escalate. USD has no equivalent."""
 )
 {
-    uniform double jitsd:envelope:linear  = 0.0
-    uniform double jitsd:envelope:angular = 0.0
-    uniform token  jitsd:envelope:linearUnit  = "m"
-    uniform token  jitsd:envelope:angularUnit = "rad"
+    uniform double weft:envelope:linear  = 0.0
+    uniform double weft:envelope:angular = 0.0
+    uniform token  weft:envelope:linearUnit  = "m"
+    uniform token  weft:envelope:angularUnit = "rad"
 }
 
 # ===========================================================================
@@ -133,7 +133,7 @@ class "JitsdEnvelopeAPI" (
 # volumes that UsdPhysics, UsdGeomPrimvarsAPI and UsdVol already model.
 # ===========================================================================
 
-class "JitsdMountAPI" (
+class "WeftMountAPI" (
     inherits = </APISchemaBase>
     customData = { token apiSchemaType = "singleApply" }
     doc = """An OFFERED attachment frame. The one archetype with no USD
@@ -150,16 +150,16 @@ class "JitsdMountAPI" (
              robotics: sensor mount"""
 )
 {
-    uniform token jitsd:mount:role (
+    uniform token weft:mount:role (
         allowedTokens = ["wheelHub", "fastener", "panelClip", "sensorMount", "propSocket"]
     )
-    uniform double jitsd:mount:loadLimit = 0.0
-    uniform token  jitsd:mount:loadUnit  = "N"
-    # Frame comes from Xformable. Tolerance comes from JitsdEnvelopeAPI.
+    uniform double weft:mount:loadLimit = 0.0
+    uniform token  weft:mount:loadUnit  = "N"
+    # Frame comes from Xformable. Tolerance comes from WeftEnvelopeAPI.
     # Nothing else is restated here.
 }
 
-class "JitsdFieldAPI" (
+class "WeftFieldAPI" (
     inherits = </APISchemaBase>
     customData = { token apiSchemaType = "singleApply" }
     doc = """Names an EXISTING primvar or UsdVol field as a semantically typed,
@@ -172,16 +172,16 @@ class "JitsdFieldAPI" (
              visibility layer, not a data model."""
 )
 {
-    uniform token jitsd:field:source (
+    uniform token weft:field:source (
         doc = "Name of the primvar, or the UsdVol field prim, carrying the data."
     )
-    uniform token jitsd:field:quantity (
+    uniform token weft:field:quantity (
         allowedTokens = ["scatterDensity", "pressure", "temperature", "illuminance", "occupancy"]
     )
-    uniform token jitsd:field:unit
+    uniform token weft:field:unit
 }
 
-class "JitsdClearanceAPI" (
+class "WeftClearanceAPI" (
     inherits = </APISchemaBase>
     customData = { token apiSchemaType = "singleApply" }
     doc = """A volume nothing may intrude into.
@@ -198,18 +198,18 @@ class "JitsdClearanceAPI" (
              is built."""
 )
 {
-    uniform token jitsd:clearance:kind (
+    uniform token weft:clearance:kind (
         allowedTokens = ["sweptVolume", "serviceAccess", "egress", "simBounds", "frustum"]
     )
-    rel jitsd:clearance:geometry (
+    rel weft:clearance:geometry (
         doc = "The Boundable or collision shape whose volume is reserved."
     )
-    uniform token jitsd:clearance:severity = "hard" (
+    uniform token weft:clearance:severity = "hard" (
         allowedTokens = ["hard", "advisory"]
     )
 }
 
-class "JitsdArticulationInterfaceAPI" (
+class "WeftArticulationInterfaceAPI" (
     inherits = </APISchemaBase>
     customData = { token apiSchemaType = "singleApply" }
     doc = """Marks which joints of an EXISTING UsdPhysics articulation are the
@@ -226,10 +226,10 @@ class "JitsdArticulationInterfaceAPI" (
              consumer may depend on, and which are internal."""
 )
 {
-    rel jitsd:articulation:publicJoints (
+    rel weft:articulation:publicJoints (
         doc = "Subset of the articulation's joints that consumers may bind to."
     )
-    rel jitsd:articulation:root (
+    rel weft:articulation:root (
         doc = "The prim carrying PhysicsArticulationRootAPI."
     )
 }
@@ -238,7 +238,7 @@ class "JitsdArticulationInterfaceAPI" (
 # Generator surface.
 # ===========================================================================
 
-class "JitsdGeneratorAPI" (
+class "WeftGeneratorAPI" (
     inherits = </APISchemaBase>
     customData = { token apiSchemaType = "singleApply" }
     doc = """Applied to any prim generated on demand -- including constants. A
@@ -246,9 +246,9 @@ class "JitsdGeneratorAPI" (
              is ADDRESSED as a function; not everything must be procedural."""
 )
 {
-    uniform asset  jitsd:generator
-    uniform string jitsd:generatorVersion
-    uniform token  jitsd:costClass = "moderate" (
+    uniform asset  weft:generator
+    uniform string weft:generatorVersion
+    uniform token  weft:costClass = "moderate" (
         allowedTokens = ["trivial", "moderate", "heavy", "offline"]
     )
 
@@ -257,15 +257,15 @@ class "JitsdGeneratorAPI" (
     # data, fixed at write time. What is missing is bounds as a cheap FUNCTION
     # of parameters. Until open question 3 settles that, this is a conservative
     # authored fallback with the same meaning as extentsHint.
-    uniform float3[] jitsd:bounds:hint
-    uniform bool     jitsd:bounds:conservative = true
+    uniform float3[] weft:bounds:hint
+    uniform bool     weft:bounds:conservative = true
 
     # The only places context may change output. Everything else is
     # context-invariant, so shared subgraphs hash identically across contexts.
-    uniform token[] jitsd:variationPoints
+    uniform token[] weft:variationPoints
 }
 
-class "JitsdOverrideHandleAPI" (
+class "WeftOverrideHandleAPI" (
     inherits = </APISchemaBase>
     customData = { token apiSchemaType = "singleApply" }
     doc = """A declared handle an assembly may override. An override on an
@@ -277,5 +277,5 @@ class "JitsdOverrideHandleAPI" (
              the same idea, scoped to shading. This generalises it."""
 )
 {
-    uniform bool jitsd:handle:required = false
+    uniform bool weft:handle:required = false
 }
