@@ -119,8 +119,14 @@ def _record_variants(prim, p: Pull) -> None:
                 p.variant_selections.append(entry)
 
 
-def _unselected_variant_edges(prim, p: Pull, members) -> None:
-    """Declare edges authored in variants NOT selected (spec section 4)."""
+def _unselected_variant_edges(prim, staged: Dict[Tuple[str, str], str]) -> None:
+    """Stage edges authored in variants NOT selected (spec section 4).
+
+    Staged into `(target, kind) -> reason`, keyed exactly like the
+    `not_followed`/`depth_cut` maps in `pull()`, so the caller can flush to
+    `p.boundary` only once the final member set is known (R13) — a target
+    admitted on a later BFS wave must not carry a stale boundary entry, and
+    repeated authored content must not duplicate one."""
     vsets = prim.GetVariantSets()
     for spec in prim.GetPrimStack():
         for vset in spec.variantSets:
@@ -131,10 +137,9 @@ def _unselected_variant_edges(prim, p: Pull, members) -> None:
                 for vspec in _iter_specs(variant.primSpec):
                     for rel in vspec.relationships:
                         for t in _rel_targets(rel):
-                            if t not in members:
-                                p.boundary.append(PullBoundary(
-                                    t, "usd:variant(%s=%s)" % (vset.name, variant.name),
-                                    "not in selected world"))
+                            staged.setdefault(
+                                (t, "usd:variant(%s=%s)" % (vset.name, variant.name)),
+                                "not in selected world")
 
 
 def _iter_specs(spec):
@@ -152,20 +157,30 @@ def _rel_targets(rel):
     return [str(t.GetPrimPath()) for t in items]
 
 
+def _nearest_ancestor(stage, path):
+    """The nearest valid ancestor prim of `path` (parent, grandparent, ...),
+    or None if none exists below the pseudo-root. Shared by `_below_payload`
+    (spec section 4) and the layer-recording pass (R15): an invalid path's
+    own layer stack does not exist on this stage, so its nearest ancestor's
+    does duty for it."""
+    cur = path
+    while cur and cur != "/":
+        cur = cur.rsplit("/", 1)[0] or "/"
+        prim = stage.GetPrimAtPath(cur)
+        if prim:
+            return prim
+    return None
+
+
 def _below_payload(stage, path, p: Pull) -> Optional[str]:
     """Confirm `path` exists below an unloaded payload by crossing the
     recorded ARC(payload) edge in layer space. Returns the path if the
     interior layer defines the remainder, else None. Spec section 4."""
     from pxr import Sdf
-    cur = path
-    prim = None
-    while cur and cur != "/":
-        cur = cur.rsplit("/", 1)[0] or "/"
-        prim = stage.GetPrimAtPath(cur)
-        if prim:
-            break
+    prim = _nearest_ancestor(stage, path)
     if not prim:
         return None
+    cur = prim.GetPath().pathString
     rest = path[len(cur):]           # e.g. "/mtl/usd_full"
     for spec in prim.GetPrimStack():
         layer_path = spec.layer.realPath or spec.layer.identifier
@@ -230,7 +245,6 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
             prim = stage.GetPrimAtPath(mpath)
             candidates: List[Tuple[str, str, str]] = []   # kind, target, direction
             if prim:
-                _record_variants(prim, p)
                 for kind, target in _out_edges(prim):
                     candidates.append((kind, target, "down"))
             for src, kind in rev.get(mpath, ()):
@@ -248,8 +262,6 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
                     continue
                 members[target] = PullMember(target, kind, mpath)
                 nxt.append(target)
-            if prim:
-                _unselected_variant_edges(prim, p, members)
         if not nxt:
             break
         frontier = nxt
@@ -273,6 +285,23 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
                     continue
                 depth_cut.setdefault((target, kind), "beyond depth %d" % cap)
 
+    # Variant recording and unselected-variant staging run once per FINAL
+    # member (R14), after closure is fully settled — not per-wave inside the
+    # loop above, so a member admitted on the last BFS wave (or only reached
+    # by the exhaustion sweep) is not skipped. `_record_variants` is
+    # naturally idempotent (guards on `entry not in ...`); staging into a
+    # dict makes `_unselected_variant_edges` idempotent the same way.
+    unselected_variant: Dict[Tuple[str, str], str] = {}
+    for mpath in members:
+        prim = stage.GetPrimAtPath(mpath)
+        if not prim:
+            continue
+        _record_variants(prim, p)
+        _unselected_variant_edges(prim, unselected_variant)
+
+    for (target, kind), reason in sorted(unselected_variant.items()):
+        if target not in members:
+            p.boundary.append(PullBoundary(target, kind, reason))
     for (target, kind), _via in sorted(not_followed.items()):
         if target not in members:
             p.boundary.append(PullBoundary(target, kind, "not followed"))
@@ -282,12 +311,19 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
 
     p.members = sorted(members.values(), key=lambda m: m.path)
 
+    # Layer recording (R15): every distinct layer consulted for the final
+    # member set. A valid member contributes its own GetPrimStack(); an
+    # invalid-but-confirmed member (below an unloaded payload) has no prim
+    # stack on this stage, so its nearest valid ancestor's stack does duty
+    # for it. `_below_payload` already recorded the crossed interior layer
+    # directly into p.layers during seed validation.
     seen_layers = {ident for ident, _ in p.layers}
     for m in p.members:
         prim = stage.GetPrimAtPath(m.path)
-        if not prim:
+        source = prim if prim else _nearest_ancestor(stage, m.path)
+        if not source:
             continue
-        for spec in prim.GetPrimStack():
+        for spec in source.GetPrimStack():
             ident = spec.layer.identifier
             if ident not in seen_layers:
                 seen_layers.add(ident)
