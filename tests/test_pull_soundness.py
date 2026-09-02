@@ -88,3 +88,36 @@ def Xform "root"
     assert declared, "joint exclusion must be declared meaning-changing"
     assert p.fitness["statement"] == "contact-incomplete by construction"
     assert p.fitness["contact_unevaluated"] >= 1
+
+
+def test_joint_exclusion_deduplicated_across_overlapping_members(tmp_path):
+    ctx = _write(tmp_path, "sim.usda", """#usda 1.0
+(
+    defaultPrim = "root"
+)
+
+def Xform "root"
+{
+    def Xform "gripper"
+    {
+        def PhysicsRevoluteJoint "hinge"
+        {
+            rel physics:body0 = </root/gripper>
+            rel physics:body1 = </root/wrist>
+        }
+    }
+    def Xform "wrist"
+    {
+    }
+}
+""")
+    # Both the ancestor "gripper" and its descendant "hinge" are admitted as
+    # members directly, so ordinary closure output overlaps: the same joint
+    # sits inside both members' PrimRange subtrees. Its exclusion must be
+    # reported exactly once, not once per covering member.
+    p = pull(ctx, ["path:/root/gripper", "path:/root/gripper/hinge"], follow=[])
+    hinge_boundaries = [b for b in p.boundary if b.target == "/root/gripper/hinge"]
+    assert len(hinge_boundaries) == 1
+    hinge_declarations = [d for d in p.declarations
+                           if "/root/gripper/hinge" in d and "excluded" in d]
+    assert len(hinge_declarations) == 1

@@ -16,7 +16,7 @@ from deps.walk import ARC, walk_file
 
 from .ask import DEFAULT_IDENTITY_KEYS, ResolvedSeed, resolve_seeds
 from .follow import FollowTerm, format_term, parse_follow
-from .registry import omission_class
+from .registry import MEANING_CHANGING, omission_class
 
 
 @dataclass
@@ -148,14 +148,25 @@ def _apply_physics_rules(stage, members: Dict[str, "PullMember"], p: "Pull") -> 
     """Joint whole-or-declared (spec section 6): a joint whose body target
     is not populated silently becomes a joint to the world frame if left
     in place, so its exclusion must be declared meaning-changing rather
-    than silently dropped or silently kept."""
+    than silently dropped or silently kept.
+
+    Members can overlap (an ancestor path and a descendant path both
+    admitted, which ordinary closure output allows), so the same joint can
+    sit in more than one member's subtree via `Usd.PrimRange`. Excluded
+    joints are staged into a dict keyed by joint path — like
+    `not_followed`/`depth_cut`/`unselected_variant` — so a joint reached
+    from multiple overlapping members is judged (and reported) exactly
+    once rather than once per covering member."""
     from pxr import Usd
-    drop: List[str] = []
+    excluded: Dict[str, str] = {}
     for mpath in list(members):
         prim = stage.GetPrimAtPath(mpath)
         if not prim:
             continue
         for joint in Usd.PrimRange(prim):
+            jp = joint.GetPath().pathString
+            if jp in excluded:
+                continue
             names = joint.GetAuthoredPropertyNames()
             bodies = []
             for rn in ("physics:body0", "physics:body1"):
@@ -169,17 +180,16 @@ def _apply_physics_rules(stage, members: Dict[str, "PullMember"], p: "Pull") -> 
                        and not any(b.startswith(m + "/") or m.startswith(b + "/")
                                    for m in members)]
             if missing:
-                jp = joint.GetPath().pathString
-                drop.append(jp)
-                p.boundary.append(PullBoundary(
-                    jp, "physics:joint", "excluded: body %s not populated"
-                    % ", ".join(missing), omission=omission_class("physics:joint")))
-    for jp in drop:
+                excluded.setdefault(
+                    jp, "excluded: body %s not populated" % ", ".join(missing))
+    for jp, reason in excluded.items():
         # Excluded joints are removed from members when directly admitted;
         # when a joint rides inside a member's subtree it cannot be carved
         # out by a mask, so the declaration records it and the boundary
-        # entry above stands — the consumer decides.
+        # entry below stands — the consumer decides.
         members.pop(jp, None)
+        p.boundary.append(PullBoundary(
+            jp, "physics:joint", reason, omission=MEANING_CHANGING))
         p.declarations.append(
             "joint %s excluded from population (a joint with an absent body "
             "silently becomes a joint to the world frame)" % jp)
