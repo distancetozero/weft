@@ -88,8 +88,16 @@ def _out_edges(prim, extractors=()) -> List[Tuple[str, str]]:
 
 def _reverse_index(stage, extractors=()) -> Dict[str, List[Tuple[str, str]]]:
     """target path -> [(source path, kind)] over the populated stage."""
+    from pxr import Usd
     idx: Dict[str, List[Tuple[str, str]]] = {}
-    for p in stage.Traverse():
+    # See ask.resolve_seeds: the context stage is LoadNone, so the default
+    # predicate's UsdPrimIsLoaded requirement would silently drop every
+    # prim behind an unloaded payload arc from the reverse index, and plain
+    # Traverse() would miss edges authored inside an instanceable
+    # placement's prototype (e.g. a Represents offer's requirement).
+    predicate = Usd.TraverseInstanceProxies(
+        Usd.PrimIsActive & Usd.PrimIsDefined & ~Usd.PrimIsAbstract)
+    for p in stage.Traverse(predicate):
         for kind, t in _out_edges(p, extractors=extractors):
             idx.setdefault(t, []).append((p.GetPath().pathString, kind))
     return idx
@@ -461,8 +469,13 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
     # counts, since PrimRange walks the whole subtree, not just the member
     # prim), so consumers can't mistake "populated" for "simulatable".
     from pxr import Usd
+    # As in _reverse_index: LoadNone means the default predicate's
+    # UsdPrimIsLoaded requirement would miss a PhysicsScene sitting behind
+    # an unloaded payload arc or inside an instanced prototype.
+    scene_predicate = Usd.TraverseInstanceProxies(
+        Usd.PrimIsActive & Usd.PrimIsDefined & ~Usd.PrimIsAbstract)
     scene_populated = any(
-        prim.GetTypeName() == "PhysicsScene" for prim in stage.Traverse())
+        prim.GetTypeName() == "PhysicsScene" for prim in stage.Traverse(scene_predicate))
     contact_unevaluated = 0
     for m in p.members:
         prim = stage.GetPrimAtPath(m.path)

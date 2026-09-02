@@ -126,10 +126,22 @@ def _world_pos(prim, cache):
 
 
 def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
-    from pxr import UsdGeom
+    from pxr import Usd, UsdGeom
 
     seeds = [parse_seed(t) for t in seed_texts]
-    prims = [p for p in stage.Traverse()]
+    # The context stage is opened with LoadNone (pull.py._open) -- pulling a
+    # thread must never require loading first. Usd's default predicate
+    # requires UsdPrimIsLoaded, which on a LoadNone stage silently drops
+    # every prim that sits behind an unloaded payload arc (in production
+    # data, that is most placements) from seed matching entirely. Drop the
+    # loaded requirement; keep active/defined/non-abstract. Also traverse
+    # instance proxies: an instanceable placement's own contract surface
+    # (e.g. a `represents` offer authoring `jitsd:bind:finish`) lives inside
+    # the prototype and is otherwise invisible to attribute/name matching.
+    # `pull()`'s `_admit` already widens a resolved instance-proxy path back
+    # to its instance root, so surfacing the proxy path here is safe.
+    prims = [p for p in stage.Traverse(Usd.TraverseInstanceProxies(
+        Usd.PrimIsActive & Usd.PrimIsDefined & ~Usd.PrimIsAbstract))]
     cache = UsdGeom.XformCache()
     out: List[ResolvedSeed] = []
 

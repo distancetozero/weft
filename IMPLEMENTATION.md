@@ -287,6 +287,29 @@ built three times. Indexing offers by contract key and resolving once made it
 linear. The receipt stays interactive at four-digit asset counts; beyond that
 the resolution accessor from `06-storage.md` is the identified mechanism.
 
+## Prim-level pull
+
+Slices, above, resolve which *assets* to load. `jitsd pull` (spec sections
+4–8, `jitsd/ask.py`, `jitsd/follow.py`, `jitsd/pull.py`, `jitsd/manifest.py`)
+works one level down, directly against a composed USD stage opened with
+`Usd.Stage.LoadNone` — no `.jitsd/` repository required. A seed resolves by
+identity, a bound attribute, spatial bounds, or a bare path/name to a set of
+composed prims; `--follow` names which relationship kinds (a contract like
+`Mount`, or any USD kind — bindings, arcs, inherits) closure is allowed to
+cross, at what depth, in which direction, and every edge closure declines to
+follow is recorded at the boundary rather than silently dropped. The result
+is a `Usd.StagePopulationMask`-ready prim mask plus a self-certifying
+manifest — every layer hash, every resolution, every declaration recorded so
+a pull is verifiable by recompute-and-compare (`jitsd pull --verify`). `jitsd
+pull` and `jitsd who` (the reverse question — what depends on this prim)
+expose it from the CLI. Validated end to end against real production
+geometry in `tests/test_alab_pull.py` and `examples/alab/README.md`, which
+also documents the one real bug that run surfaced: seed and reverse-edge
+resolution scanned `stage.Traverse()` with Usd's default predicate, which
+requires `UsdPrimIsLoaded` — invisible against test fixtures with no payload
+arcs, but silent-empty against ALab, where every placement is an
+`instanceable` reference with a payload for its geometry.
+
 ## Storage granularity — settled by measurement
 
 `bench/granularity.py` tests the storage claims against **real USD** rather

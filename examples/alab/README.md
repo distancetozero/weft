@@ -212,6 +212,133 @@ Whole run: **3.5 s** (2.6 s of it opening 164 entity layers for `extentsHint`).
 - **Drift is visible and attributable.** The baseline's merkle root differs
   from the current world because a compatible republish landed after the cut.
 
+## Pulling at prim level
+
+Everything above pulls at *asset* granularity: `jitsd select` decides which
+assets to load, not which prims inside them. `jitsd pull` (spec sections
+4–8) works one level down — seed by identity, attribute, bounds, or path,
+follow only the relationship kinds named, and get back a prim mask, no
+asset ingestion and no `.jitsd/` repository required. It runs directly
+against the checked-out ALab tree:
+
+    JITSD_ALAB=/path/to/ALab-2.3.0/ALab python -m pytest tests/test_alab_pull.py -v
+
+The test's setup fixture regenerates the workbench and placed-prop
+interfaces with `anchor="root"` and `carrier_rule="group-furniture"`
+(Task 11) — root-anchored overs so the surface composes onto the
+assembly's own `/root` placements, which the asset-anchored interfaces
+checked into this tree earlier do not.
+
+**One prim, by path or by bare name** — the lexical form finds the same
+prim without a path in the question:
+
+    $ jitsd pull 'path:/root/shelf01/chemistry_bottle01_0004' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+    seed path:/root/shelf01/chemistry_bottle01_0004 -> 1 (path)
+    members (1):
+      /root/shelf01/chemistry_bottle01_0004        seed
+    boundary (8):
+      /root/shelf01/furniture_lbracket01_0001      Mount                    not followed [inert]
+      /root/shelf01/furniture_lbracket01_0001      jitsd:offer:carrier      not followed [inert]
+      /root/shelf01/furniture_lbracket01_2         Mount                    not followed [inert]
+      /root/shelf01/furniture_lbracket01_2         jitsd:offer:carrier      not followed [inert]
+      /root/shelf01/furniture_parts_cabinet02_0002 Mount                    not followed [inert]
+      /root/shelf01/furniture_parts_cabinet02_0002 jitsd:offer:carrier      not followed [inert]
+      /root/shelf01/furniture_shelving01_0001      Mount                    not followed [inert]
+      /root/shelf01/furniture_shelving01_0001      jitsd:offer:carrier      not followed [inert]
+    fitness: contact-incomplete by construction
+
+    $ jitsd pull 'chemistry_bottle01_0004' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+    seed chemistry_bottle01_0004 -> 1 (lexical)
+    members (1):
+      /root/shelf01/chemistry_bottle01_0004        seed
+
+**Following the Mount contract to its carrier.** `--follow Mount` walks the
+advisory `jitsd:offer:carrier` edges the regenerated interface authors,
+pulling the shelf furniture that carries the bottle — not the other 300+
+props on the bench:
+
+    $ jitsd pull 'path:/root/shelf01/chemistry_bottle01_0004' --follow Mount --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+    members (5):
+      /root/shelf01/chemistry_bottle01_0004        seed
+      /root/shelf01/furniture_lbracket01_0001      Mount <- /root/shelf01/chemistry_bottle01_0004
+      /root/shelf01/furniture_lbracket01_2         Mount <- /root/shelf01/chemistry_bottle01_0004
+      /root/shelf01/furniture_parts_cabinet02_0002 Mount <- /root/shelf01/chemistry_bottle01_0004
+      /root/shelf01/furniture_shelving01_0001      Mount <- /root/shelf01/chemistry_bottle01_0004
+
+**An attribute ask, rendered.** `where:finish=translucent` resolves against
+`jitsd:bind:finish`, authored on each placed asset's own `Represents` offer
+— derived at extraction from real `UsdPreviewSurface` opacity
+(`jitsd/extract.py:finish`), never invented. No path names a single one of
+the 26 hits:
+
+    $ jitsd pull 'where:finish=translucent' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda --mask-out /tmp/pull.mask
+    seed where:finish=translucent -> 26 (attribute, 1744 do not author the key)
+    members (26):
+      /root/shelf01/chemistry_bottle01_0004        seed
+      /root/shelf01/chemistry_bottle01_0005        seed
+      /root/shelf01/chemistry_bottle01_0007        seed
+      ... 20 more, all under /root, every one a bottle, beaker, jar or set
+          square from the 8 translucent assets
+    boundary (16): the shelf furniture that carries these props, and every
+      other contract on the bench — 8 furniture pieces (Mount + carrier,
+      not followed), plus the 8 hits' own `represents` instance proxies
+      widened to their placement roots
+    fitness: contact-incomplete by construction
+    mask: /tmp/pull.mask  (usdrecord --mask "$(cat /tmp/pull.mask | tr '\n' ',')" ...)
+
+    $ /usr/bin/usdrecord -w 1280 --mask "$(tr '\n' ',' < /tmp/pull.mask)" $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda /tmp/pull.png
+    Recording time code: EARLIEST
+
+26 members — exactly the 26 paths an earlier exploratory spike recorded by
+hand, matched exactly, not just in count. The render shows 26 pieces of
+glassware — beakers, bottles, a soda bottle, set squares — floating at
+their production transforms in otherwise empty space. Nothing else on the
+lab bench, and none of its non-translucent props, was ever composed.
+
+**Who depends on this prim.**
+
+    $ jitsd who 'path:/root/shelf01/furniture_shelving01_0001' --kinds Mount --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+      /root/shelf01/chemistry_bottle01_0004        Mount                    -> /root/shelf01/furniture_shelving01_0001
+      /root/shelf01/chemistry_bottle01_0005        Mount                    -> /root/shelf01/furniture_shelving01_0001
+      /root/shelf01/chemistry_bottle01_0007        Mount                    -> /root/shelf01/furniture_shelving01_0001
+      ... 58 more
+
+61 placements mount to this one shelf.
+
+**The manifest is verifiable.**
+
+    $ jitsd pull 'where:finish=translucent' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda --out /tmp/pull.manifest.usda
+    manifest: /tmp/pull.manifest.usda
+    $ jitsd pull --verify /tmp/pull.manifest.usda
+    verify: ok
+
+### A bug this run found
+
+Attribute- and name-based seeds (`where:`, bare lexical names, `id:`)
+resolve by scanning `stage.Traverse()`. Against the fixtures every other
+test uses — no payload arcs, no instancing — that traversal sees every
+prim, so the bug was invisible until this run: against ALab it silently
+matched nothing at all. `pull.py` opens the context with
+`Usd.Stage.LoadNone` specifically so a pull never has to load anything
+first, but every ALab placement references its entity layer with
+`instanceable = true`, and that entity layer's heavy geometry sits behind
+a payload — so every placement has `IsLoaded() == False`, and Usd's
+default traversal predicate requires `UsdPrimIsLoaded`. A `LoadNone`
+context stage made every attribute and name seed match nothing. Separately,
+`chemistry_bottle01_0004`'s own `Represents` offer — the very prim
+`where:finish` matches — lives inside the instance's prototype, invisible
+to plain `Traverse()` regardless of predicate, because `instanceable = true`
+elides prototype content from ordinary traversal.
+
+The fix (`jitsd/ask.py:resolve_seeds`, `jitsd/pull.py:_reverse_index`,
+`jitsd/pull.py`'s fitness pass): traverse with
+`Usd.TraverseInstanceProxies(...)` and drop the loaded requirement from the
+predicate. `pull()`'s existing instance-widening in `_admit` (spec section
+4) does the rest — a matched `.../represents` instance proxy widens back to
+its instance root before it becomes a member, which is why the 26-member
+mask above lands on exactly the spike's 26 placement paths, not 26
+`represents` children.
+
 ## What it does not show
 
 - **Real re-modelling.** The geometry was not changed; the surface was. A

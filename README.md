@@ -15,7 +15,9 @@ $ usdrecord --mask "$(tr '\n' ',' < pull.mask)" lab.usda out.png
 
 Twenty-six pieces of glassware render, floating at their exact production
 transforms, from a scene that was never loaded. No path appeared in the
-question.
+question. Run as written against [Animal Logic's
+ALab](https://dpel.aswf.io/alab/) — real production geometry, not a
+fixture — in [`examples/alab/README.md`](examples/alab/README.md#pulling-at-prim-level).
 
 Three rules keep pulls trustworthy:
 
