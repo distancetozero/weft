@@ -186,8 +186,8 @@ any file — the richer planes bootstrap from your data; they're not a precondit
 
 <h2>One picture of the data</h2>
 <figure>
-<svg viewBox="0 0 900 560" role="img" style="width:100%;height:auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"
-  aria-label="A small scene as a graph: a bottle, shelf, and material joined by typed threads — a Mount contract carrying tolerances, a material binding, and a hierarchy arc shown as just one kind among them. Attributes on each node carry provenance marks. A dashed boundary encloses the pulled set; a thread that was not followed crosses it and is declared.">
+<svg viewBox="0 0 900 610" role="img" style="width:100%;height:auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"
+  aria-label="A small scene as a graph: a bottle, shelf, and material joined by typed threads — a Mount contract carrying tolerances, a material binding, and a hierarchy arc shown as just one kind among them. Attributes on each node carry provenance marks. A dashed boundary encloses the pulled set; a thread from an unpulled prop crosses it and is declared.">
   <defs>
     <marker id="ah-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/>
@@ -198,69 +198,69 @@ any file — the richer planes bootstrap from your data; they're not a precondit
   </defs>
 
   <!-- the pull boundary -->
-  <rect x="40" y="50" width="700" height="400" rx="26" style="fill:none;stroke:var(--muted);stroke-width:1.4;stroke-dasharray:7 7"/>
-  <text x="60" y="436" style="fill:var(--muted);font-size:12.5px">boundary — 163 threads not followed: counted by kind, never silent</text>
-
-  <!-- shelf01 (provider) -->
-  <rect x="90" y="110" width="230" height="92" rx="10" style="fill:var(--card);stroke:var(--line);stroke-width:1.5"/>
-  <text x="106" y="138" style="fill:var(--ink);font-size:15px;font-weight:600">shelf01</text>
-  <text x="106" y="162" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">offers Mount@1</text>
-  <text x="106" y="182" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">envelope ±1 cm · policy</text>
-
-  <!-- glass_mtl -->
-  <rect x="520" y="110" width="190" height="92" rx="10" style="fill:var(--card);stroke:var(--line);stroke-width:1.5"/>
-  <text x="536" y="138" style="fill:var(--ink);font-size:15px;font-weight:600">glass_mtl</text>
-  <text x="536" y="162" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">opacity 0.1 · authored</text>
-
-  <!-- bottle (seed) -->
-  <rect x="130" y="320" width="250" height="110" rx="10" style="fill:var(--card);stroke:var(--accent);stroke-width:2.5"/>
-  <text x="146" y="311" style="fill:var(--accent);font-size:12px;font-weight:600">seed</text>
-  <text x="146" y="350" style="fill:var(--ink);font-size:15px;font-weight:600">bottle_0004</text>
-  <text x="146" y="374" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">id: flask-blue · metadata</text>
-  <text x="146" y="394" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">finish = translucent · derived</text>
-  <text x="146" y="414" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">tolerance 0.59 cm · stated rule</text>
-
-  <!-- tube (outside the pull) -->
-  <g style="opacity:.75">
-    <rect x="700" y="478" width="180" height="64" rx="10" style="fill:var(--card);stroke:var(--line);stroke-width:1.5"/>
-    <text x="716" y="504" style="fill:var(--ink);font-size:14px;font-weight:600">tube_0002</text>
-    <text x="716" y="524" style="fill:var(--muted);font-size:11.5px">not pulled</text>
-  </g>
+  <rect x="40" y="60" width="660" height="420" rx="26" style="fill:none;stroke:var(--muted);stroke-width:1.4;stroke-dasharray:7 7"/>
 
   <!-- ghost of the rest of the world -->
-  <text x="756" y="86" style="fill:var(--muted);font-size:12px">… 433 more</text>
-  <text x="756" y="103" style="fill:var(--muted);font-size:12px">placements</text>
-  <line x1="750" y1="93" x2="741" y2="100" style="stroke:var(--muted);stroke-width:1.2;stroke-dasharray:4 4"/>
+  <text x="720" y="92" style="fill:var(--muted);font-size:12px">… 433 more</text>
+  <text x="720" y="109" style="fill:var(--muted);font-size:12px">placements</text>
+  <line x1="716" y1="100" x2="701" y2="105" style="stroke:var(--muted);stroke-width:1.2;stroke-dasharray:4 4"/>
 
-  <!-- Mount edge: bottle -> shelf (followed, tolerances on the thread) -->
-  <path d="M 235,320 C 225,280 215,245 208,204" style="fill:none;stroke:var(--accent);stroke-width:2.5" marker-end="url(#ah-a)"/>
-  <text x="250" y="252" style="fill:var(--accent);font-size:14px;font-weight:600">Mount@1</text>
-  <text x="250" y="271" style="fill:var(--muted);font-size:11.5px">consumer tolerates ≤ 0.59 cm · provider promises ≤ 1 cm</text>
-  <text x="250" y="288" style="fill:var(--muted);font-size:11.5px">a republish is measured against both — here, on the thread</text>
+  <!-- shelf01 (provider) -->
+  <rect x="110" y="100" width="230" height="92" rx="10" style="fill:var(--card);stroke:var(--line);stroke-width:1.5"/>
+  <text x="126" y="128" style="fill:var(--ink);font-size:15px;font-weight:600">shelf01</text>
+  <text x="126" y="152" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">offers Mount@1</text>
+  <text x="126" y="172" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">envelope ±1 cm · policy</text>
 
-  <!-- hierarchy edge: shelf -> bottle (one kind among many) -->
-  <path d="M 140,202 C 148,242 155,281 162,320" style="fill:none;stroke:var(--muted);stroke-width:1.4" marker-end="url(#ah-m)"/>
-  <text x="58" y="258" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">usd:arc</text>
-  <text x="46" y="274" style="fill:var(--muted);font-size:11px">hierarchy —</text>
-  <text x="46" y="288" style="fill:var(--muted);font-size:11px">just one kind</text>
+  <!-- Mount edge: bottle up to shelf -->
+  <line x1="215" y1="340" x2="207" y2="196" style="stroke:var(--accent);stroke-width:2.5" marker-end="url(#ah-a)"/>
+  <text x="243" y="238" style="fill:var(--accent);font-size:14px;font-weight:600">Mount@1</text>
+  <text x="243" y="258" style="fill:var(--muted);font-size:11.5px">consumer tolerates ≤ 0.59 cm</text>
+  <text x="243" y="275" style="fill:var(--muted);font-size:11.5px">provider promises ≤ 1 cm</text>
+  <text x="243" y="292" style="fill:var(--muted);font-size:11.5px">a republish is measured against both</text>
 
-  <!-- binding edge: bottle -> glass (followed) -->
-  <path d="M 380,362 C 470,330 540,270 590,204" style="fill:none;stroke:var(--accent);stroke-width:2.5" marker-end="url(#ah-a)"/>
-  <text x="470" y="303" style="fill:var(--accent);font-size:13.5px;font-weight:600;font-family:ui-monospace,Menlo,monospace">material:binding</text>
+  <!-- hierarchy edge: shelf down to bottle -->
+  <line x1="150" y1="196" x2="158" y2="340" style="stroke:var(--muted);stroke-width:1.4" marker-end="url(#ah-m)"/>
+  <text x="76" y="252" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">usd:arc</text>
+  <text x="74" y="270" style="fill:var(--muted);font-size:11px">hierarchy —</text>
+  <text x="74" y="285" style="fill:var(--muted);font-size:11px">just one kind</text>
 
-  <!-- not-followed Mount from tube, crossing the boundary -->
-  <path d="M 770,478 C 700,380 500,250 325,180" style="fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:6 6" marker-end="url(#ah-m)"/>
-  <circle cx="712" cy="428" r="4.5" style="fill:var(--ground);stroke:var(--muted);stroke-width:1.5"/>
-  <text x="560" y="392" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">Mount@1 · not followed → declared</text>
+  <!-- bottle (seed) -->
+  <text x="126" y="331" style="fill:var(--accent);font-size:12px;font-weight:600">seed</text>
+  <rect x="110" y="340" width="250" height="110" rx="10" style="fill:var(--card);stroke:var(--accent);stroke-width:2.5"/>
+  <text x="126" y="370" style="fill:var(--ink);font-size:15px;font-weight:600">bottle_0004</text>
+  <text x="126" y="394" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">id: flask-blue · metadata</text>
+  <text x="126" y="414" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">finish = translucent · derived</text>
+  <text x="126" y="434" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">tolerance 0.59 cm · stated rule</text>
 
-  <!-- legend -->
+  <!-- glass_mtl beside the bottle -->
+  <rect x="490" y="330" width="200" height="92" rx="10" style="fill:var(--card);stroke:var(--line);stroke-width:1.5"/>
+  <text x="506" y="358" style="fill:var(--ink);font-size:15px;font-weight:600">glass_mtl</text>
+  <text x="506" y="382" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">opacity 0.1 · authored</text>
+
+  <!-- binding edge: bottle right to glass -->
+  <line x1="360" y1="410" x2="486" y2="410" style="stroke:var(--accent);stroke-width:2.5" marker-end="url(#ah-a)"/>
+  <text x="366" y="398" style="fill:var(--accent);font-size:12px;font-weight:600;font-family:ui-monospace,Menlo,monospace">material:binding</text>
+
+  <!-- tube outside, its thread running up the clear left margin -->
+  <g style="opacity:.8">
+    <rect x="85" y="515" width="185" height="58" rx="10" style="fill:var(--card);stroke:var(--line);stroke-width:1.5"/>
+    <text x="101" y="540" style="fill:var(--ink);font-size:14px;font-weight:600">tube_0002</text>
+    <text x="101" y="559" style="fill:var(--muted);font-size:11.5px">not pulled</text>
+  </g>
+  <path d="M 150,515 C 105,502 62,478 62,440 L 62,235 C 62,214 80,198 112,192"
+        style="fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:6 6" marker-end="url(#ah-m)"/>
+  <circle cx="62" cy="480" r="4.5" style="fill:var(--ground);stroke:var(--muted);stroke-width:1.5"/>
+  <text x="104" y="472" style="fill:var(--muted);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">Mount@1 · not followed → declared</text>
+  <text x="380" y="472" style="fill:var(--muted);font-size:12px">boundary — everything not followed is counted by kind</text>
+
+  <!-- legend, clear of everything -->
   <g>
-    <line x1="60" y1="520" x2="102" y2="520" style="stroke:var(--accent);stroke-width:2.5"/>
-    <text x="110" y="524" style="fill:var(--muted);font-size:12px">followed thread</text>
-    <line x1="240" y1="520" x2="282" y2="520" style="stroke:var(--muted);stroke-width:1.4"/>
-    <text x="290" y="524" style="fill:var(--muted);font-size:12px">another kind of thread</text>
-    <line x1="460" y1="520" x2="502" y2="520" style="stroke:var(--muted);stroke-width:1.6;stroke-dasharray:6 6"/>
-    <text x="510" y="524" style="fill:var(--muted);font-size:12px">present, not followed → declared</text>
+    <line x1="330" y1="584" x2="372" y2="584" style="stroke:var(--accent);stroke-width:2.5"/>
+    <text x="380" y="588" style="fill:var(--muted);font-size:12px">followed</text>
+    <line x1="470" y1="584" x2="512" y2="584" style="stroke:var(--muted);stroke-width:1.4"/>
+    <text x="520" y="588" style="fill:var(--muted);font-size:12px">another kind</text>
+    <line x1="640" y1="584" x2="682" y2="584" style="stroke:var(--muted);stroke-width:1.6;stroke-dasharray:6 6"/>
+    <text x="690" y="588" style="fill:var(--muted);font-size:12px">not followed → declared</text>
   </g>
 </svg>
 <figcaption>The data concept in one scene: things carry <b>attributes with provenance</b>
