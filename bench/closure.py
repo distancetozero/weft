@@ -19,8 +19,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from jitsd.ledger import Repo               # noqa: E402
-from jitsd.slice import SliceSpec, resolve_slice  # noqa: E402
+from weft.ledger import Repo               # noqa: E402
+from weft.slice import SliceSpec, resolve_slice  # noqa: E402
 
 IFACE = """#usda 1.0
 def Xform "link_%03d" (
@@ -58,7 +58,7 @@ def main() -> int:
     print("%8s %12s %12s %10s" % ("chain", "build s", "select ms", "members"))
     print("-" * 46)
     for k in (50, 200, 500, 1000):
-        root = Path(tempfile.mkdtemp(prefix="jitsd-closure-"))
+        root = Path(tempfile.mkdtemp(prefix="weft-closure-"))
         try:
             t0 = time.perf_counter()
             repo = build(root, k)

@@ -1,7 +1,7 @@
 [project]
-name = "jitsd"
+name = "weft-usd"
 version = "0.1.0"
-description = "JIT-SD reference implementation -- rung 1: solo, offline, no contracts"
+description = "weft: pull threads through OpenUSD, not worlds -- identity-first addressing, measured compatibility, declared boundaries"
 requires-python = ">=3.9"
 dependencies = []
 
@@ -10,7 +10,7 @@ dependencies = []
 #   numpy    a performance path only -- the pure-Python chunker produces
 #            identical boundaries, just far slower.
 #   usd-core real USD. When present it backs the .usda reader and validates
-#            everything jitsd emits; when absent the fallback parser runs and
+#            everything weft emits; when absent the fallback parser runs and
 #            the pxr tests skip.
 fast = ["numpy>=1.24"]
 usd = ["usd-core>=24.0"]
@@ -19,18 +19,19 @@ usd = ["usd-core>=24.0"]
 dev = ["numpy>=1.24", "usd-core>=24.0", "pytest>=7", "jinja2>=3"]
 
 [project.scripts]
-jitsd = "jitsd.cli:main"
+weft = "weft.cli:main"
+jitsd = "weft.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 # Declared explicitly: this is a flat layout with several top-level directories
-# (jitsd, bench, specs, docs, examples, tests), and setuptools auto-discovery
+# (weft, bench, specs, docs, examples, tests), and setuptools auto-discovery
 # refuses to guess between them -- `pip install -e .` fails outright without
 # this. Caught by simulating the CI job from a clean clone.
 [tool.setuptools]
-packages = ["jitsd", "jitsd.generators"]
+packages = ["weft", "weft.generators", "deps", "absent"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

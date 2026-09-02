@@ -36,10 +36,10 @@ def _author() -> str:
 def cmd_init(args) -> int:
     repo = Repo(Path(args.path))
     if repo.exists():
-        print("already a jitsd repository: %s" % repo.dir)
+        print("already a weft repository: %s" % repo.dir)
         return 0
     repo.init()
-    print("initialised empty jitsd repository in %s" % repo.dir)
+    print("initialised empty weft repository in %s" % repo.dir)
     return 0
 
 
@@ -279,8 +279,13 @@ def cmd_select(args) -> int:
             print("    ... and %d more" % (len(re.breaking) - 8))
 
     if args.out:
+        if result.selections:
+            spec.selections = [
+                {"context": s.context, "rev": s.rev, "ask": s.ask, "paths": s.paths}
+                for s in result.selections
+            ]
         Path(args.out).write_text(_slice.emit_query_document(result))
-        print("\nwritten: %s  (a query document -- `jitsd compile` materialises it)"
+        print("\nwritten: %s  (a query document -- `weft compile` materialises it)"
               % args.out)
     return 0 if result.ok else 1
 
@@ -314,6 +319,125 @@ def cmd_bind(args) -> int:
     return 0 if res.ok else 1
 
 
+def _context_file(raw: str) -> str:
+    """A raw USD file path, or a ledger asset name resolved via the repo."""
+    if os.path.exists(raw):
+        return raw
+    repo = Repo.find()
+    rev = repo.ledger.resolve_ref(raw, "approved")
+    r = repo.ledger.read_revision(raw, rev)
+    if r.blob is None:
+        raise ValueError("context %s@%s is generator-backed; materialise it with weft checkout first"
+                         % (raw, rev))
+    import tempfile
+    out = Path(tempfile.mkdtemp(prefix="weft-ctx-")) / ("%s.usda" % raw)
+    repo.store.checkout(r.blob, out)
+    return str(out)
+
+
+def cmd_pull(args) -> int:
+    # manifest.py imports pull.py (Pull, PullMember) at its own module top,
+    # and pull.py imports deps.walk -> pxr at ITS module top -- so importing
+    # manifest is where a bare (no usd-core) environment actually fails, and
+    # it is needed unconditionally, even for --verify.
+    try:
+        from . import manifest as _manifest
+    except ImportError:
+        print("pull: usd-core is required for prim-level pulls (pip install usd-core)",
+              file=sys.stderr)
+        return 1
+
+    if args.verify:
+        findings = _manifest.verify(Path(args.verify).read_text())
+        for f in findings:
+            print("  ! %s" % f)
+        print("verify: %s" % ("ok" if not findings else "%d findings" % len(findings)))
+        return 0 if not findings else 1
+
+    if not args.context:
+        print("pull: --context FILE_OR_ASSET is required", file=sys.stderr)
+        return 1
+
+    from . import pull as _pull   # already imported transitively via manifest above
+    from .registry import parse_extractors
+
+    extractors = []
+    if args.extractors:
+        try:
+            extractors = parse_extractors(Path(args.extractors).read_text())
+        except ValueError as e:
+            print("pull: %s" % e, file=sys.stderr)
+            return 1
+    try:
+        ctx = _context_file(args.context)
+    except (ValueError, KeyError) as e:
+        print("pull: %s" % e, file=sys.stderr)
+        return 1
+    try:
+        p = _pull.pull(ctx, args.seeds, follow=args.follow, depth=args.depth,
+                       extractors=extractors)
+    except ValueError as e:
+        print("pull: %s" % e, file=sys.stderr)
+        return 1
+    _manifest.layer_hashes(p)
+
+    for r in p.resolutions:
+        line = "seed %s -> %d (%s" % (r.seed.raw, r.matched, r.mode)
+        if r.complement:
+            line += ", %d do not author the key" % r.complement
+        line += ")"
+        if r.note:
+            line += "  %s" % r.note
+        print(line)
+    print("members (%d):" % len(p.members))
+    for m in p.members:
+        via = "seed" if m.via_kind == "seed" else "%s <- %s" % (m.via_kind, m.from_member)
+        print("  %-44s %s" % (m.path, via))
+    if p.boundary:
+        print("boundary (%d):" % len(p.boundary))
+        for b in p.boundary:
+            print("  %-44s %-24s %s [%s]" % (b.target, b.kind, b.reason, b.omission))
+    for d in p.declarations:
+        print("  ~ %s" % d)
+    print("fitness: %s" % p.fitness.get("statement", ""))
+
+    doc = _manifest.to_document(p)
+    findings = _manifest.verify(doc)
+    for f in findings:
+        print("  ! %s" % f, file=sys.stderr)
+    if args.out:
+        Path(args.out).write_text(doc)
+        print("manifest: %s" % args.out)
+    if args.mask_out:
+        _manifest.write_mask(p, args.mask_out)
+        print('mask: %s  (usdrecord --mask "$(cat %s | tr \'\\n\' \',\')" ...)'
+              % (args.mask_out, args.mask_out))
+    return 0 if not findings else 1
+
+
+def cmd_who(args) -> int:
+    try:
+        from . import pull as _pull
+    except ImportError:
+        print("pull: usd-core is required for prim-level pulls (pip install usd-core)",
+              file=sys.stderr)
+        return 1
+    try:
+        ctx = _context_file(args.context)
+    except (ValueError, KeyError) as e:
+        print("who: %s" % e, file=sys.stderr)
+        return 1
+    kinds = args.kinds.split(",") if args.kinds else None
+    try:
+        results = _pull.who(ctx, args.seeds, kinds=kinds, depth=args.depth)
+    except ValueError as e:
+        print("who: %s" % e, file=sys.stderr)
+        return 1
+    for src, kind, member in results:
+        print("  %-44s %-24s -> %s" % (src, kind, member))
+    return 0
+
+
 def cmd_check(args) -> int:
     """What would promoting this revision break?"""
     repo = Repo.find()
@@ -342,14 +466,14 @@ def cmd_checkout(args) -> int:
     r = repo.ledger.read_revision(args.asset, rev)
     if r.blob is None:
         print("%s %s is generator-backed (%s); there is no stored payload to "
-              "check out.\nUse `jitsd compile` to materialise it."
+              "check out.\nUse `weft compile` to materialise it."
               % (args.asset, rev, r.generator), file=sys.stderr)
         return 1
     try:
         repo.store.checkout(r.blob, Path(args.dest))
     except CorruptObject as e:
         print("REFUSED: %s" % e, file=sys.stderr)
-        print("Nothing was written. Run `jitsd verify` to survey the store.",
+        print("Nothing was written. Run `weft verify` to survey the store.",
               file=sys.stderr)
         return 1
     except KeyError as e:
@@ -524,7 +648,7 @@ def cmd_verify(args) -> int:
 # -- parser ---------------------------------------------------------------
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="jitsd", description="JIT-SD rung 1: solo, offline, no contracts.")
+    p = argparse.ArgumentParser(prog="weft", description="JIT-SD rung 1: solo, offline, no contracts.")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("init", help="create a repository here")
@@ -635,7 +759,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--baseline")
     s.add_argument("--channel", default="approved")
     s.add_argument("--label", default="")
-    s.add_argument("--out", default="jitsd.lock")
+    s.add_argument("--out", default="weft.lock")
     s.set_defaults(fn=cmd_resolve)
 
     s = sub.add_parser("drift", help="has anything changed since a baseline?")
@@ -661,6 +785,29 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("verify", help="check stored bytes against their hashes")
     s.set_defaults(fn=cmd_verify)
+
+    s = sub.add_parser("pull", help="prim-level pull: seeds -> manifest + mask")
+    s.add_argument("seeds", nargs="*",
+                   help="glob, name:, id:, id:occ:, role:, offers:, requires:, "
+                        "where:attr=value, near:SEED,R, within:6-floats, path:")
+    s.add_argument("--context", default=None, metavar="FILE_OR_ASSET")
+    s.add_argument("--follow", default=None, metavar="TERMS",
+                   help="direction-qualified kinds: Mount, up:electrical:feeds*8")
+    s.add_argument("--depth", type=int, default=4)
+    s.add_argument("--extractors", default=None, metavar="FILE",
+                   help="a jitsd__extractors document")
+    s.add_argument("-o", "--out", default=None, help="write the manifest here")
+    s.add_argument("--mask-out", default=None, help="write member paths, one per line")
+    s.add_argument("--verify", default=None, metavar="MANIFEST",
+                   help="verify an existing manifest instead of pulling")
+    s.set_defaults(fn=cmd_pull)
+
+    s = sub.add_parser("who", help="what depends on this prim (incoming edges)")
+    s.add_argument("seeds", nargs="+")
+    s.add_argument("--context", required=True, metavar="FILE_OR_ASSET")
+    s.add_argument("--kinds", default=None)
+    s.add_argument("--depth", type=int, default=1, help="how many reverse hops to follow")
+    s.set_defaults(fn=cmd_who)
 
     return p
 

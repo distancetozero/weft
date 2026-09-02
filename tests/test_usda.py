@@ -1,6 +1,6 @@
 import pytest
 
-from jitsd.usda import UsdaError, parse
+from weft.usda import UsdaError, parse
 
 DOC = '''#usda 1.0
 (

@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from pxr import Gf, Sdf, Usd, UsdGeom, Vt  # noqa: E402
 
-from jitsd.store import ObjectStore  # noqa: E402
+from weft.store import ObjectStore  # noqa: E402
 
 MESHES = 4000
 PTS = 300
@@ -123,7 +123,7 @@ def score_bytes(a: str, b: str, avg: int = 64 * 1024) -> Tuple[int, int]:
     property of crate. Chunk size must be small relative to the file or the
     measurement is meaningless.
     """
-    from jitsd.chunker import chunk
+    from weft.chunker import chunk
 
     A, B = Path(a).read_bytes(), Path(b).read_bytes()
     kw = dict(min_size=avg // 4, avg_size=avg, max_size=avg * 4)

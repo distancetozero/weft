@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import pytest
 
-from jitsd.contracts import (
+from weft.contracts import (
     ANGULAR, EXACT, SET, SPATIAL, Attribute, Offer, Requirement, Surface,
     check_compatibility, extract_text, resolve,
 )
-from jitsd.reeval import reevaluate
-from jitsd.ledger import BreakingChange, Repo
+from weft.reeval import reevaluate
+from weft.ledger import BreakingChange, Repo
 
 
 def _offer(path="/m", role="cup", frame=(0.0, 0.0, 0.0), env=1.0, **binds):

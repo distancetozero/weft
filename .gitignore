@@ -1,9 +1,10 @@
 __pycache__/
 *.py[cod]
 .jitsd/
-jitsd.lock
+weft.lock
 *.egg-info/
 .pytest_cache/
 build/
 dist/
 .deps-cache.json
+.claude/worktrees/

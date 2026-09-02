@@ -3,12 +3,12 @@ from pathlib import Path
 
 import pytest
 
-from jitsd.generators import vehicle  # noqa: F401
-from jitsd.ledger import Repo
-from jitsd.query import compile_query, parse_query
-from jitsd.slice import (Overlay, SliceSpec, emit_query_document, read_spec,
+from weft.generators import vehicle  # noqa: F401
+from weft.ledger import Repo
+from weft.query import compile_query, parse_query
+from weft.slice import (Overlay, SliceSpec, emit_query_document, read_spec,
                          resolve_slice)
-from jitsd.usda import parse
+from weft.usda import parse
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
