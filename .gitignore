@@ -1,6 +1,6 @@
 __pycache__/
 *.py[cod]
-.jitsd/
+.weft/
 weft.lock
 *.egg-info/
 .pytest_cache/

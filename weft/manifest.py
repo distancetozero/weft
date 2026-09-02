@@ -15,7 +15,7 @@ from typing import Dict, List
 
 from .pull import Pull, PullMember
 
-PULL_RE = re.compile(r'string\s+jitsd__pull\s*=\s*"((?:[^"\\]|\\.)*)"')
+PULL_RE = re.compile(r'string\s+weft__pull\s*=\s*"((?:[^"\\]|\\.)*)"')
 MANIFEST_VERSION = 1
 
 
@@ -102,7 +102,7 @@ def to_document(p: Pull, usd_version: str = "") -> str:
         "# with `weft pull --verify` before trusting the mask.",
         "(",
         "    customLayerData = {",
-        '        string jitsd__pull = "%s"' % esc,
+        '        string weft__pull = "%s"' % esc,
         "    }",
         ")",
         "",
@@ -112,7 +112,7 @@ def to_document(p: Pull, usd_version: str = "") -> str:
 def read_document(text: str) -> dict:
     m = PULL_RE.search(text)
     if not m:
-        raise ValueError("no jitsd__pull block")
+        raise ValueError("no weft__pull block")
     return json.loads(m.group(1).encode().decode("unicode_escape"))
 
 

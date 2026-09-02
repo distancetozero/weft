@@ -8,65 +8,65 @@
 )
 
 def Xform "chassis" (
-    prepend apiSchemas = ["JitsdGeneratorAPI"]
+    prepend apiSchemas = ["WeftGeneratorAPI"]
 )
 {
-    uniform token jitsd:costClass = "heavy"
+    uniform token weft:costClass = "heavy"
 
     def Scope "mounts"
     {
         def Xform "hubFL" (
-            prepend apiSchemas = ["JitsdOfferAPI", "JitsdMountAPI", "JitsdEnvelopeAPI"]
+            prepend apiSchemas = ["WeftOfferAPI", "WeftMountAPI", "WeftEnvelopeAPI"]
         )
         {
-            uniform token  jitsd:offer:contract  = "Mount@2"
-            uniform token  jitsd:offer:archetype = "mount"
-            uniform token  jitsd:mount:role      = "wheelHub"
-            uniform double jitsd:envelope:linear = 0.0005
+            uniform token  weft:offer:contract  = "Mount@2"
+            uniform token  weft:offer:archetype = "mount"
+            uniform token  weft:mount:role      = "wheelHub"
+            uniform double weft:envelope:linear = 0.0005
             double3 xformOp:translate = (1.42, 0.31, 0.78)
         }
 
         def Xform "hubFR" (
-            prepend apiSchemas = ["JitsdOfferAPI", "JitsdMountAPI", "JitsdEnvelopeAPI"]
+            prepend apiSchemas = ["WeftOfferAPI", "WeftMountAPI", "WeftEnvelopeAPI"]
         )
         {
-            uniform token  jitsd:offer:contract  = "Mount@2"
-            uniform token  jitsd:offer:archetype = "mount"
-            uniform token  jitsd:mount:role      = "wheelHub"
-            uniform double jitsd:envelope:linear = 0.0005
+            uniform token  weft:offer:contract  = "Mount@2"
+            uniform token  weft:offer:archetype = "mount"
+            uniform token  weft:mount:role      = "wheelHub"
+            uniform double weft:envelope:linear = 0.0005
             double3 xformOp:translate = (1.42, 0.31, -0.78)
         }
 
         def Xform "hubRL" (
-            prepend apiSchemas = ["JitsdOfferAPI", "JitsdMountAPI", "JitsdEnvelopeAPI"]
+            prepend apiSchemas = ["WeftOfferAPI", "WeftMountAPI", "WeftEnvelopeAPI"]
         )
         {
-            uniform token  jitsd:offer:contract  = "Mount@2"
-            uniform token  jitsd:offer:archetype = "mount"
-            uniform token  jitsd:mount:role      = "wheelHub"
-            uniform double jitsd:envelope:linear = 0.0005
+            uniform token  weft:offer:contract  = "Mount@2"
+            uniform token  weft:offer:archetype = "mount"
+            uniform token  weft:mount:role      = "wheelHub"
+            uniform double weft:envelope:linear = 0.0005
             double3 xformOp:translate = (-1.42, 0.31, 0.78)
         }
 
         def Xform "hubRR" (
-            prepend apiSchemas = ["JitsdOfferAPI", "JitsdMountAPI", "JitsdEnvelopeAPI"]
+            prepend apiSchemas = ["WeftOfferAPI", "WeftMountAPI", "WeftEnvelopeAPI"]
         )
         {
-            uniform token  jitsd:offer:contract  = "Mount@2"
-            uniform token  jitsd:offer:archetype = "mount"
-            uniform token  jitsd:mount:role      = "wheelHub"
-            uniform double jitsd:envelope:linear = 0.0005
+            uniform token  weft:offer:contract  = "Mount@2"
+            uniform token  weft:offer:archetype = "mount"
+            uniform token  weft:mount:role      = "wheelHub"
+            uniform double weft:envelope:linear = 0.0005
             double3 xformOp:translate = (-1.42, 0.31, -0.78)
         }
 
         def Xform "aeroRail" (
-            prepend apiSchemas = ["JitsdOfferAPI", "JitsdMountAPI", "JitsdEnvelopeAPI"]
+            prepend apiSchemas = ["WeftOfferAPI", "WeftMountAPI", "WeftEnvelopeAPI"]
         )
         {
-            uniform token  jitsd:offer:contract  = "Mount@2"
-            uniform token  jitsd:offer:archetype = "mount"
-            uniform token  jitsd:mount:role      = "panelClip"
-            uniform double jitsd:envelope:linear = 0.002
+            uniform token  weft:offer:contract  = "Mount@2"
+            uniform token  weft:offer:archetype = "mount"
+            uniform token  weft:mount:role      = "panelClip"
+            uniform double weft:envelope:linear = 0.002
             double3 xformOp:translate = (0.0, 1.05, 0.0)
         }
     }

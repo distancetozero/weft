@@ -49,7 +49,7 @@ def test_generator_backed_revision_opens(tmp_path):
     text = (r.ledger._revdir("chassis") / "v001.usda").read_text()
     layer = open_or_fail(text, "generator revision")
     spec = layer.GetPrimAtPath("/chassis")
-    assert list(spec.GetInfo("apiSchemas").GetAddedOrExplicitItems()) == ["JitsdGeneratorAPI"]
+    assert list(spec.GetInfo("apiSchemas").GetAddedOrExplicitItems()) == ["WeftGeneratorAPI"]
 
 
 def test_payload_backed_revision_opens(tmp_path):
@@ -64,7 +64,7 @@ def test_payload_backed_revision_opens(tmp_path):
     layer = open_or_fail(text, "payload revision")
     spec = layer.GetPrimAtPath("/propA")
     paths = [x.assetPath for x in spec.GetInfo("payload").GetAddedOrExplicitItems()]
-    assert paths == ["jitsd:obj/sha256:%s" % rev.blob]
+    assert paths == ["weft:obj/sha256:%s" % rev.blob]
 
 
 def test_baseline_layer_opens(tmp_path):
@@ -75,7 +75,7 @@ def test_baseline_layer_opens(tmp_path):
     b = r.cut_baseline(label="review")
     text = (r.ledger.baselines_dir / ("%s.usda" % b.number)).read_text()
     layer = open_or_fail(text, "baseline")
-    pins = layer.GetPrimAtPath("/World").GetInfo("customData")["jitsd__pins"]
+    pins = layer.GetPrimAtPath("/World").GetInfo("customData")["weft__pins"]
     assert dict(pins) == {"chassis": "v001"}
 
 

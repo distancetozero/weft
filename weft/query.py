@@ -38,17 +38,17 @@ class _Constant:
     def generate(self, params, ctx, bindings) -> str:
         return (
             '    def Xform "%s" (\n'
-            '        prepend payload = @jitsd:obj/sha256:%s@\n'
+            '        prepend payload = @weft:obj/sha256:%s@\n'
             '    )\n'
             '    {\n'
-            '        uniform int64 jitsd:payloadSize = %d\n'
+            '        uniform int64 weft:payloadSize = %d\n'
             '    }\n' % (self._rev.asset, self._rev.blob, self._rev.size)
         )
 from .generators import Context, Vec3
 from .generators import get as get_generator
 from .usda import Layer, parse
 
-INSTANCE_API = "JitsdInstanceAPI"
+INSTANCE_API = "WeftInstanceAPI"
 
 # Named contexts expand to claim sets at the edge (docs/05-contexts.md): roles
 # do not compose, claims do. These are presets, not the type.
@@ -92,20 +92,20 @@ class Query:
 def parse_query(layer: Layer) -> Query:
     meta = layer.meta.get("customLayerData") or {}
     q = Query(
-        baseline=(meta.get("jitsd__baseline") or None),
-        context=str(meta.get("jitsd__context") or "review"),
-        label=str(meta.get("jitsd__label") or ""),
+        baseline=(meta.get("weft__baseline") or None),
+        context=str(meta.get("weft__context") or "review"),
+        label=str(meta.get("weft__label") or ""),
     )
     for prim in layer.walk():
         if not prim.has_api(INSTANCE_API):
             continue
-        asset = prim.attrs.get("jitsd:instance:asset")
+        asset = prim.attrs.get("weft:instance:asset")
         if not asset:
             continue
         params = {
             k.split(":", 2)[2]: v
             for k, v in prim.attrs.items()
-            if k.startswith("jitsd:param:")
+            if k.startswith("weft:param:")
         }
         q.instances.append(Instance(key=prim.path, name=prim.name,
                                     asset=str(asset), params=params))
@@ -232,11 +232,11 @@ def _emit(query: Query, ctx: Context, pins: Dict[str, str],
         '(\n'
         '    defaultPrim = "World"\n'
         '    customLayerData = {\n'
-        '        string jitsd__compiled = "%s"\n'
-        '        string jitsd__baseline = "%s"\n'
-        '        string jitsd__context  = "%s"\n'
-        '        string jitsd__claims   = "%s"\n'
-        '        dictionary jitsd__pins = {\n%s\n        }\n'
+        '        string weft__compiled = "%s"\n'
+        '        string weft__baseline = "%s"\n'
+        '        string weft__context  = "%s"\n'
+        '        string weft__claims   = "%s"\n'
+        '        dictionary weft__pins = {\n%s\n        }\n'
         '    }\n'
         ')\n\n'
         'def Xform "World"\n{\n%s%s}\n'

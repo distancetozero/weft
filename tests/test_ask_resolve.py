@@ -37,8 +37,8 @@ def Xform "root"
             customData = { string "absent:id" = "bolt-m8" }
         )
         {
-            uniform token jitsd:offer:contract = "Mount@1"
-            uniform token jitsd:offer:role = "propSocket"
+            uniform token weft:offer:contract = "Mount@1"
+            uniform token weft:offer:role = "propSocket"
         }
         def Xform "fastener" (
             customData = { string "absent:id" = "bolt-m8" }
@@ -47,7 +47,7 @@ def Xform "root"
         }
         def Xform "sealed_container"
         {
-            uniform token jitsd:bind:finish = "glossy"
+            uniform token weft:bind:finish = "glossy"
             float rating = 1.5
         }
     }
@@ -121,7 +121,7 @@ def test_contract_role_resolution(stage):
     assert r.mode == "contract"
 
 
-def test_where_via_jitsd_bind_fallback(stage):
+def test_where_via_weft_bind_fallback(stage):
     (r,) = resolve_seeds(stage, ["where:finish=glossy"])
     assert r.paths == ["/root/shelf01/sealed_container"]
     assert r.mode == "attribute"

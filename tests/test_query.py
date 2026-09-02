@@ -63,7 +63,7 @@ def test_wheels_follow_a_chassis_parameter_change(tmp_path):
         return sorted(set(abs(v) for v in out))
 
     assert wheel_x(text) == [pytest.approx(1.42)]
-    longer = text.replace("jitsd:param:wheelbase = 2.84", "jitsd:param:wheelbase = 3.30")
+    longer = text.replace("weft:param:wheelbase = 2.84", "weft:param:wheelbase = 3.30")
     assert wheel_x(longer) == [pytest.approx(1.65)]
 
 
@@ -121,19 +121,19 @@ def test_a_stored_payload_compiles_as_a_constant(tmp_path):
     r.promote("propA", "v001", "approved")
     src = """#usda 1.0
 (
-    customLayerData = { string jitsd__context = "proxy" }
+    customLayerData = { string weft__context = "proxy" }
 )
 def Xform "S"
 {
-    def Xform "propA" ( prepend apiSchemas = ["JitsdInstanceAPI"] )
+    def Xform "propA" ( prepend apiSchemas = ["WeftInstanceAPI"] )
     {
-        uniform token jitsd:instance:asset = "propA"
+        uniform token weft:instance:asset = "propA"
     }
 }
 """
     c = compile_query(r, parse_query(parse(src)))
     assert c.ok
-    assert "prepend payload = @jitsd:obj/sha256:%s@" % rev.blob in c.stage
+    assert "prepend payload = @weft:obj/sha256:%s@" % rev.blob in c.stage
 
 
 def test_unknown_context_is_rejected():
@@ -145,23 +145,23 @@ def test_two_instances_of_one_asset_are_separate_consumers(tmp_path):
     r = _repo(tmp_path)
     src = '''#usda 1.0
 (
-    customLayerData = { string jitsd__context = "proxy" }
+    customLayerData = { string weft__context = "proxy" }
 )
 def Xform "Twin"
 {
-    def Xform "carA" ( prepend apiSchemas = ["JitsdInstanceAPI"] )
+    def Xform "carA" ( prepend apiSchemas = ["WeftInstanceAPI"] )
     {
-        uniform token jitsd:instance:asset = "chassis"
-        uniform double jitsd:param:wheelbase = 2.60
+        uniform token weft:instance:asset = "chassis"
+        uniform double weft:param:wheelbase = 2.60
     }
-    def Xform "wheelsA" ( prepend apiSchemas = ["JitsdInstanceAPI"] )
+    def Xform "wheelsA" ( prepend apiSchemas = ["WeftInstanceAPI"] )
     {
-        uniform token jitsd:instance:asset = "wheelset"
+        uniform token weft:instance:asset = "wheelset"
     }
-    def Xform "wheelsB" ( prepend apiSchemas = ["JitsdInstanceAPI"] )
+    def Xform "wheelsB" ( prepend apiSchemas = ["WeftInstanceAPI"] )
     {
-        uniform token jitsd:instance:asset = "wheelset"
-        uniform double jitsd:param:diameter = 0.80
+        uniform token weft:instance:asset = "wheelset"
+        uniform double weft:param:diameter = 0.80
     }
 }
 '''

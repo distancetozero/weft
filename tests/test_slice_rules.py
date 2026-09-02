@@ -44,11 +44,11 @@ def _two_threads(tmp_path):
         #usda 1.0
 
         def Xform "bench" (
-            prepend apiSchemas = ["JitsdOfferAPI"]
+            prepend apiSchemas = ["WeftOfferAPI"]
         )
         {
-            uniform token jitsd:offer:contract = "Mount@1"
-            uniform token jitsd:mount:role = "bottle"
+            uniform token weft:offer:contract = "Mount@1"
+            uniform token weft:mount:role = "bottle"
             double3 xformOp:translate = (0, 143, 0)
         }
     ''')
@@ -56,12 +56,12 @@ def _two_threads(tmp_path):
         #usda 1.0
 
         def Xform "bottle" (
-            prepend apiSchemas = ["JitsdRequireAPI:mount"]
+            prepend apiSchemas = ["WeftRequireAPI:mount"]
         )
         {
-            uniform token jitsd:require:mount:contract = "Mount@1"
-            uniform token jitsd:require:mount:role = "bottle"
-            uniform token jitsd:require:mount:cardinality = "many"
+            uniform token weft:require:mount:contract = "Mount@1"
+            uniform token weft:require:mount:role = "bottle"
+            uniform token weft:require:mount:cardinality = "many"
         }
     ''')
     # Real USDA is strict: nested defs need their own lines and braces.

@@ -11,11 +11,11 @@
 )
 
 def Xform "aero" (
-    prepend apiSchemas = ["JitsdGeneratorAPI", "JitsdRequireAPI:rail"]
+    prepend apiSchemas = ["WeftGeneratorAPI", "WeftRequireAPI:rail"]
 )
 {
-    uniform token jitsd:require:rail:contract      = "Mount@2"
-    uniform token jitsd:require:rail:role          = "panelClip"
-    uniform token jitsd:require:rail:cardinality   = "one"
-    uniform token jitsd:require:rail:failurePolicy = "substitutable"
+    uniform token weft:require:rail:contract      = "Mount@2"
+    uniform token weft:require:rail:role          = "panelClip"
+    uniform token weft:require:rail:cardinality   = "one"
+    uniform token weft:require:rail:failurePolicy = "substitutable"
 }

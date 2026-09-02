@@ -26,9 +26,9 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from .usda import Layer, Prim, parse
 
-OFFER_API = "JitsdOfferAPI"
-REQUIRE_API = "JitsdRequireAPI"
-ENVELOPE_API = "JitsdEnvelopeAPI"
+OFFER_API = "WeftOfferAPI"
+REQUIRE_API = "WeftRequireAPI"
+ENVELOPE_API = "WeftEnvelopeAPI"
 
 
 def split_contract(ident: str) -> Tuple[str, int]:
@@ -294,24 +294,24 @@ def extract(layer: Layer) -> Surface:
     surface = Surface()
     for prim in layer.walk():
         if prim.has_api(OFFER_API):
-            contract = prim.attrs.get("jitsd:offer:contract")
+            contract = prim.attrs.get("weft:offer:contract")
             if contract:
                 surface.offers.append(
                     Offer(
                         path=prim.path,
                         contract=str(contract),
-                        archetype=str(prim.attrs.get("jitsd:offer:archetype") or ""),
-                        role=str(prim.attrs.get("jitsd:mount:role") or ""),
-                        public=bool(prim.attrs.get("jitsd:offer:public", True)),
+                        archetype=str(prim.attrs.get("weft:offer:archetype") or ""),
+                        role=str(prim.attrs.get("weft:mount:role") or ""),
+                        public=bool(prim.attrs.get("weft:offer:public", True)),
                         frame=_frame_of(prim),
                         orient=_orient_of(prim),
-                        envelope_linear=float(prim.attrs.get("jitsd:envelope:linear") or 0.0),
-                        envelope_angular=float(prim.attrs.get("jitsd:envelope:angular") or 0.0),
-                        binds=_read_binds(prim, "jitsd:bind:"),
+                        envelope_linear=float(prim.attrs.get("weft:envelope:linear") or 0.0),
+                        envelope_angular=float(prim.attrs.get("weft:envelope:angular") or 0.0),
+                        binds=_read_binds(prim, "weft:bind:"),
                     )
                 )
         for inst in prim.api_instances(REQUIRE_API):
-            pre = "jitsd:require:%s:" % inst
+            pre = "weft:require:%s:" % inst
             contract = prim.attrs.get(pre + "contract")
             if contract:
                 binds = _read_binds(prim, pre + "bind:")

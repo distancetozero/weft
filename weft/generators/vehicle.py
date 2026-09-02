@@ -81,12 +81,12 @@ class Chassis(Generator):
         for name, frame in self.hub_frames(p):
             out.append(
                 '            def Xform "%s" (\n'
-                '                prepend apiSchemas = ["JitsdOfferAPI", "JitsdMountAPI", "JitsdEnvelopeAPI"]\n'
+                '                prepend apiSchemas = ["WeftOfferAPI", "WeftMountAPI", "WeftEnvelopeAPI"]\n'
                 '            )\n'
                 '            {\n'
-                '                uniform token  jitsd:offer:contract  = "Mount@2"\n'
-                '                uniform token  jitsd:mount:role      = "wheelHub"\n'
-                '                uniform double jitsd:envelope:linear = 0.0005\n'
+                '                uniform token  weft:offer:contract  = "Mount@2"\n'
+                '                uniform token  weft:mount:role      = "wheelHub"\n'
+                '                uniform double weft:envelope:linear = 0.0005\n'
                 '                double3 xformOp:translate = (%.6g, %.6g, %.6g)\n'
                 '            }\n' % (name, frame[0], frame[1], frame[2]))
         out.append('        }\n    }\n')

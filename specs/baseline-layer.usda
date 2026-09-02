@@ -16,23 +16,23 @@
         # Monotonic, assigned by the sequencer. The LABEL is what people say
         # out loud ("pull up the client review"); the number is the fallback
         # for auto-cut baselines nobody named.
-        string jitsd__baseline = "000118"
-        string jitsd__label    = "client_review"
-        string jitsd__parent   = "000117"
+        string weft__baseline = "000118"
+        string weft__label    = "client_review"
+        string weft__parent   = "000117"
 
-        string jitsd__cut   = "2026-08-30T09:14:00Z"
-        string jitsd__cutBy = "ci"                    # or a person
-        string jitsd__cutReason = "approved-channel-moved"
+        string weft__cut   = "2026-08-30T09:14:00Z"
+        string weft__cutBy = "ci"                    # or a person
+        string weft__cutReason = "approved-channel-moved"
 
         # --- merkle root over the whole pinned world -------------------------
         # "Has anything drifted since sign-off?" is a comparison of this value.
         # Kilobyte-scale and instant, for a question that currently takes a
         # person a day and is usually answered wrong.
-        string jitsd__merkleRoot = "sha256:4d90ff21"
+        string weft__merkleRoot = "sha256:4d90ff21"
 
         # --- exemplar gate ----------------------------------------------------
-        string jitsd__exemplarStatus = "pass"
-        int    jitsd__exemplarsRun   = 412
+        string weft__exemplarStatus = "pass"
+        int    weft__exemplarsRun   = 412
     }
 )
 
@@ -42,7 +42,7 @@ over "World" (
         # SPARSE, with tile collapse (the OpenVDB lesson): an entire subtree
         # can resolve to one entry rather than enumerating every prim under it.
         # A 200,000-prim plant should not need a 200,000-row table.
-        dictionary jitsd__pins = {
+        dictionary weft__pins = {
             string "hero_car"   = "v037"
             string "env_desert" = "v012"
             string "rig_key"    = "v004"
@@ -55,15 +55,15 @@ over "World" (
         # --- contract resolution ---------------------------------------------
         # Which provider satisfied which requirement, and why. This is the
         # provenance that makes "why is this different?" answerable.
-        dictionary jitsd__resolutions = {
-            string "hero_car:requires:JitsdSurfaceFieldAPI@1" = "env_desert v012 provides:terrainField"
+        dictionary weft__resolutions = {
+            string "hero_car:requires:WeftSurfaceFieldAPI@1" = "env_desert v012 provides:terrainField"
         }
 
         # --- approvals ---------------------------------------------------------
         # An approval is a signature over a derivation, not over a file.
         # Dailies sign-off, engineering change approval,
         # issued-for-construction, and cert are all this.
-        dictionary jitsd__approvals = {
+        dictionary weft__approvals = {
             string "lookdev" = "sig:9a71cc by:dana at:2026-08-30T11:02:00Z"
         }
     }

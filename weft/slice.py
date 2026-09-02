@@ -24,7 +24,7 @@ from typing import Dict, List, Optional, Tuple
 
 from .contracts import Surface, resolve, split_contract
 
-SLICE_RE = re.compile(r'string\s+jitsd__slice\s*=\s*"((?:[^"\\]|\\.)*)"')
+SLICE_RE = re.compile(r'string\s+weft__slice\s*=\s*"((?:[^"\\]|\\.)*)"')
 
 DEFAULT_DEPTH = 4
 
@@ -80,7 +80,7 @@ class SliceSpec:
 
 # -- rule sets: a team's way of seeing the scene, as content ---------------
 
-RULES_RE = re.compile(r'string\s+jitsd__rules\s*=\s*"((?:[^"\\]|\\.)*)"')
+RULES_RE = re.compile(r'string\s+weft__rules\s*=\s*"((?:[^"\\]|\\.)*)"')
 
 
 @dataclass
@@ -136,7 +136,7 @@ def emit_rules_document(rs: RuleSet, name: str) -> str:
         "#",
         "(",
         "    customLayerData = {",
-        '        string jitsd__rules = "%s"' % _esc(rs.to_json()),
+        '        string weft__rules = "%s"' % _esc(rs.to_json()),
         "    }",
         ")",
         "",
@@ -146,7 +146,7 @@ def emit_rules_document(rs: RuleSet, name: str) -> str:
 def read_rules(text: str) -> RuleSet:
     m = RULES_RE.search(text)
     if not m:
-        raise ValueError("no jitsd__rules block")
+        raise ValueError("no weft__rules block")
     return RuleSet.from_json(m.group(1).encode().decode("unicode_escape"))
 
 
@@ -732,13 +732,13 @@ def emit_query_document(result: SliceResult) -> str:
         "#usda 1.0",
         "(",
         "    customLayerData = {",
-        '        string jitsd__label   = "%s"' % _esc(spec.label or "slice"),
-        '        string jitsd__context = "%s"' % spec.context,
+        '        string weft__label   = "%s"' % _esc(spec.label or "slice"),
+        '        string weft__context = "%s"' % spec.context,
     ]
     if spec.baseline:
-        head.append('        string jitsd__baseline = "%s"' % spec.baseline)
+        head.append('        string weft__baseline = "%s"' % spec.baseline)
     head += [
-        '        string jitsd__slice = "%s"' % _esc(spec.to_json()),
+        '        string weft__slice = "%s"' % _esc(spec.to_json()),
         "    }",
         ")",
         "",
@@ -749,11 +749,11 @@ def emit_query_document(result: SliceResult) -> str:
     for m in result.members:
         body += [
             '    def Xform "%s" (' % m.asset,
-            '        prepend apiSchemas = ["JitsdInstanceAPI"]',
+            '        prepend apiSchemas = ["WeftInstanceAPI"]',
             "    )",
             "    {",
-            '        uniform token jitsd:instance:asset = "%s"' % _esc(m.asset),
-            '        uniform token jitsd:provenance = "%s"'
+            '        uniform token weft:instance:asset = "%s"' % _esc(m.asset),
+            '        uniform token weft:provenance = "%s"'
             % _esc("%s: %s" % (m.provenance.kind, m.provenance.detail)),
             "    }",
         ]
@@ -763,7 +763,7 @@ def emit_query_document(result: SliceResult) -> str:
 def read_spec(path: Path) -> SliceSpec:
     m = SLICE_RE.search(Path(path).read_text())
     if not m:
-        raise ValueError("%s carries no jitsd__slice block" % path)
+        raise ValueError("%s carries no weft__slice block" % path)
     return SliceSpec.from_json(m.group(1).encode().decode("unicode_escape"))
 
 

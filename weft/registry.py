@@ -29,7 +29,7 @@ def omission_class(kind: str) -> str:
     return INERT
 
 
-EXTRACTORS_RE = re.compile(r'string\s+jitsd__extractors\s*=\s*"((?:[^"\\]|\\.)*)"')
+EXTRACTORS_RE = re.compile(r'string\s+weft__extractors\s*=\s*"((?:[^"\\]|\\.)*)"')
 
 
 @dataclass(frozen=True)
@@ -42,7 +42,7 @@ class Extractor:
 def parse_extractors(text: str) -> List[Extractor]:
     m = EXTRACTORS_RE.search(text)
     if not m:
-        raise ValueError("no jitsd__extractors block")
+        raise ValueError("no weft__extractors block")
     raw = json.loads(m.group(1).encode().decode("unicode_escape"))
     return [Extractor(**d) for d in raw]
 
@@ -57,7 +57,7 @@ def emit_extractors_document(items, name: str) -> str:
         "# into first-class edges. Apply with `weft pull --extractors %s`." % name,
         "(",
         "    customLayerData = {",
-        '        string jitsd__extractors = "%s"' % esc,
+        '        string weft__extractors = "%s"' % esc,
         "    }",
         ")",
         "",

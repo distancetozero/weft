@@ -4,9 +4,9 @@ The adoption path for every studio that has a USD library and no contracts.
 An assembly already *is* the data: it places props at real transforms under
 named groups. Read that, and emit interface layers --
 
-  provider   one JitsdOfferAPI mount per placement, frame = the placement's
+  provider   one WeftOfferAPI mount per placement, frame = the placement's
              translate, role = the placed asset's name, plus an envelope
-  consumers  one JitsdRequireAPI per placed asset: Mount, role = itself,
+  consumers  one WeftRequireAPI per placed asset: Mount, role = itself,
              cardinality many, so it binds every place the provider offers it
 
 Role = asset name is the deliberate choice. Per-placement roles would make a
@@ -264,7 +264,7 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
     wherever it is used.
 
     `carrier_rule="group-furniture"` additionally authors an ADVISORY
-    `jitsd:offer:carrier` rel on every non-furniture offer, pointing at the
+    `weft:offer:carrier` rel on every non-furniture offer, pointing at the
     `furniture_*` placements in its own group (a shelf is not its own
     carrier). It is a stated, recorded rule -- not a measurement -- so it is
     refused (`ValueError`) when `load_limit` says an offer carries physical
@@ -310,15 +310,15 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
         ")",
         "",
     ]
-    schemas = ['"JitsdGeneratorAPI"']
-    schemas += ['"JitsdRequireAPI:rep_%s"' % a for a in sorted(represents or {})]
+    schemas = ['"WeftGeneratorAPI"']
+    schemas += ['"WeftRequireAPI:rep_%s"' % a for a in sorted(represents or {})]
     lines += [
         '%s "%s" (' % (root_kw, root_name),
         "    prepend apiSchemas = [%s]" % ", ".join(schemas),
         ")",
         "{",
-        '    uniform token jitsd:costClass = "%s"' % cost_class,
-        '    uniform token jitsd:envelope:source = "policy:extractor-default"',
+        '    uniform token weft:costClass = "%s"' % cost_class,
+        '    uniform token weft:envelope:source = "policy:extractor-default"',
     ]
     for a, deps_ in sorted((represents or {}).items()):
         # The reverse direction: the assembly CONSUMES each placed asset's
@@ -328,17 +328,17 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
         # the assembly at re-evaluation.
         lines += [
             "",
-            '    uniform token   jitsd:require:rep_%s:contract      = "%s"' % (a, REPRESENTS_CONTRACT),
-            '    uniform token   jitsd:require:rep_%s:role          = "%s"' % (a, a),
-            '    uniform token   jitsd:require:rep_%s:cardinality   = "one"' % a,
-            '    uniform token   jitsd:require:rep_%s:failurePolicy = "required"' % a,
-            "    uniform token[] jitsd:require:rep_%s:bind:provides = [%s]"
+            '    uniform token   weft:require:rep_%s:contract      = "%s"' % (a, REPRESENTS_CONTRACT),
+            '    uniform token   weft:require:rep_%s:role          = "%s"' % (a, a),
+            '    uniform token   weft:require:rep_%s:cardinality   = "one"' % a,
+            '    uniform token   weft:require:rep_%s:failurePolicy = "required"' % a,
+            "    uniform token[] weft:require:rep_%s:bind:provides = [%s]"
             % (a, ", ".join('"%s"' % d for d in sorted(deps_))),
         ]
         sh = (shading_required or {}).get(a)
         if sh:
             lines += [
-                "    uniform token[] jitsd:require:rep_%s:bind:shading  = [%s]"
+                "    uniform token[] weft:require:rep_%s:bind:shading  = [%s]"
                 % (a, ", ".join('"%s"' % m for m in sorted(sh))),
             ]
     for group in ex.groups:
@@ -349,21 +349,21 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
             t = (p.translate[0] + d[0], p.translate[1] + d[1], p.translate[2] + d[2])
             lines += [
                 '        %s "%s" (' % (offer_kw, p.name),
-                '            prepend apiSchemas = ["JitsdOfferAPI", "JitsdMountAPI", "JitsdEnvelopeAPI"]',
+                '            prepend apiSchemas = ["WeftOfferAPI", "WeftMountAPI", "WeftEnvelopeAPI"]',
                 "        )",
                 "        {",
-                '            uniform token  jitsd:offer:contract  = "%s"' % contract,
-                '            uniform token  jitsd:offer:archetype = "mount"',
-                '            uniform token  jitsd:mount:role      = "%s"' % p.asset,
-                "            uniform double jitsd:envelope:linear = %s" % _f(envelope),
+                '            uniform token  weft:offer:contract  = "%s"' % contract,
+                '            uniform token  weft:offer:archetype = "mount"',
+                '            uniform token  weft:mount:role      = "%s"' % p.asset,
+                "            uniform double weft:envelope:linear = %s" % _f(envelope),
                 "            double3 xformOp:translate = (%s, %s, %s)" % tuple(_f(x) for x in t),
             ]
             if carriers and not p.name.startswith("furniture_"):
                 targets = ", ".join(
                     "</%s/%s/%s>" % (root_name, group, c) for c in sorted(carriers))
                 lines += [
-                    "            prepend rel jitsd:offer:carrier = [%s]" % targets,
-                    "            uniform token jitsd:offer:carrierRule = "
+                    "            prepend rel weft:offer:carrier = [%s]" % targets,
+                    "            uniform token weft:offer:carrierRule = "
                     "\"%s: furniture_* placements of the offer's group\"" % carrier_rule,
                 ]
             lines.append("        }")
@@ -408,21 +408,21 @@ def consumer_interface(asset: str, contract: str = DEFAULT_CONTRACT,
         ")",
         "",
         '%s "%s" (' % (root_kw, root_name),
-        '    prepend apiSchemas = ["JitsdGeneratorAPI", "JitsdRequireAPI:mount"]',
+        '    prepend apiSchemas = ["WeftGeneratorAPI", "WeftRequireAPI:mount"]',
         ")",
         "{",
-        '    uniform token jitsd:costClass = "%s"' % cost_class,
+        '    uniform token weft:costClass = "%s"' % cost_class,
         "",
-        '    uniform token jitsd:require:mount:contract      = "%s"' % contract,
-        '    uniform token jitsd:require:mount:role          = "%s"' % asset,
-        '    uniform token jitsd:require:mount:cardinality   = "many"',
-        '    uniform token jitsd:require:mount:failurePolicy = "required"',
+        '    uniform token weft:require:mount:contract      = "%s"' % contract,
+        '    uniform token weft:require:mount:role          = "%s"' % asset,
+        '    uniform token weft:require:mount:cardinality   = "many"',
+        '    uniform token weft:require:mount:failurePolicy = "required"',
     ]
     if tolerance is not None:
         lines += [
             "",
             "    # derived: %s" % (tolerance_rule or "stated by the consumer"),
-            "    uniform double jitsd:require:mount:tolerance:linear = %s" % _f(tolerance),
+            "    uniform double weft:require:mount:tolerance:linear = %s" % _f(tolerance),
         ]
     if provides:
         # The contract is two-sided. The prop consumes a mount; it also OFFERS
@@ -434,23 +434,23 @@ def consumer_interface(asset: str, contract: str = DEFAULT_CONTRACT,
         lines += [
             "",
             '    def Xform "represents" (',
-            '        prepend apiSchemas = ["JitsdOfferAPI"]',
+            '        prepend apiSchemas = ["WeftOfferAPI"]',
             "    )",
             "    {",
-            '        uniform token   jitsd:offer:contract  = "%s"' % REPRESENTS_CONTRACT,
-            '        uniform token   jitsd:offer:archetype = "field"',
-            '        uniform token   jitsd:mount:role      = "%s"' % asset,
-            "        uniform token[] jitsd:bind:provides   = [%s]"
+            '        uniform token   weft:offer:contract  = "%s"' % REPRESENTS_CONTRACT,
+            '        uniform token   weft:offer:archetype = "field"',
+            '        uniform token   weft:mount:role      = "%s"' % asset,
+            "        uniform token[] weft:bind:provides   = [%s]"
             % ", ".join('"%s"' % d for d in sorted(provides)),
         ]
         if shading:
             lines += [
-                "        uniform token[] jitsd:bind:shading    = [%s]"
+                "        uniform token[] weft:bind:shading    = [%s]"
                 % ", ".join('"%s"' % m for m in sorted(shading)),
             ]
         if surface_finish:
             lines += [
-                '        uniform token   jitsd:bind:finish     = "%s"' % surface_finish,
+                '        uniform token   weft:bind:finish     = "%s"' % surface_finish,
             ]
         lines += ["    }"]
     lines += ["}", ""]

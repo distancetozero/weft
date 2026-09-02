@@ -118,7 +118,7 @@ def _needs_regen(alab: str) -> bool:
     if not os.path.exists(iface):
         return True
     text = open(iface).read()
-    return "jitsd:offer:carrier" not in text or 'over "root"' not in text
+    return "weft:offer:carrier" not in text or 'over "root"' not in text
 
 
 def maybe_regenerate_interfaces(alab: str) -> bool:
@@ -350,7 +350,7 @@ def s2_weft_pull(alab: str):
 
 
 def s2_amortized_setup(alab: str):
-    """The one-time cost of deriving jitsd:bind:finish onto the interfaces
+    """The one-time cost of deriving weft:bind:finish onto the interfaces
     weft's pull reads -- run into a THROWAWAY temp dir (into_assets omitted)
     so this measurement never touches the real ALab tree."""
     from weft.extract import finish as _finish, materials as _materials
@@ -404,7 +404,7 @@ def run_s2(alab: str) -> None:
     print("  time (best/3)          %s   all: %s"
           % (fmt_ms(w["best_s"]), ", ".join(fmt_ms(t) for t in w["times"])))
 
-    sub("AMORTIZED SETUP -- one-time cost of deriving jitsd:bind:finish onto "
+    sub("AMORTIZED SETUP -- one-time cost of deriving weft:bind:finish onto "
         "the interfaces weft's answer reads (run into a throwaway temp dir, "
         "does not touch the ALab tree)")
     print("  look layers read       %d real look layers (fragment/look/surfacing/*)"
@@ -433,7 +433,7 @@ def run_s2(alab: str) -> None:
           % (len(SPIKE_TRANSLUCENT_MASK), set(SPIKE_TRANSLUCENT_MASK) == weft_set))
 
     sub("HONEST WRINKLE")
-    print("  weft's answer reads jitsd:bind:finish from interfaces derived ONCE "
+    print("  weft's answer reads weft:bind:finish from interfaces derived ONCE "
           "from the look layers (spec-level walk across every representation: "
           "usd_full, usd_preview, usd_preview_proxy); the baseline inspects the "
           "COMPOSED shading network live, at one binding purpose ('preview') per "

@@ -188,8 +188,8 @@ def Xform "root"
 {
     def Xform "bottle"
     {
-        uniform token jitsd:offer:contract = "Mount@1"
-        rel jitsd:offer:carrier = </root/shelf>
+        uniform token weft:offer:contract = "Mount@1"
+        rel weft:offer:carrier = </root/shelf>
     }
     def Xform "shelf"
     {

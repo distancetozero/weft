@@ -24,18 +24,18 @@ from weft.slice import SliceSpec, resolve_slice  # noqa: E402
 
 IFACE = """#usda 1.0
 def Xform "link_%03d" (
-    prepend apiSchemas = ["JitsdOfferAPI"%s]
+    prepend apiSchemas = ["WeftOfferAPI"%s]
 )
 {
-    uniform token jitsd:offer:contract = "Chain@1"
-    uniform token jitsd:mount:role = "slot_%03d"
+    uniform token weft:offer:contract = "Chain@1"
+    uniform token weft:mount:role = "slot_%03d"
 %s}
 """
 
-REQ = """    uniform token jitsd:require:next:contract = "Chain@1"
-    uniform token jitsd:require:next:role = "slot_%03d"
-    uniform token jitsd:require:next:cardinality = "one"
-    uniform token jitsd:require:next:failurePolicy = "required"
+REQ = """    uniform token weft:require:next:contract = "Chain@1"
+    uniform token weft:require:next:role = "slot_%03d"
+    uniform token weft:require:next:cardinality = "one"
+    uniform token weft:require:next:failurePolicy = "required"
 """
 
 
@@ -46,7 +46,7 @@ def build(root: Path, k: int) -> Repo:
     blob.write_bytes(random.Random(1).randbytes(4096))
     for i in range(k):
         req = REQ % (i + 1) if i < k - 1 else ""
-        api = ', "JitsdRequireAPI:next"' if req else ""
+        api = ', "WeftRequireAPI:next"' if req else ""
         iface = root / ("l%03d.usda" % i)
         iface.write_text(IFACE % (i, api, i, req))
         repo.save("link_%03d" % i, blob, "bench", interface=iface)

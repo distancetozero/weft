@@ -69,7 +69,7 @@ def parse_seed(text: str) -> Seed:
 import fnmatch
 from typing import Dict, List, Optional, Tuple
 
-DEFAULT_IDENTITY_KEYS = ("absent:id", "jitsd:id", "ifc:GlobalId")
+DEFAULT_IDENTITY_KEYS = ("absent:id", "weft:id", "ifc:GlobalId")
 
 
 from dataclasses import dataclass as _dc, field as _field
@@ -107,9 +107,9 @@ def _value_matches(authored, text: str) -> bool:
 
 
 def _authored(prim, name):
-    """Authored value for `name`: attribute (plain or jitsd:bind:), then
+    """Authored value for `name`: attribute (plain or weft:bind:), then
     customData. Returns (found, value)."""
-    for attr_name in (name, "jitsd:bind:%s" % name):
+    for attr_name in (name, "weft:bind:%s" % name):
         a = prim.GetAttribute(attr_name)
         if a and a.HasAuthoredValue():
             return True, a.Get()
@@ -136,7 +136,7 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
     # data, that is most placements) from seed matching entirely. Drop the
     # loaded requirement; keep active/defined/non-abstract. Also traverse
     # instance proxies: an instanceable placement's own contract surface
-    # (e.g. a `represents` offer authoring `jitsd:bind:finish`) lives inside
+    # (e.g. a `represents` offer authoring `weft:bind:finish`) lives inside
     # the prototype and is otherwise invisible to attribute/name matching.
     # `pull()`'s `_admit` already widens a resolved instance-proxy path back
     # to its instance root, so surfacing the proxy path here is safe.
@@ -223,15 +223,15 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
             r.mode = "contract"
             hits = []
             for p in prims:
-                found, v = _authored(p, "jitsd:offer:contract")
-                rfound, rv = _authored(p, "jitsd:offer:role")
+                found, v = _authored(p, "weft:offer:contract")
+                rfound, rv = _authored(p, "weft:offer:role")
                 if s.key == "offers" and found and str(v).split("@")[0] == s.value.split("@")[0]:
                     hits.append(p.GetPath().pathString)
                 elif s.key == "role" and rfound and str(rv) == s.value:
                     hits.append(p.GetPath().pathString)
                 elif s.key == "requires":
                     for prop in p.GetAuthoredPropertyNames():
-                        if prop.startswith("jitsd:require:") and prop.endswith(":contract"):
+                        if prop.startswith("weft:require:") and prop.endswith(":contract"):
                             a = p.GetAttribute(prop)
                             if a and str(a.Get()).split("@")[0] == s.value.split("@")[0]:
                                 hits.append(p.GetPath().pathString)

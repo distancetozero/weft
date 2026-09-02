@@ -70,10 +70,10 @@ def _out_edges(prim, extractors=()) -> List[Tuple[str, str]]:
         for t in rel.GetTargets():
             out.append((kind, t.GetPrimPath().pathString))
 
-    c = prim.GetAttribute("jitsd:offer:contract")
+    c = prim.GetAttribute("weft:offer:contract")
     if c and c.HasAuthoredValue():
         kind = str(c.Get()).split("@")[0]          # "Mount@1" -> "Mount"
-        rel = prim.GetRelationship("jitsd:offer:carrier")
+        rel = prim.GetRelationship("weft:offer:carrier")
         if rel:
             for t in rel.GetTargets():
                 out.append((kind, t.GetPrimPath().pathString))
