@@ -31,7 +31,7 @@ build-backend = "setuptools.build_meta"
 # refuses to guess between them -- `pip install -e .` fails outright without
 # this. Caught by simulating the CI job from a clean clone.
 [tool.setuptools]
-packages = ["weft", "weft.generators"]
+packages = ["weft", "weft.generators", "deps", "absent"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
