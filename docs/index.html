@@ -157,6 +157,32 @@ weft pull b01 --follow up:electrical:feeds*8   <span class="cmt"># trace upstrea
 weft pull path:/root/shelf01/b_0004      <span class="cmt"># location — the fallback, not the default</span>
 weft who 'name:glass' --context shot.usda      <span class="cmt"># what depends on this prim?</span></code></pre>
 
+<h2>Where the attributes come from</h2>
+<p>Nothing above is hand-annotated. Every attribute weft reads has one of four
+provenances, and the provenance is recorded with the value:</p>
+<ul class="rules">
+  <li><b>Derived from data already there.</b> <code>finish</code> comes from authored
+  <code>UsdPreviewSurface</code> opacity; mount frames from the assembly's own
+  translates; <code>provides</code> sets from the department sublayers. The extractor
+  derived all 601 contract surfaces on ALab from the files as shipped.</li>
+  <li><b>Derived by a stated rule, recorded beside the result.</b> A consumer's
+  tolerance is 10% of its own authored extent — and that rule is stamped on the
+  interface next to the number, so derivation is never mistaken for measurement.</li>
+  <li><b>Policy, marked as policy.</b> The provider's default envelope carries
+  <code>source = "policy:extractor-default"</code> — visibly an assumption, never
+  disguised as a promise.</li>
+  <li><b>Declared by you.</b> Team relationship kinds, edge extractors for your
+  soft-reference conventions, identity keys — your existing GUIDs or part numbers
+  become <code>id:</code> addresses.</li>
+</ul>
+<p>And unauthored data yields no attribute, ever: only 8 of ALab's 158 look files
+author opacity, so 150 props got <i>no</i> <code>finish</code> — an invented
+"opaque" would be a claim nobody made. Receipts count the complement
+("matched 212; 340 don't author this — not evaluated"), so sparse data degrades to
+declared ignorance, not confident nonsense. With no extraction at all,
+<code>name:</code>, <code>path:</code>, and the stock USD kinds still work bare on
+any file — the richer planes bootstrap from your data; they're not a precondition.</p>
+
 <h2>Three rules keep pulls trustworthy</h2>
 <ul class="rules">
   <li><b>What you didn't pull is declared, never silently absent.</b>
