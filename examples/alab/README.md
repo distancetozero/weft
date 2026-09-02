@@ -34,7 +34,7 @@ offer frame really is where a prop's base sits.
 | value | tier | source |
 |---|---|---|
 | offer frames | derived from data | the assembly's own translates |
-| provider envelope (1 cm) | **policy** | given to the extractor; every offer carries `jitsd:envelope:source = "policy:extractor-default"` so nobody mistakes it for the shelf's real promise |
+| provider envelope (1 cm) | **policy** | given to the extractor; every offer carries `weft:envelope:source = "policy:extractor-default"` so nobody mistakes it for the shelf's real promise |
 | consumer tolerance | derived by a stated rule | **10 % of the prop's own footprint**, from `extentsHint`; recorded on the interface as `# derived: 10% of a 5.9 footprint`. A thumb tack gets 0.08 cm, a bottle 0.59 cm, the bench 45 cm. Five props state no extent and get no tolerance — the envelope governs them, which is honest; an invented number is not. |
 
 ## A relationship is not a position
@@ -63,28 +63,24 @@ simulation is legitimate rather than a cheat.
 
 ```
 == extract contract surfaces from the assembly
-   437 placements in 6 groups -> 437 offers, 164 consumer surfaces  (221 ms)
+   shading sets from 158 real look layers; finish derived for 8 (8 translucent, 0 opaque)
+   437 placements in 6 groups -> 437 offers, 164 consumer surfaces  (1094 ms)
    camera01             3 mounts
    floor_dressing01     8 mounts
    shelf01             65 mounts
    shelf02             51 mounts
    wall_dressing01      9 mounts
    workbench01        301 mounts
+   consumer tolerances derived for 159/164 props: proc_dev_circuit_fuse01 0.06 cm .. furniture_workbench01 44.96 cm
 
 == ingest: workbench + every placed prop, each with its surface
    165 assets on @approved
 
 == bind: requirements -> offers, by contract and role only
-   164 consumers bound to 437 offers; ok=True
-
-   shading sets from 158 real look layers; finish derived for 8 (8 translucent, 0 opaque)
-   consumer tolerances derived for 159/164 props: proc_dev_circuit_fuse01 0.06 cm .. furniture_workbench01 44.96 cm
-
-== bind: requirements -> offers, by contract and role only
-   328 consumers bound to 601 offers; ok=True        (164 mounts + 164 representations)
+   328 consumers bound to 601 offers; ok=True
 
 == cut baseline
-   baseline 000001  merkle f51109e315d0b3f1
+   baseline 000001  merkle c0feca8b064dcd59
 
 == republish workbench: shelf01 raised 0.05 cm (inside every tolerance)
    promoted v002 -> @approved  (0 violations)
@@ -94,34 +90,52 @@ simulation is legitimate rather than a cheat.
    consumer re-evaluation (what was measured): 164 consumers checked, 19 broken
    REFUSED by consumers: 19 props would break, though the provider kept its promise
      chemistry_bottle01         position moved 0.65, consumer tolerates 0.5913
+     chemistry_bottle03         position moved 0.65, consumer tolerates 0.5155
      chemistry_test_tube02      position moved 0.65, consumer tolerates 0.2225
+     chemistry_test_tube03      position moved 0.65, consumer tolerates 0.2381
+     decor_clip01               position moved 0.65, consumer tolerates 0.1512
      decor_thumb_tack01         position moved 0.65, consumer tolerates 0.0823
-     ... and 16 more
+     ... and 13 more
    @approved still at v002
 
 == republish workbench: shelf01 raised 3 cm (past the envelope)
    REFUSED: lab_workbench01 v004 -> @approved  (65 provider violations, 62 consumer violations)
-     envelope  /lab_workbench01/shelf01/chemistry_bottle01_0004: moved 2.95, envelope allows 1
+     envelope           /lab_workbench01/shelf01/chemistry_bottle01_0004: moved 2.95, envelope allows 1 -- provider broke its own promise
+     envelope           /lab_workbench01/shelf01/chemistry_bottle01_0005: moved 2.95, envelope allows 1 -- provider broke its own promise
+     envelope           /lab_workbench01/shelf01/chemistry_bottle01_0007: moved 2.95, envelope allows 1 -- provider broke its own promise
+     envelope           /lab_workbench01/shelf01/chemistry_bottle01_0011: moved 2.95, envelope allows 1 -- provider broke its own promise
      ... and 61 more, every one on shelf01
    @approved still at v002
 
-== impact preview from a slice: a lighter's slice of the bottles
+== impact preview from a slice (docs/10-slices.md): a lighter's slice of the bottles
    slice: 3 bottles.  candidate lab_workbench01@wip breaks 34 consumers:
      inside the slice  (3): chemistry_bottle01, chemistry_bottle02, chemistry_bottle03
-     outside the slice (31): chemistry_microscope01, chemistry_test_tube02, ...
+     outside the slice (31): chemistry_microscope01, chemistry_test_tube02, chemistry_test_tube03, decor_bonsai_jar01, decor_clip01 ...
    -- the lighter sees what their edit breaks for other teams, without loading their slices
+
+== two-sided: a prop republished without its preview department
+   REFUSED: chemistry_bottle01 dropped preview
+     unresolved lab_workbench01 /lab_workbench01:rep_chemistry_bottle01: no provider of Represents@1
+   -- the ASSEMBLY is the broken consumer: the contract runs both ways
+   @approved still at v001
+
+== shading is a binding attribute: tool_screw01 republished without usd_full
+   REFUSED: tool_screw01 dropped usd_full from its shading set
+     unresolved lab_workbench01 /lab_workbench01:rep_tool_screw01: no provider of Represents@1
+   -- a shading change breaks exactly the consumers bound on shading
+   @approved still at v001
 
 == pull one thread: closure by relationship kind, and a team's rule set
    seed chemistry_bottle01, follow everything: 165 members  (the bench references every prop)
    seed chemistry_bottle01, follow Mount only: 2 members  -> chemistry_bottle01, lab_workbench01
-   declared at the boundary, not pulled: 163 threads (usd:arc not followed)
+   declared at the boundary, not pulled: 326 threads (Represents not followed, usd:arc not followed)
    rule set lookdev.rules@v001 saved and promoted; applied to a different seed: 2 members
 
 == drift since baseline 000001
-   baseline f51109e315d0b3f1   now d44304852ec16712   DRIFTED
+   baseline c0feca8b064dcd59   now 70f9785dc35994ac   DRIFTED (the +0.05cm republish is on @approved)
 
 == verify
-   blobs ok 333  corrupt 0  missing 0   stale generators 0
+   blobs ok 336  corrupt 0  missing 0   stale generators 0
 ```
 
 ## The contract runs both ways
@@ -136,7 +150,7 @@ so the assembly is a consumer of its own props.
 ```
 == two-sided: a prop republished without its preview department
    REFUSED: chemistry_bottle01 dropped preview
-     unresolved lab_workbench01 rep_chemistry_bottle01: no provider of Represents@1
+     unresolved lab_workbench01 /lab_workbench01:rep_chemistry_bottle01: no provider of Represents@1
    -- the ASSEMBLY is the broken consumer: the contract runs both ways
 ```
 
@@ -149,7 +163,7 @@ not identity. That uniformity is exactly what a set attribute wants:
 ```
 == shading is a binding attribute: tool_screw01 republished without usd_full
    REFUSED: tool_screw01 dropped usd_full from its shading set
-     unresolved lab_workbench01 rep_tool_screw01: no provider of Represents@1
+     unresolved lab_workbench01 /lab_workbench01:rep_tool_screw01: no provider of Represents@1
    -- a shading change breaks exactly the consumers bound on shading
 ```
 
@@ -179,7 +193,7 @@ prop. Correct, and useless.
 relationship it is — a contract name like `Mount`, or a USD kind like
 `usd:binding`, `usd:arc`, `usd:inherit` — and closure follows only the kinds
 named. What is not followed is **declared at the boundary**, never silently
-dropped: *163 threads, usd:arc not followed*.
+dropped: *326 threads, Represents and usd:arc not followed*.
 
 A **rule set** is the reusable half of a slice — closure, follow, depth,
 attributes in view, context — stored as an asset revision, promoted through
@@ -190,7 +204,9 @@ one hop, position in view*. A team shares a way of seeing, not a scene file.
     weft select chemistry_bottle01 --rules lookdev.rules
     weft select 'chemistry_*' --follow Mount,usd:binding --save-rules lighting.rules
 
-Whole run: **3.5 s** (2.6 s of it opening 164 entity layers for `extentsHint`).
+Whole run: **16.4 s** (1.1 s of it extracting the contract surfaces and
+deriving consumer tolerances from 164 entity layers' `extentsHint`, printed
+above).
 
 ## What it shows
 
@@ -222,10 +238,10 @@ Everything above pulls at *asset* granularity: `weft select` decides which
 assets to load, not which prims inside them. `weft pull` (spec sections
 4–8) works one level down — seed by identity, attribute, bounds, or path,
 follow only the relationship kinds named, and get back a prim mask, no
-asset ingestion and no `.jitsd/` repository required. It runs directly
+asset ingestion and no `.weft/` repository required. It runs directly
 against the checked-out ALab tree:
 
-    JITSD_ALAB=/path/to/ALab-2.3.0/ALab python -m pytest tests/test_alab_pull.py -v
+    WEFT_ALAB=/path/to/ALab-2.3.0/ALab python -m pytest tests/test_alab_pull.py -v
 
 The test's setup fixture regenerates the workbench and placed-prop
 interfaces with `anchor="root"` and `carrier_rule="group-furniture"`
@@ -236,46 +252,48 @@ checked into this tree earlier do not.
 **One prim, by path or by bare name** — the lexical form finds the same
 prim without a path in the question:
 
-    $ weft pull 'path:/root/shelf01/chemistry_bottle01_0004' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+    $ weft pull 'path:/root/shelf01/chemistry_bottle01_0004' --context $WEFT_ALAB/entity/lab_workbench01/lab_workbench01.usda
     seed path:/root/shelf01/chemistry_bottle01_0004 -> 1 (path)
     members (1):
       /root/shelf01/chemistry_bottle01_0004        seed
     boundary (8):
       /root/shelf01/furniture_lbracket01_0001      Mount                    not followed [inert]
-      /root/shelf01/furniture_lbracket01_0001      jitsd:offer:carrier      not followed [inert]
+      /root/shelf01/furniture_lbracket01_0001      weft:offer:carrier      not followed [inert]
       /root/shelf01/furniture_lbracket01_2         Mount                    not followed [inert]
-      /root/shelf01/furniture_lbracket01_2         jitsd:offer:carrier      not followed [inert]
+      /root/shelf01/furniture_lbracket01_2         weft:offer:carrier      not followed [inert]
       /root/shelf01/furniture_parts_cabinet02_0002 Mount                    not followed [inert]
-      /root/shelf01/furniture_parts_cabinet02_0002 jitsd:offer:carrier      not followed [inert]
+      /root/shelf01/furniture_parts_cabinet02_0002 weft:offer:carrier      not followed [inert]
       /root/shelf01/furniture_shelving01_0001      Mount                    not followed [inert]
-      /root/shelf01/furniture_shelving01_0001      jitsd:offer:carrier      not followed [inert]
+      /root/shelf01/furniture_shelving01_0001      weft:offer:carrier      not followed [inert]
+      ~ strand-free over relationships, arcs, and registered extractors (0 registered); attribute-encoded references outside them are not visible
     fitness: contact-incomplete by construction
 
-    $ weft pull 'chemistry_bottle01_0004' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+    $ weft pull 'chemistry_bottle01_0004' --context $WEFT_ALAB/entity/lab_workbench01/lab_workbench01.usda
     seed chemistry_bottle01_0004 -> 1 (lexical)
     members (1):
       /root/shelf01/chemistry_bottle01_0004        seed
 
 **Following the Mount contract to its carrier.** `--follow Mount` walks the
-advisory `jitsd:offer:carrier` edges the regenerated interface authors,
+advisory `weft:offer:carrier` edges the regenerated interface authors,
 pulling the shelf furniture that carries the bottle — not the other 300+
 props on the bench:
 
-    $ weft pull 'path:/root/shelf01/chemistry_bottle01_0004' --follow Mount --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+    $ weft pull 'path:/root/shelf01/chemistry_bottle01_0004' --follow Mount --context $WEFT_ALAB/entity/lab_workbench01/lab_workbench01.usda
     members (5):
       /root/shelf01/chemistry_bottle01_0004        seed
       /root/shelf01/furniture_lbracket01_0001      Mount <- /root/shelf01/chemistry_bottle01_0004
       /root/shelf01/furniture_lbracket01_2         Mount <- /root/shelf01/chemistry_bottle01_0004
       /root/shelf01/furniture_parts_cabinet02_0002 Mount <- /root/shelf01/chemistry_bottle01_0004
       /root/shelf01/furniture_shelving01_0001      Mount <- /root/shelf01/chemistry_bottle01_0004
+      ~ strand-free over relationships, arcs, and registered extractors (0 registered); attribute-encoded references outside them are not visible
 
 **An attribute ask, rendered.** `where:finish=translucent` resolves against
-`jitsd:bind:finish`, authored on each placed asset's own `Represents` offer
+`weft:bind:finish`, authored on each placed asset's own `Represents` offer
 — derived at extraction from real `UsdPreviewSurface` opacity
 (`weft/extract.py:finish`), never invented. No path names a single one of
 the 26 hits:
 
-    $ weft pull 'where:finish=translucent' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda --mask-out /tmp/pull.mask
+    $ weft pull 'where:finish=translucent' --context $WEFT_ALAB/entity/lab_workbench01/lab_workbench01.usda --mask-out /tmp/pull.mask
     seed where:finish=translucent -> 26 (attribute, 1744 do not author the key)
     members (26):
       /root/shelf01/chemistry_bottle01_0004        seed
@@ -285,12 +303,14 @@ the 26 hits:
           square from the 8 translucent assets
     boundary (16): the shelf furniture that carries these props, and every
       other contract on the bench — 8 furniture pieces (Mount + carrier,
-      not followed), plus the 8 hits' own `represents` instance proxies
-      widened to their placement roots
+      not followed), plus one declaration per hit — all 26 — recording that
+      its `represents` instance proxy widened to its placement root, plus a
+      final declaration that the pull is strand-free over relationships and
+      arcs (no extractors registered)
     fitness: contact-incomplete by construction
     mask: /tmp/pull.mask  (usdrecord --mask "$(cat /tmp/pull.mask | tr '\n' ',')" ...)
 
-    $ /usr/bin/usdrecord -w 1280 --mask "$(tr '\n' ',' < /tmp/pull.mask)" $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda /tmp/pull.png
+    $ /usr/bin/usdrecord -w 1280 --mask "$(tr '\n' ',' < /tmp/pull.mask)" $WEFT_ALAB/entity/lab_workbench01/lab_workbench01.usda /tmp/pull.png
     Recording time code: EARLIEST
 
 26 members — exactly the 26 paths an earlier exploratory spike recorded by
@@ -305,7 +325,7 @@ props, was ever composed.
 
 **Who depends on this prim.**
 
-    $ weft who 'path:/root/shelf01/furniture_shelving01_0001' --kinds Mount --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+    $ weft who 'path:/root/shelf01/furniture_shelving01_0001' --kinds Mount --context $WEFT_ALAB/entity/lab_workbench01/lab_workbench01.usda
       /root/shelf01/chemistry_bottle01_0004        Mount                    -> /root/shelf01/furniture_shelving01_0001
       /root/shelf01/chemistry_bottle01_0005        Mount                    -> /root/shelf01/furniture_shelving01_0001
       /root/shelf01/chemistry_bottle01_0007        Mount                    -> /root/shelf01/furniture_shelving01_0001
@@ -315,7 +335,7 @@ props, was ever composed.
 
 **The manifest is verifiable.**
 
-    $ weft pull 'where:finish=translucent' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda --out /tmp/pull.manifest.usda
+    $ weft pull 'where:finish=translucent' --context $WEFT_ALAB/entity/lab_workbench01/lab_workbench01.usda --out /tmp/pull.manifest.usda
     manifest: /tmp/pull.manifest.usda
     $ weft pull --verify /tmp/pull.manifest.usda
     verify: ok
@@ -358,5 +378,5 @@ mask above lands on exactly the spike's 26 placement paths, not 26
 - **One hop.** Consumers of the workbench are re-evaluated; consumers of
   *those* consumers are not.
 - **The proof is logged, not stamped.** The spec puts
-  `jitsd__compatibilityProof` on the revision; revisions are immutable, so
+  `weft__compatibilityProof` on the revision; revisions are immutable, so
   the proof is recorded with the promotion event instead.
