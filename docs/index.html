@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>weft</title>
 <meta name="description" content="weft — pull threads through OpenUSD, not worlds. Identity-first addressing, measured compatibility, declared boundaries.">
+<meta property="og:title" content="weft">
+<meta property="og:description" content="Pull the thread, not the world. A resolution layer for OpenUSD: identity-first addressing, measured compatibility, declared boundaries.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://distancetozero.github.io/weft/">
+<meta property="og:image" content="https://distancetozero.github.io/weft/assets/moment3_translucent.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧵</text></svg>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&display=swap">
 <style>
   :root {
@@ -99,7 +106,9 @@
   and drilling down; weft inverts that — stand at any point, named by identity,
   role, attribute, or place, and pull only the threads you care about. A thread is
   any relationship: a material binding, a mount contract, <code>electrical:feeds</code>,
-  or a kind your team defines. Hierarchy is just one thread on the spool.</p>
+  or a kind your team defines. Hierarchy is just one thread on the spool.
+  The same premise runs wherever scenes outgrow their files — film, games,
+  manufacturing, AEC, robotics.</p>
   <nav>
     <a href="https://github.com/distancetozero/weft">github</a>
     <a href="https://github.com/distancetozero/weft/blob/main/examples/alab/README.md">the ALab run</a>
@@ -116,7 +125,7 @@
   reference, placement for placement.</figcaption>
 </figure>
 
-<h2>The same scene, three asks</h2>
+<h2>One scene, from world to thread</h2>
 
 <figure>
   <div class="plate"><img src="assets/moment1_world.png" alt="The full ALab workbench: 437 props" width="1280" height="934"></div>
@@ -161,13 +170,29 @@ weft who 'name:glass' --context shot.usda      <span class="cmt"># what depends 
   and a refusal names each broken consumer with what it tolerates.</li>
 </ul>
 
+<h2>What a refusal looks like</h2>
+<p>A shelf is raised 0.7&thinsp;cm — inside the provider's own 1&thinsp;cm promise,
+so the provider's self-check passes. The consumers are measured anyway:</p>
+<pre><code>== MEASURED, NOT ASSERTED: shelf01 raised 0.7 cm -- inside the provider's 1 cm promise
+   provider self-check (what it asserted): 0 violations
+   consumer re-evaluation (what was measured): 164 consumers checked, 19 broken
+   REFUSED by consumers: 19 props would break, though the provider kept its promise
+     chemistry_bottle01         position moved 0.65, consumer tolerates 0.5913
+     chemistry_test_tube02      position moved 0.65, consumer tolerates 0.2225
+     decor_thumb_tack01         position moved 0.65, consumer tolerates 0.0823
+     ... and 16 more
+   @approved still at v002</code></pre>
+<p>The channel never moved. Both refused revisions still exist in the ledger and can
+be inspected. The tolerances weren't invented — each is derived from the prop's own
+authored extent by a stated, recorded rule.</p>
+
 <h2>Measured</h2>
 <div class="measure">
   <div><div class="n">2 of 165</div><div class="d">assets pulled when one bottle is seeded with <code>--follow Mount</code>; the other 163 threads declared at the boundary.</div></div>
   <div><div class="n">19 refusals</div><div class="d">a 0.7&thinsp;cm republish sits inside the provider's 1&thinsp;cm promise — and is refused by 19 consumers whose own tolerances are tighter, each named.</div></div>
   <div><div class="n">~126 ms</div><div class="d">to make the whole production scene addressable without loading it.</div></div>
   <div><div class="n">4,296 layers</div><div class="d">walked into a dependency graph in 1.75&thinsp;s — 23&thinsp;ms incremental — including edges no stock USD API reports.</div></div>
-  <div><div class="n">26 = 26</div><div class="d">the attribute pull's mask is asserted identical to a hand-built reference, placement for placement, in the test suite.</div></div>
+  <div><div class="n">26 = 26</div><div class="d">the translucent pull reproduces a hand-built reference mask exactly — every placement, asserted in the acceptance suite, not observed once.</div></div>
   <div><div class="n">25&times;</div><div class="d">storage dedup at 64&thinsp;KiB content-addressed chunks; revisions are nearly free after the first.</div></div>
 </div>
 
@@ -179,8 +204,19 @@ artifact is real USDA; contracts are codeless applied schemas; nothing is ever
 re-rooted or rewritten. Deferral, never extraction.</p>
 <p>For teams that want ground truth and not just queries, the engine adds a
 content-addressed store, immutable revisions, channels, and the measured promotion
-gate — offline, serverless, <code>git init</code>-shaped. Packaged as
-<code>weft-usd</code>; runs on any USD file with no server and no schema changes.</p>
+gate — offline, serverless, <code>git init</code>-shaped. Runs on any USD file with
+no server and no schema changes.</p>
+
+<h2>Try it</h2>
+<pre><code>git clone https://github.com/distancetozero/weft
+cd weft &amp;&amp; pip install -e '.[usd]'      <span class="cmt"># PyPI package (weft-usd) coming</span>
+weft pull 'where:finish=translucent' --context your_scene.usda --mask-out pull.mask
+usdrecord --mask "$(tr '\n' ',' &lt; pull.mask)" your_scene.usda out.png</code></pre>
+<p><b>Status:</b> a working research prototype — validated against real production
+USD, adversarially reviewed, and honest about what it hasn't proven: it has no
+outside users yet, and it's looking for its first. If you have a scene that
+outgrew its files, <a href="https://github.com/distancetozero/weft/issues">come
+poke holes in it</a>.</p>
 
 <footer>
   <p>Scene: <a href="https://dpel.aswf.io/alab/">ALab</a>, © Animal Logic, via the
