@@ -36,10 +36,10 @@ def _author() -> str:
 def cmd_init(args) -> int:
     repo = Repo(Path(args.path))
     if repo.exists():
-        print("already a jitsd repository: %s" % repo.dir)
+        print("already a weft repository: %s" % repo.dir)
         return 0
     repo.init()
-    print("initialised empty jitsd repository in %s" % repo.dir)
+    print("initialised empty weft repository in %s" % repo.dir)
     return 0
 
 
@@ -285,7 +285,7 @@ def cmd_select(args) -> int:
                 for s in result.selections
             ]
         Path(args.out).write_text(_slice.emit_query_document(result))
-        print("\nwritten: %s  (a query document -- `jitsd compile` materialises it)"
+        print("\nwritten: %s  (a query document -- `weft compile` materialises it)"
               % args.out)
     return 0 if result.ok else 1
 
@@ -327,10 +327,10 @@ def _context_file(raw: str) -> str:
     rev = repo.ledger.resolve_ref(raw, "approved")
     r = repo.ledger.read_revision(raw, rev)
     if r.blob is None:
-        raise ValueError("context %s@%s is generator-backed; materialise it with jitsd checkout first"
+        raise ValueError("context %s@%s is generator-backed; materialise it with weft checkout first"
                          % (raw, rev))
     import tempfile
-    out = Path(tempfile.mkdtemp(prefix="jitsd-ctx-")) / ("%s.usda" % raw)
+    out = Path(tempfile.mkdtemp(prefix="weft-ctx-")) / ("%s.usda" % raw)
     repo.store.checkout(r.blob, out)
     return str(out)
 
@@ -466,14 +466,14 @@ def cmd_checkout(args) -> int:
     r = repo.ledger.read_revision(args.asset, rev)
     if r.blob is None:
         print("%s %s is generator-backed (%s); there is no stored payload to "
-              "check out.\nUse `jitsd compile` to materialise it."
+              "check out.\nUse `weft compile` to materialise it."
               % (args.asset, rev, r.generator), file=sys.stderr)
         return 1
     try:
         repo.store.checkout(r.blob, Path(args.dest))
     except CorruptObject as e:
         print("REFUSED: %s" % e, file=sys.stderr)
-        print("Nothing was written. Run `jitsd verify` to survey the store.",
+        print("Nothing was written. Run `weft verify` to survey the store.",
               file=sys.stderr)
         return 1
     except KeyError as e:
@@ -648,7 +648,7 @@ def cmd_verify(args) -> int:
 # -- parser ---------------------------------------------------------------
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="jitsd", description="JIT-SD rung 1: solo, offline, no contracts.")
+    p = argparse.ArgumentParser(prog="weft", description="JIT-SD rung 1: solo, offline, no contracts.")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("init", help="create a repository here")
@@ -759,7 +759,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--baseline")
     s.add_argument("--channel", default="approved")
     s.add_argument("--label", default="")
-    s.add_argument("--out", default="jitsd.lock")
+    s.add_argument("--out", default="weft.lock")
     s.set_defaults(fn=cmd_resolve)
 
     s = sub.add_parser("drift", help="has anything changed since a baseline?")

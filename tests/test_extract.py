@@ -9,12 +9,12 @@ import pytest
 
 pytest.importorskip("pxr")
 
-from jitsd.contracts import extract_text, resolve  # noqa: E402
-from jitsd.extract import (  # noqa: E402
+from weft.contracts import extract_text, resolve  # noqa: E402
+from weft.extract import (  # noqa: E402
     Extraction, Placement, consumer_interface, provider_interface,
     read_assembly, write_interfaces,
 )
-from jitsd.ledger import BreakingChange, Repo  # noqa: E402
+from weft.ledger import BreakingChange, Repo  # noqa: E402
 
 
 def _assembly(tmp_path):
@@ -150,7 +150,7 @@ def _entity(tmp_path, name, depts=("modelling", "preview", "surfacing")):
 
 
 def test_departments_are_derived_from_sublayers(tmp_path):
-    from jitsd.extract import departments
+    from weft.extract import departments
     d = _entity(tmp_path, "bottle01", ("modelling", "preview", "surfacing", "rigging"))
     assert departments(str(d / "bottle01.usda")) == [
         "modelling", "preview", "rigging", "surfacing"]
@@ -159,9 +159,9 @@ def test_departments_are_derived_from_sublayers(tmp_path):
 def test_two_sided_contract_binds_both_ways(tmp_path):
     """The prop consumes a mount; the assembly consumes the prop's
     representations. Dropping a department breaks the ASSEMBLY."""
-    from jitsd.contracts import extract_text, resolve
-    from jitsd.extract import consumer_interface, provider_interface, read_assembly
-    from jitsd.reeval import reevaluate
+    from weft.contracts import extract_text, resolve
+    from weft.extract import consumer_interface, provider_interface, read_assembly
+    from weft.reeval import reevaluate
 
     _entity(tmp_path, "bottle01")
     asm = _assembly(tmp_path)   # places bottle01 + screw01 (flat files)
@@ -187,7 +187,7 @@ def test_two_sided_contract_binds_both_ways(tmp_path):
 
 
 def test_into_assets_writes_the_interface_sublayer(tmp_path):
-    from jitsd.extract import read_assembly, write_interfaces
+    from weft.extract import read_assembly, write_interfaces
     d = _entity(tmp_path, "bottle01")
     _entity(tmp_path, "screw01", ("modelling",))
     asm = tmp_path / "bench_assembly.usda"
@@ -225,7 +225,7 @@ def Xform "root"
 def test_materials_reads_defs_and_prepended_bindings(tmp_path):
     """ALab authors bindings with `prepend`; explicitItems-only readers see an
     empty look. Both definition and binding contribute names."""
-    from jitsd.extract import materials
+    from weft.extract import materials
     p = tmp_path / "look.usda"
     p.write_text('''#usda 1.0
 
@@ -256,8 +256,8 @@ def "root" (
 
 
 def test_shading_and_finish_flow_onto_the_represents_offer(tmp_path):
-    from jitsd.contracts import extract_text
-    from jitsd.extract import consumer_interface
+    from weft.contracts import extract_text
+    from weft.extract import consumer_interface
     s = extract_text(consumer_interface(
         "bottle01", provides=["modelling"],
         shading=["usd_full", "usd_preview"], surface_finish="translucent"))
@@ -268,7 +268,7 @@ def test_shading_and_finish_flow_onto_the_represents_offer(tmp_path):
 
 
 def test_finish_derived_from_authored_opacity(tmp_path):
-    from jitsd.extract import finish
+    from weft.extract import finish
     glass = tmp_path / "glass.usda"
     glass.write_text("""#usda 1.0
 

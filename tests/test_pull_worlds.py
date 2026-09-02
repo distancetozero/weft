@@ -2,7 +2,7 @@ import pytest
 
 pxr = pytest.importorskip("pxr")
 
-from jitsd.pull import pull
+from weft.pull import pull
 
 VARIANT_CTX = """#usda 1.0
 (

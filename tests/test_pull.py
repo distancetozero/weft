@@ -2,7 +2,7 @@ import pytest
 
 pxr = pytest.importorskip("pxr")
 
-from jitsd.pull import edge_kind_of, pull, who
+from weft.pull import edge_kind_of, pull, who
 
 CTX = """#usda 1.0
 (

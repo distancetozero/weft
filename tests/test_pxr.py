@@ -1,4 +1,4 @@
-"""Everything jitsd emits must open in real USD.
+"""Everything weft emits must open in real USD.
 
 These tests are the difference between "the shape fits USD" as an argument and
 as a fact. They skip when pxr is absent -- rung 1 must run with no dependencies
@@ -16,10 +16,10 @@ pytest.importorskip("pxr")
 
 from pxr import Sdf, Usd  # noqa: E402
 
-from jitsd.generators import vehicle  # noqa: F401,E402
-from jitsd.ledger import Repo  # noqa: E402
-from jitsd.query import compile_query, parse_query  # noqa: E402
-from jitsd.usda import parse, parse_file  # noqa: E402
+from weft.generators import vehicle  # noqa: F401,E402
+from weft.ledger import Repo  # noqa: E402
+from weft.query import compile_query, parse_query  # noqa: E402
+from weft.usda import parse, parse_file  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 

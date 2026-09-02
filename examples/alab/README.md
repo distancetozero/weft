@@ -13,7 +13,7 @@ placing **437 props at real transforms** under six groups.
 
 ## What is authored, and what is honest about it
 
-**Nothing is hand-written.** `jitsd/extract.py` reads the assembly and derives
+**Nothing is hand-written.** `weft/extract.py` reads the assembly and derives
 the contract surfaces from it:
 
 - the workbench **offers** one `Mount@1` per placement, frame = the assembly's
@@ -182,9 +182,9 @@ attributes in view, context — stored as an asset revision, promoted through
 channels like anything else. `lookdev.rules@v001` above is one: *mounts only,
 one hop, position in view*. A team shares a way of seeing, not a scene file.
 
-    jitsd select chemistry_bottle01 --follow Mount
-    jitsd select chemistry_bottle01 --rules lookdev.rules
-    jitsd select 'chemistry_*' --follow Mount,usd:binding --save-rules lighting.rules
+    weft select chemistry_bottle01 --follow Mount
+    weft select chemistry_bottle01 --rules lookdev.rules
+    weft select 'chemistry_*' --follow Mount,usd:binding --save-rules lighting.rules
 
 Whole run: **3.5 s** (2.6 s of it opening 164 entity layers for `extentsHint`).
 
@@ -214,8 +214,8 @@ Whole run: **3.5 s** (2.6 s of it opening 164 entity layers for `extentsHint`).
 
 ## Pulling at prim level
 
-Everything above pulls at *asset* granularity: `jitsd select` decides which
-assets to load, not which prims inside them. `jitsd pull` (spec sections
+Everything above pulls at *asset* granularity: `weft select` decides which
+assets to load, not which prims inside them. `weft pull` (spec sections
 4–8) works one level down — seed by identity, attribute, bounds, or path,
 follow only the relationship kinds named, and get back a prim mask, no
 asset ingestion and no `.jitsd/` repository required. It runs directly
@@ -232,7 +232,7 @@ checked into this tree earlier do not.
 **One prim, by path or by bare name** — the lexical form finds the same
 prim without a path in the question:
 
-    $ jitsd pull 'path:/root/shelf01/chemistry_bottle01_0004' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+    $ weft pull 'path:/root/shelf01/chemistry_bottle01_0004' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
     seed path:/root/shelf01/chemistry_bottle01_0004 -> 1 (path)
     members (1):
       /root/shelf01/chemistry_bottle01_0004        seed
@@ -247,7 +247,7 @@ prim without a path in the question:
       /root/shelf01/furniture_shelving01_0001      jitsd:offer:carrier      not followed [inert]
     fitness: contact-incomplete by construction
 
-    $ jitsd pull 'chemistry_bottle01_0004' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+    $ weft pull 'chemistry_bottle01_0004' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
     seed chemistry_bottle01_0004 -> 1 (lexical)
     members (1):
       /root/shelf01/chemistry_bottle01_0004        seed
@@ -257,7 +257,7 @@ advisory `jitsd:offer:carrier` edges the regenerated interface authors,
 pulling the shelf furniture that carries the bottle — not the other 300+
 props on the bench:
 
-    $ jitsd pull 'path:/root/shelf01/chemistry_bottle01_0004' --follow Mount --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+    $ weft pull 'path:/root/shelf01/chemistry_bottle01_0004' --follow Mount --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
     members (5):
       /root/shelf01/chemistry_bottle01_0004        seed
       /root/shelf01/furniture_lbracket01_0001      Mount <- /root/shelf01/chemistry_bottle01_0004
@@ -268,10 +268,10 @@ props on the bench:
 **An attribute ask, rendered.** `where:finish=translucent` resolves against
 `jitsd:bind:finish`, authored on each placed asset's own `Represents` offer
 — derived at extraction from real `UsdPreviewSurface` opacity
-(`jitsd/extract.py:finish`), never invented. No path names a single one of
+(`weft/extract.py:finish`), never invented. No path names a single one of
 the 26 hits:
 
-    $ jitsd pull 'where:finish=translucent' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda --mask-out /tmp/pull.mask
+    $ weft pull 'where:finish=translucent' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda --mask-out /tmp/pull.mask
     seed where:finish=translucent -> 26 (attribute, 1744 do not author the key)
     members (26):
       /root/shelf01/chemistry_bottle01_0004        seed
@@ -301,7 +301,7 @@ props, was ever composed.
 
 **Who depends on this prim.**
 
-    $ jitsd who 'path:/root/shelf01/furniture_shelving01_0001' --kinds Mount --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
+    $ weft who 'path:/root/shelf01/furniture_shelving01_0001' --kinds Mount --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda
       /root/shelf01/chemistry_bottle01_0004        Mount                    -> /root/shelf01/furniture_shelving01_0001
       /root/shelf01/chemistry_bottle01_0005        Mount                    -> /root/shelf01/furniture_shelving01_0001
       /root/shelf01/chemistry_bottle01_0007        Mount                    -> /root/shelf01/furniture_shelving01_0001
@@ -311,9 +311,9 @@ props, was ever composed.
 
 **The manifest is verifiable.**
 
-    $ jitsd pull 'where:finish=translucent' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda --out /tmp/pull.manifest.usda
+    $ weft pull 'where:finish=translucent' --context $JITSD_ALAB/entity/lab_workbench01/lab_workbench01.usda --out /tmp/pull.manifest.usda
     manifest: /tmp/pull.manifest.usda
-    $ jitsd pull --verify /tmp/pull.manifest.usda
+    $ weft pull --verify /tmp/pull.manifest.usda
     verify: ok
 
 ### A bug this run found
@@ -334,8 +334,8 @@ context stage made every attribute and name seed match nothing. Separately,
 to plain `Traverse()` regardless of predicate, because `instanceable = true`
 elides prototype content from ordinary traversal.
 
-The fix (`jitsd/ask.py:resolve_seeds`, `jitsd/pull.py:_reverse_index`,
-`jitsd/pull.py`'s fitness pass): traverse with
+The fix (`weft/ask.py:resolve_seeds`, `weft/pull.py:_reverse_index`,
+`weft/pull.py`'s fitness pass): traverse with
 `Usd.TraverseInstanceProxies(...)` and drop the loaded requirement from the
 predicate. `pull()`'s existing instance-widening in `_admit` (spec section
 4) does the rest — a matched `.../represents` instance proxy widens back to

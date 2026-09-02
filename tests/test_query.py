@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from jitsd.generators import vehicle  # noqa: F401
-from jitsd.ledger import Repo
-from jitsd.query import compile_query, context_for, parse_query
-from jitsd.usda import parse
+from weft.generators import vehicle  # noqa: F401
+from weft.ledger import Repo
+from weft.query import compile_query, context_for, parse_query
+from weft.usda import parse
 
 SHOT = Path(__file__).resolve().parents[1] / "examples" / "shot.usda"
 

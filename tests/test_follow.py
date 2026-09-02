@@ -1,6 +1,6 @@
 import pytest
 
-from jitsd.follow import FollowTerm, format_term, parse_follow, parse_term
+from weft.follow import FollowTerm, format_term, parse_follow, parse_term
 
 
 def test_bare_kind_defaults():

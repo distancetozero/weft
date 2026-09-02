@@ -1,6 +1,6 @@
 import pytest
 
-from jitsd.ask import Seed, parse_seed
+from weft.ask import Seed, parse_seed
 
 
 def test_bare_glob_is_name_plane():

@@ -80,7 +80,7 @@ def _regenerated_interfaces():
     not. Idempotent: skips entirely once already regenerated."""
     if not ALAB or not _needs_regen():
         return
-    from jitsd.extract import (departments, finish as _finish,
+    from weft.extract import (departments, finish as _finish,
                                materials as _materials, read_assembly,
                                write_interfaces)
 
@@ -117,7 +117,7 @@ def _regenerated_interfaces():
 
 
 def test_ask_one_bottle():
-    from jitsd.pull import pull
+    from weft.pull import pull
     p = pull(_ctx(), ["path:/root/shelf01/chemistry_bottle01_0004"])
     assert [m.path for m in p.members] == ["/root/shelf01/chemistry_bottle01_0004"]
 
@@ -127,7 +127,7 @@ def test_ask_one_bottle():
 
 
 def test_ask_translucent_matches_spike_mask():
-    from jitsd.pull import pull
+    from weft.pull import pull
     p = pull(_ctx(), ["where:finish=translucent"])
     paths = [m.path for m in p.members]
     # the spike's mask: 26 placements under /root, every one a placement of
@@ -141,7 +141,7 @@ def test_ask_translucent_matches_spike_mask():
 
 
 def test_ask_mount_with_carrier():
-    from jitsd.pull import pull
+    from weft.pull import pull
     p = pull(_ctx(), ["path:/root/shelf01/chemistry_bottle01_0004"],
              follow=["Mount"])
     paths = [m.path for m in p.members]
@@ -152,8 +152,8 @@ def test_ask_mount_with_carrier():
 
 
 def test_manifest_verifies():
-    from jitsd.manifest import layer_hashes, to_document, verify
-    from jitsd.pull import pull
+    from weft.manifest import layer_hashes, to_document, verify
+    from weft.pull import pull
     p = pull(_ctx(), ["where:finish=translucent"])
     layer_hashes(p)
     assert verify(to_document(p)) == []

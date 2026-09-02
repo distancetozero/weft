@@ -2,9 +2,9 @@ import pytest
 
 pxr = pytest.importorskip("pxr")
 
-from jitsd.cli import main
-from jitsd.ledger import Repo
-from jitsd.generators import vehicle as _vehicle  # noqa: F401  registers built-ins
+from weft.cli import main
+from weft.ledger import Repo
+from weft.generators import vehicle as _vehicle  # noqa: F401  registers built-ins
 
 CTX = """#usda 1.0
 (
@@ -39,7 +39,7 @@ def test_pull_raw_file_emits_manifest_and_mask(tmp_path, capsys):
     text = capsys.readouterr().out
     assert "members (2)" in text
     assert "/root/Looks/glass" in mask.read_text().splitlines()
-    from jitsd.manifest import read_document
+    from weft.manifest import read_document
     assert read_document(out.read_text())["follow"] == ["material:binding"]
 
 

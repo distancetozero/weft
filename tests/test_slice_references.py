@@ -12,8 +12,8 @@ import textwrap
 
 import pytest
 
-from jitsd.ledger import Repo
-from jitsd.slice import SliceSpec, resolve_slice, receipt
+from weft.ledger import Repo
+from weft.slice import SliceSpec, resolve_slice, receipt
 
 
 def _repo(tmp_path) -> Repo:

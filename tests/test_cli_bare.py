@@ -1,8 +1,8 @@
-"""What `jitsd pull` does when usd-core is not installed at all.
+"""What `weft pull` does when usd-core is not installed at all.
 
-`jitsd.pull` imports `deps.walk`, which imports `pxr` at module top level --
+`weft.pull` imports `deps.walk`, which imports `pxr` at module top level --
 so a bare environment (no usd-core) must not surface a raw ModuleNotFoundError
-from `jitsd pull`; the CLI/slice boundary is where failures become clean
+from `weft pull`; the CLI/slice boundary is where failures become clean
 diagnostics, even the failure of "the whole prim-level feature is
 unavailable here". This file is the mirror image of the usual
 `pytest.importorskip("pxr")` guard: it only runs where pxr is ABSENT, so it
@@ -15,7 +15,7 @@ import pytest
 if importlib.util.find_spec("pxr") is not None:
     pytest.skip("only meaningful without usd-core installed", allow_module_level=True)
 
-from jitsd.cli import main
+from weft.cli import main
 
 
 def test_pull_without_usd_core_fails_cleanly(tmp_path, capsys):

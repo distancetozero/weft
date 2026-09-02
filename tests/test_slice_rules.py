@@ -13,8 +13,8 @@ import textwrap
 
 import pytest
 
-from jitsd.ledger import Repo
-from jitsd.slice import (
+from weft.ledger import Repo
+from weft.slice import (
     RuleSet, SliceSpec, emit_rules_document, load_rules, read_rules,
     resolve_slice, save_rules,
 )

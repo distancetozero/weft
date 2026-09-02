@@ -99,7 +99,7 @@ def to_document(p: Pull, usd_version: str = "") -> str:
     return "\n".join([
         "#usda 1.0",
         "# A pull manifest. Valid against its recorded layer set; verify",
-        "# with `jitsd pull --verify` before trusting the mask.",
+        "# with `weft pull --verify` before trusting the mask.",
         "(",
         "    customLayerData = {",
         '        string jitsd__pull = "%s"' % esc,

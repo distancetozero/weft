@@ -12,11 +12,11 @@ import os
 
 import pytest
 
-from jitsd.chunker import chunk
-from jitsd.contracts import Offer, Surface, check_compatibility
-from jitsd.ledger import ChannelRaced, Repo, RevisionExists, Revision, _esc
-from jitsd.store import CorruptObject, ObjectStore
-from jitsd.generators import vehicle as _vehicle  # noqa: F401  registers built-ins
+from weft.chunker import chunk
+from weft.contracts import Offer, Surface, check_compatibility
+from weft.ledger import ChannelRaced, Repo, RevisionExists, Revision, _esc
+from weft.store import CorruptObject, ObjectStore
+from weft.generators import vehicle as _vehicle  # noqa: F401  registers built-ins
 
 
 def _repo(tmp_path) -> Repo:

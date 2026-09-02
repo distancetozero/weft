@@ -2,8 +2,8 @@ import pytest
 
 pxr = pytest.importorskip("pxr")
 
-from jitsd.pull import pull
-from jitsd.registry import Extractor, emit_extractors_document, parse_extractors
+from weft.pull import pull
+from weft.registry import Extractor, emit_extractors_document, parse_extractors
 
 
 def test_document_roundtrip():

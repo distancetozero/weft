@@ -350,7 +350,7 @@ class BreakingChange(Exception):
 
 
 class Repo:
-    """A jitsd working root: object store + ledger."""
+    """A weft working root: object store + ledger."""
 
     DIRNAME = ".jitsd"
 
@@ -366,7 +366,7 @@ class Repo:
         for cand in [cur, *cur.parents]:
             if (cand / cls.DIRNAME).is_dir():
                 return cls(cand)
-        raise SystemExit("not a jitsd repository (no .jitsd found) -- run `jitsd init`")
+        raise SystemExit("not a weft repository (no .jitsd found) -- run `weft init`")
 
     def exists(self) -> bool:
         return self.dir.is_dir()
@@ -661,7 +661,7 @@ class Repo:
         By default this is *every revision the ledger still lists*, not just
         the ones a channel or baseline currently points at. Rooting only at
         heads and pins deletes the payload of every intermediate revision while
-        `jitsd log` goes on listing it -- which silently destroys exactly the
+        `weft log` goes on listing it -- which silently destroys exactly the
         rung-1 features that justify the tool: instant rollback, named
         checkpoints, and diff between any two revisions.
 

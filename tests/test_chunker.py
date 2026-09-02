@@ -2,7 +2,7 @@ import random
 
 import pytest
 
-from jitsd.chunker import chunk, cut_points_numpy, cut_points_pure
+from weft.chunker import chunk, cut_points_numpy, cut_points_pure
 
 MIN, AVG, MAX = 1024, 4096, 16384
 

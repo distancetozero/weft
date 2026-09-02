@@ -1,7 +1,7 @@
 import pytest
 
-from jitsd.generators import Context, get, known
-from jitsd.generators import vehicle  # noqa: F401  registers the built-ins
+from weft.generators import Context, get, known
+from weft.generators import vehicle  # noqa: F401  registers the built-ins
 
 
 def test_registry():

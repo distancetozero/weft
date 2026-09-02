@@ -1,15 +1,18 @@
-# jit-sd
+# weft
 
 Pull the thread, not the world.
 
-Opening a USD stage means loading everything and drilling down. jit-sd
+Packaged as `weft-usd` (not yet published — `pip install weft-usd` is the
+eventual install line).
+
+Opening a USD stage means loading everything and drilling down. weft
 inverts that: stand at any point — a name, an identity, an attribute, a
 place — and pull the threads you care about. A thread is any relationship:
 a material binding, a mount contract, `electrical:feeds`, or a kind your
 team defines. Hierarchy is just one thread on the spool.
 
 ```
-$ jitsd pull 'where:finish=translucent' --context lab.usda --mask-out pull.mask
+$ weft pull 'where:finish=translucent' --context lab.usda --mask-out pull.mask
 $ usdrecord --mask "$(tr '\n' ',' < pull.mask)" lab.usda out.png
 ```
 
@@ -18,6 +21,18 @@ transforms, from a scene that was never loaded. No path appeared in the
 question. Run as written against [Animal Logic's
 ALab](https://dpel.aswf.io/alab/) — real production geometry, not a
 fixture — in [`examples/alab/README.md`](examples/alab/README.md#pulling-at-prim-level).
+
+## Addresses
+
+```
+weft pull id:hero-car                        # identity — no path, survives restructures
+weft pull id:occ:weld-47                     # one placement, restructure-proof
+weft pull role:propSocket                    # by contract role
+weft pull 'where:finish=translucent'         # by attribute
+weft pull 'near:id:rack-R42,5'               # within 5 units of a thing, by name
+weft pull bottle01 --follow up:electrical:feeds*8   # trace upstream, 8 hops
+weft pull path:/root/shelf01/bottle_0004     # location — the fallback, not the default
+```
 
 Three rules keep pulls trustworthy:
 
@@ -36,8 +51,8 @@ Three rules keep pulls trustworthy:
 No server, no schema changes, no buy-in:
 
 ```
-$ jitsd pull 'chemistry_bottle01*' --context shot.usda --follow Mount
-$ jitsd who 'name:glass' --context shot.usda    # what depends on this prim?
+$ weft pull 'chemistry_bottle01*' --context shot.usda --follow Mount
+$ weft who 'name:glass' --context shot.usda    # what depends on this prim?
 $ python -m deps breaks ./assets hub.usda       # what breaks if I republish?
 $ python -m absent shot.usda                    # what silently resolves to nothing?
 ```
@@ -61,15 +76,29 @@ bottle with `--follow Mount` pulls 2 assets instead of 165; the other 163
 threads are declared at the boundary.
 
 ```
-$ jitsd save car car.usda -m "first pass"     # immutable, deduped
-$ jitsd promote car v002 --to approved        # gated: measured compatibility
-$ jitsd select 'chassis*' --follow Mount      # a slice, priced before loading
+$ weft save car car.usda -m "first pass"     # immutable, deduped
+$ weft promote car v002 --to approved        # gated: measured compatibility
+$ weft select 'chassis*' --follow Mount      # a slice, priced before loading
 ```
 
 Teams share *ways of seeing* as versioned content: rule sets (which threads
 to follow), edge extractors (your soft-reference conventions become real
 edges), and omission classes — the vocabulary is yours; the machinery
 stays fixed.
+
+## Measured
+
+All from real runs, not projections:
+
+- Seeding one bottle pulls 2 assets instead of 165 — the other 163 are
+  declared at the boundary, not silently dropped.
+- The translucent pull's 26-placement mask is asserted byte-identical to a
+  hand-built reference in the acceptance suite.
+- A 0.7 cm republish, inside the provider's own 1 cm promise, is refused by
+  19 consumers — each named, with its own tolerance.
+- 4,296 production layers walked in 1.75 s (23 ms incremental).
+- The whole scene is addressable in ~126 ms without loading it.
+- 25× storage dedup at 64 KiB chunks.
 
 ## Status
 
@@ -96,6 +125,9 @@ The rest, in reading order:
 | [`docs/08-open-questions.md`](docs/08-open-questions.md) | what is still undecided |
 | [`docs/10-slices.md`](docs/10-slices.md) | the slice interaction model |
 | [`specs/jitsdContracts/schema.usda`](specs/jitsdContracts/schema.usda) | codeless API schemas for the contract archetypes |
+
+The design documents predate the rename and say "JIT-SD" throughout — same
+project.
 
 ## Commitments
 

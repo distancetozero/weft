@@ -2,8 +2,8 @@ import pytest
 
 pxr = pytest.importorskip("pxr")
 
-from jitsd.pull import pull
-from jitsd.registry import MEANING_CHANGING, omission_class
+from weft.pull import pull
+from weft.registry import MEANING_CHANGING, omission_class
 
 
 def test_omission_classes():

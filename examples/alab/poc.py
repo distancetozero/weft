@@ -10,7 +10,7 @@ asset -- lab_workbench01, 437 props placed at real transforms.
 
 What is authored, and what is honest about it:
 
-  * Contract surfaces are DERIVED from the assembly (jitsd/extract.py): one
+  * Contract surfaces are DERIVED from the assembly (weft/extract.py): one
     offer per placement at the assembly's own translate, role = the placed
     asset's name. Props are base-origin (verified from extentsHint), so a
     frame really is where a prop's base sits.
@@ -35,9 +35,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(HERE))
 
-from jitsd.contracts import Surface  # noqa: E402
-from jitsd.extract import provider_interface, read_assembly, write_interfaces  # noqa: E402
-from jitsd.ledger import BreakingChange, Repo  # noqa: E402
+from weft.contracts import Surface  # noqa: E402
+from weft.extract import provider_interface, read_assembly, write_interfaces  # noqa: E402
+from weft.ledger import BreakingChange, Repo  # noqa: E402
 
 PROVIDER = "lab_workbench01"
 ASSEMBLY = "fragment/assembly/assembly/lab_workbench01/assembly_assembly_lab_workbench01.usda"
@@ -83,7 +83,7 @@ def main() -> int:
     # republish of the bench keeps its two-sided surface -- the first version
     # of this POC dropped them on the ok/mid/bad republishes, which silently
     # stripped the bench's requirements from @approved.
-    from jitsd.extract import departments, finish as _finish, materials as _materials
+    from weft.extract import departments, finish as _finish, materials as _materials
     reps = {}
     for a, d in asset_dirs.items():
         if a == PROVIDER:
@@ -183,7 +183,7 @@ def main() -> int:
                                             represents=reps, shading_required=shading_map))
     repo.save(PROVIDER, A / "entity" / PROVIDER / ("%s.usda" % PROVIDER), "alab",
               "%s +0.7cm" % GATE_GROUP, interface=mid_iface)
-    from jitsd.contracts import check_compatibility
+    from weft.contracts import check_compatibility
     cur = repo.ledger.channels(PROVIDER)["approved"]
     cand = repo.ledger.resolve_ref(PROVIDER, "@wip")
     old_s = Surface.from_dict(repo.ledger.read_revision(PROVIDER, cur).surface)
@@ -236,7 +236,7 @@ def main() -> int:
     # No closure: the slice is exactly the bottles. With closure, the bottles
     # need the bench and the bench's assembly references every prop, so the
     # slice would be the whole set -- correct, but no blast radius to show.
-    from jitsd.slice import SliceSpec, resolve_slice
+    from weft.slice import SliceSpec, resolve_slice
     sl = resolve_slice(repo, SliceSpec(seeds=["chemistry_bottle*"], closure=[],
                                        channel="approved"))
     members = {m.asset for m in sl.members}
@@ -252,7 +252,7 @@ def main() -> int:
           "loading their slices")
 
     step("two-sided: a prop republished without its preview department")
-    from jitsd.extract import consumer_interface, departments, footprint as _fp
+    from weft.extract import consumer_interface, departments, footprint as _fp
     victim = "chemistry_bottle01"
     vdir = A / "entity" / victim
     deps_now = departments(str(vdir / ("%s.usda" % victim)))
@@ -305,7 +305,7 @@ def main() -> int:
     print("   @approved still at %s" % repo.ledger.channels(victim2)["approved"])
 
     step("pull one thread: closure by relationship kind, and a team's rule set")
-    from jitsd.slice import RuleSet, load_rules, save_rules
+    from weft.slice import RuleSet, load_rules, save_rules
     everything = resolve_slice(repo, SliceSpec(seeds=["chemistry_bottle01"], channel="approved"))
     mounts = resolve_slice(repo, SliceSpec(seeds=["chemistry_bottle01"], channel="approved",
                                            follow=["Mount"]))

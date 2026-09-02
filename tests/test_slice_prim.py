@@ -17,8 +17,8 @@ import pytest
 
 pxr = pytest.importorskip("pxr")
 
-from jitsd.ledger import Repo
-from jitsd.slice import (Selection, SliceSpec, is_prim_seed, resolve_slice,
+from weft.ledger import Repo
+from weft.slice import (Selection, SliceSpec, is_prim_seed, resolve_slice,
                          split_prim_seed)
 
 
@@ -128,7 +128,7 @@ def test_prim_seed_context_with_no_source_is_an_error(tmp_path):
     """A generator-backed asset has no source file at all (_AssetInfo.source
     is None) -- the same diagnostic-plus-error path as a missing file."""
     r = _repo(tmp_path)
-    from jitsd.generators import vehicle  # noqa: F401 -- registers "vehicle"
+    from weft.generators import vehicle  # noqa: F401 -- registers "vehicle"
     r.declare("chassis", "chassis@1.0.0", None, "alice")
     r.promote("chassis", "wip", "approved")
     result = resolve_slice(r, SliceSpec(seeds=["chassis:where:finish=translucent"]))
@@ -202,7 +202,7 @@ def test_authority_rule_different_rev_is_drift_diagnostic_never_an_error(tmp_pat
 # -- receipt ------------------------------------------------------------------
 
 def test_receipt_prints_selections(tmp_path):
-    from jitsd.slice import receipt
+    from weft.slice import receipt
     r, _src = _bench_repo(tmp_path)
     result = resolve_slice(r, SliceSpec(seeds=["bench:where:finish=translucent"]))
     text = receipt(result)
@@ -211,7 +211,7 @@ def test_receipt_prints_selections(tmp_path):
 
 
 def test_receipt_omits_selections_block_when_empty(tmp_path):
-    from jitsd.slice import receipt
+    from weft.slice import receipt
     r, _src = _bench_repo(tmp_path)
     result = resolve_slice(r, SliceSpec(seeds=["bench"]))
     assert "selections" not in receipt(result)

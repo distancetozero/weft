@@ -3,9 +3,9 @@ import pytest
 
 pxr = pytest.importorskip("pxr")
 
-from jitsd.manifest import (digest, layer_hashes, mask_paths, read_document,
+from weft.manifest import (digest, layer_hashes, mask_paths, read_document,
                             to_document, verify, write_mask)
-from jitsd.pull import pull
+from weft.pull import pull
 
 CTX = """#usda 1.0
 (
@@ -58,7 +58,7 @@ def test_verify_clean_manifest(ctx):
 def test_verify_catches_vacuous_member(ctx):
     p = pull(ctx, ["bottle_*"], follow=["material:binding"])
     layer_hashes(p)
-    from jitsd.pull import PullMember
+    from weft.pull import PullMember
     p.members.append(PullMember("/root/no_such_prim", "seed"))
     findings = verify(to_document(p))
     assert any("no_such_prim" in f and "does not resolve" in f for f in findings)

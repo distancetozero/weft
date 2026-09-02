@@ -1,7 +1,7 @@
 __pycache__/
 *.py[cod]
 .jitsd/
-jitsd.lock
+weft.lock
 *.egg-info/
 .pytest_cache/
 build/

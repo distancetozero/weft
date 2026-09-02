@@ -9,7 +9,7 @@ member carries provenance: seeded, pulled by closure via a named edge, or
 pinned by a person with a reason. The moment something can be in a slice
 without a "why am I here" answer, the mystery scene file has been recreated.
 
-A slice serialises to an ordinary query document, so `jitsd compile`
+A slice serialises to an ordinary query document, so `weft compile`
 materialises it with no new machinery.
 """
 
@@ -132,7 +132,7 @@ def emit_rules_document(rs: RuleSet, name: str) -> str:
         "#usda 1.0",
         "#",
         "# A rule set: a team's way of seeing the scene. Reads only the relational",
-        "# plane. Apply with `jitsd select --rules %s`." % name,
+        "# plane. Apply with `weft select --rules %s`." % name,
         "#",
         "(",
         "    customLayerData = {",
@@ -173,7 +173,7 @@ def load_rules(repo, ref: str) -> Tuple[RuleSet, str]:
 def save_rules(repo, name: str, rs: RuleSet, author: str, message: str = "") -> str:
     """Store a rule set as an asset revision. Returns the revision id."""
     import tempfile
-    d = Path(tempfile.mkdtemp(prefix="jitsd-rules-"))
+    d = Path(tempfile.mkdtemp(prefix="weft-rules-"))
     p = d / ("%s.usda" % name)
     p.write_text(emit_rules_document(rs, name))
     return repo.save(name, p, author, message or ("rules: %s" % name)).rev
@@ -394,7 +394,7 @@ class _Untracked:
     """A file a member references that is not a tracked asset at this coordinate.
 
     It is still required -- the reference will resolve or strand regardless of
-    whether jitsd knows about it -- so the receipt must count its bytes. Hiding
+    whether weft knows about it -- so the receipt must count its bytes. Hiding
     it is how the receipt reported 765 B for an asset that needs 11 layers.
     """
     consumer: str

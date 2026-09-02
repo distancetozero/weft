@@ -6,8 +6,8 @@ declared and no generator in sight, and each layer above is an upgrade.
 
 ```
 pip install -e ".[dev]"      # numpy and pytest are optional
-python -m jitsd init
-python -m jitsd save hero_car car.usdc -m "reworked front wing"
+python -m weft init
+python -m weft save hero_car car.usdc -m "reworked front wing"
 ```
 
 ## What it does
@@ -22,7 +22,7 @@ python -m jitsd save hero_car car.usdc -m "reworked front wing"
 | `back <asset> <rev>` | point `@wip` at an earlier revision |
 | `checkout <asset> <rev\|@chan> <dest>` | materialise to a file |
 | `baseline cut [--label L]` | pin the world |
-| `resolve [--baseline N]` | write `jitsd.lock` (mints a baseline if floating) |
+| `resolve [--baseline N]` | write `weft.lock` (mints a baseline if floating) |
 | `drift <baseline>` | has anything changed since sign-off? |
 | `diff <asset> <a> <b>` | structural diff — chunks shared vs new |
 | `stat` | storage and dedup |
@@ -42,7 +42,7 @@ parameters and a context — about a kilobyte of readable USD, and the only
 durable artifact. It names no geometry, no file, and no positions.
 
 ```
-$ jitsd compile examples/shot.usda --context review -o stage.usda
+$ weft compile examples/shot.usda --context review -o stage.usda
 stage.usda  context review  baseline floating
   bindings   1
   bounds     (-1.87, -0.33, -0.903) .. (1.87, 1.41, 0.903)
@@ -106,7 +106,7 @@ direction** — `examples/wheelset.iface.usda` names `Mount@2` and the role
 restructure their internals freely.
 
 ```
-$ jitsd bind
+$ weft bind
 3 assets  ·  5 offered  ·  2 required
 
   aero rail        Mount@2  -> chassis/chassis/mounts/aeroRail
@@ -120,11 +120,11 @@ now executable. An offer declares how far it may move before consumers care;
 promotion compares a candidate against what is currently on the channel.
 
 ```
-$ jitsd promote chassis v002 --to approved     # hub nudged 0.3 mm, envelope 0.5 mm
+$ weft promote chassis v002 --to approved     # hub nudged 0.3 mm, envelope 0.5 mm
 chassis v002 -> @approved: compatible
 @approved -> chassis v002                       # consumers untouched, no re-work
 
-$ jitsd promote chassis v003 --to approved     # hub moved 2.7 mm
+$ weft promote chassis v003 --to approved     # hub moved 2.7 mm
 REFUSED: chassis v003 -> @approved is a breaking change
   envelope   /chassis/mounts/hubFL: moved 0.0027, envelope allows 0.0005
              -- provider broke its own promise
@@ -150,7 +150,7 @@ document, which rung 1 does not have.
 **Whole-file content addressing does not deduplicate.** One changed byte
 changes the file hash, so a 4 GB asset saved 200 times costs 800 GB. The claim
 in `docs/06-storage.md` is only true with **content-defined chunking**, which
-`jitsd/chunker.py` now implements (gear hash, ~1 MiB average). This was not in
+`weft/chunker.py` now implements (gear hash, ~1 MiB average). This was not in
 the design docs and is a hard requirement, not an optimisation.
 
 **Dedup granularity is the chunk size.** A 50 KB edit does not cost 50 KB — it
@@ -191,7 +191,7 @@ exists to validate the model, not to ship.
 - **Stored payloads cannot be parameterised.** An asset is either a generator
   or a blob; compiling a query against a blob-backed asset fails loudly rather
   than silently ignoring the parameters.
-- **The fallback parser is more lenient than USD.** `jitsd/usda.py` now uses
+- **The fallback parser is more lenient than USD.** `weft/usda.py` now uses
   `Sdf.Layer` when pxr is installed and its own parser when it is not — and
   the hand-rolled one accepts layers real USD rejects (a closing brace on the
   same line as a value, for one). A layer authored offline can therefore fail
@@ -206,7 +206,7 @@ exists to validate the model, not to ship.
 instead of 107; without pxr the extra ones skip and everything else still
 passes, because rung 1 must run with nothing installed.
 
-`tests/test_pxr.py` opens **everything jitsd writes** in real USD — revision
+`tests/test_pxr.py` opens **everything weft writes** in real USD — revision
 layers (both generator- and payload-backed), baseline layers, every authored
 example and spec, and compiled stages in all five contexts — then checks each
 mesh's face counts against its index list, and compares our cheap parametric
@@ -233,11 +233,11 @@ cleanly in USD.
 
 ## Slices (docs/10-slices.md, plan step 1)
 
-`jitsd select` resolves a slice entirely in the relational plane and prints its
+`weft select` resolves a slice entirely in the relational plane and prints its
 receipt. Nothing materialises.
 
 ```
-$ jitsd select wheelset --pin "glass_building: reflects into the shot"
+$ weft select wheelset --pin "glass_building: reflects into the shot"
 slice: wheelset  +needs  depth 4  ctx:review
 coordinate: floating on @approved
 
@@ -264,7 +264,7 @@ omitting the chassis under a wheelset prints
 heavy)` and exits non-zero. Every member answers "why am I here".
 
 `-o` emits the slice as an ordinary query document (the spec rides in
-`customLayerData`), so `jitsd compile` materialises it unchanged and
+`customLayerData`), so `weft compile` materialises it unchanged and
 `select --from` reloads it. Blob-backed members compile as **constants** — a
 payload arc into the object store — which closed a real gap: compile
 previously refused them, contradicting "constants are functions".
@@ -289,8 +289,8 @@ the resolution accessor from `06-storage.md` is the identified mechanism.
 
 ## Prim-level pull
 
-Slices, above, resolve which *assets* to load. `jitsd pull` (spec sections
-4–8, `jitsd/ask.py`, `jitsd/follow.py`, `jitsd/pull.py`, `jitsd/manifest.py`)
+Slices, above, resolve which *assets* to load. `weft pull` (spec sections
+4–8, `weft/ask.py`, `weft/follow.py`, `weft/pull.py`, `weft/manifest.py`)
 works one level down, directly against a composed USD stage opened with
 `Usd.Stage.LoadNone` — no `.jitsd/` repository required. A seed resolves by
 identity, a bound attribute, spatial bounds, or a bare path/name to a set of
@@ -300,8 +300,8 @@ cross, at what depth, in which direction, and every edge closure declines to
 follow is recorded at the boundary rather than silently dropped. The result
 is a `Usd.StagePopulationMask`-ready prim mask plus a self-certifying
 manifest — every layer hash, every resolution, every declaration recorded so
-a pull is verifiable by recompute-and-compare (`jitsd pull --verify`). `jitsd
-pull` and `jitsd who` (the reverse question — what depends on this prim)
+a pull is verifiable by recompute-and-compare (`weft pull --verify`). `weft
+pull` and `weft who` (the reverse question — what depends on this prim)
 expose it from the CLI. Validated end to end against real production
 geometry in `tests/test_alab_pull.py` and `examples/alab/README.md`, which
 also documents the one real bug that run surfaced: seed and reverse-edge

@@ -54,7 +54,7 @@ def emit_extractors_document(items, name: str) -> str:
     return "\n".join([
         "#usda 1.0",
         "# Registered edge extractors: attribute-encoded references made",
-        "# into first-class edges. Apply with `jitsd pull --extractors %s`." % name,
+        "# into first-class edges. Apply with `weft pull --extractors %s`." % name,
         "(",
         "    customLayerData = {",
         '        string jitsd__extractors = "%s"' % esc,

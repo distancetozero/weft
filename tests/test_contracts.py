@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from jitsd.contracts import (Surface, check_compatibility, extract_text,
+from weft.contracts import (Surface, check_compatibility, extract_text,
                              resolve, split_contract)
 
 EX = Path(__file__).resolve().parents[1] / "examples"

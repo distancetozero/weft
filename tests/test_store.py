@@ -1,6 +1,6 @@
 import random
 
-from jitsd.store import ObjectStore
+from weft.store import ObjectStore
 
 
 def _store(tmp_path):
@@ -63,7 +63,7 @@ def test_store_records_its_chunker_parameters(tmp_path):
     means nothing new dedups against anything already stored, silently."""
     import json
 
-    from jitsd import chunker
+    from weft import chunker
 
     s = _store(tmp_path)
     cfg = json.loads((tmp_path / "objects" / "config.json").read_text())

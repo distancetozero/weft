@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from jitsd.store import ObjectStore  # noqa: E402
+from weft.store import ObjectStore  # noqa: E402
 
 
 def human(n: float) -> str:
@@ -62,7 +62,7 @@ PATTERNS = {"local": edit_local, "scattered": edit_scattered, "global": edit_glo
 
 def run(pattern: str, size_mb: int, saves: int, frac: float) -> dict:
     rng = random.Random(0xC0FFEE)
-    tmp = Path(tempfile.mkdtemp(prefix="jitsd-bench-"))
+    tmp = Path(tempfile.mkdtemp(prefix="weft-bench-"))
     try:
         store = ObjectStore(tmp / "objects")
         store.init()

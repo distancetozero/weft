@@ -3,7 +3,7 @@ import pytest
 pxr = pytest.importorskip("pxr")
 from pxr import Usd
 
-from jitsd.ask import resolve_seeds
+from weft.ask import resolve_seeds
 
 FIXTURE = """#usda 1.0
 (
@@ -162,10 +162,10 @@ def test_seed_and_reverse_edge_resolve_behind_unloaded_payload(tmp_path):
     `GetPrimAtPath` resolves it fine and its non-payload attributes are
     fully composed. `resolve_seeds` (name and attribute planes) and
     `who()`'s reverse index (over `pull._reverse_index`) must find it
-    anyway. Reverting the traversal predicate in `jitsd/ask.py` and
-    `jitsd/pull.py` back to plain `stage.Traverse()` makes every assertion
+    anyway. Reverting the traversal predicate in `weft/ask.py` and
+    `weft/pull.py` back to plain `stage.Traverse()` makes every assertion
     here fail (verified by hand; see task-13-report.md)."""
-    from jitsd.pull import who
+    from weft.pull import who
 
     (tmp_path / "inner.usda").write_text("""#usda 1.0
 def "geo"

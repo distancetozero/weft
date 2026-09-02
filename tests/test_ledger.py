@@ -2,7 +2,7 @@ import random
 
 import pytest
 
-from jitsd.ledger import Repo
+from weft.ledger import Repo
 
 
 def _repo(tmp_path):
@@ -115,7 +115,7 @@ EXAMPLES = __import__("pathlib").Path(__file__).resolve().parents[1] / "examples
 
 def test_promotion_is_gated_on_measured_compatibility(tmp_path):
     """The claim in docs/03-versioning.md, as a test."""
-    from jitsd.ledger import BreakingChange
+    from weft.ledger import BreakingChange
 
     r = _repo(tmp_path)
     payload = _write(tmp_path, "c.bin", 50_000, 20)
