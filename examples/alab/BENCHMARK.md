@@ -8,8 +8,9 @@ scenario where the stock practice wins.
 
     python examples/alab/compare.py /path/to/ALab-2.3.0/ALab
 
-Every number below is that script's own output, pasted verbatim. Re-run it
-to reproduce; nothing here is hand-adjusted or rounded up.
+Every number below is that script's own output, pasted verbatim (only the
+local checkout path is shortened to `/path/to/…`). Re-run it to reproduce;
+nothing here is hand-adjusted or rounded up.
 
 ## Methodology (printed by the script; reproduced here verbatim)
 
@@ -46,7 +47,10 @@ in. `JITSD_ALAB` interfaces were already regenerated root-anchored (with
 `jitsd:offer:carrier`, `jitsd:bind:finish`, etc.) before this run — the
 script checks and would regenerate them idempotently into the ALab tree if
 they weren't there, which they were; nothing in the ALab tree changed as a
-result of running it (verified with `find … -newer` before and after).
+result of running it (verified with `find … -newer` before and after). Note
+that this transcript therefore does not exercise the first-time
+regeneration path itself; that path is exercised by
+`tests/test_alab_pull.py`'s fixture.
 
 ```
 ==============================================================================
@@ -73,7 +77,7 @@ SCENARIO 1 -- known asset, tidy library ("give me chemistry_bottle01, I know whe
   path            entity/chemistry_bottle01/chemistry_bottle01.usda
   prims           27
   bytes (1 layer) 726
-  time (best/3)   0.8 ms   all: 24.0 ms, 0.9 ms, 0.8 ms
+  time (best/3)   0.9 ms   all: 10.2 ms, 0.9 ms, 1.0 ms
   prerequisite    must already know the exact file path: entity/chemistry_bottle01/chemistry_bottle01.usda
   verifiability   none -- a stage, nothing recorded about how it was reached
 
@@ -81,7 +85,7 @@ SCENARIO 1 -- known asset, tidy library ("give me chemistry_bottle01, I know whe
   seed members    ['/root/shelf01/chemistry_bottle01_0004']
   masked prims    29 total (2 spine ancestors carried for context, 27 belonging to the entity itself)
   layer bytes     673890 (every layer contributing to the seed's composed prim stack)
-  time (best/3)   46.5 ms   all: 94.0 ms, 48.2 ms, 46.5 ms
+  time (best/3)   46.5 ms   all: 85.0 ms, 49.2 ms, 46.5 ms
   prerequisite    the workbench context file + one lexical name ('chemistry_bottle01_0004'); no need to know entity/chemistry_bottle01/chemistry_bottle01.usda exists
   verifiability   SHA256-hashed manifest (5461 bytes), re-verifiable with weft.manifest.verify()
 
@@ -89,7 +93,7 @@ SCENARIO 1 -- known asset, tidy library ("give me chemistry_bottle01, I know whe
   entity-only prim count from the mask (27) MATCHES the baseline's direct-open count (27)
 
 -- HONEST RESULT --
-  baseline is faster here (0.8 ms vs 46.5 ms) -- EXPECTED and PUBLISHED: zero-tooling path-open wins when the path is already known and the library is tidy.
+  baseline is faster here (0.9 ms vs 46.5 ms) -- EXPECTED and PUBLISHED: zero-tooling path-open wins when the path is already known and the library is tidy.
   weft's difference in this scenario is the receipt and not needing the path, not speed.
 
 ==============================================================================
@@ -102,17 +106,17 @@ SCENARIO 2 -- find-then-extract by property ("give me every translucent thing")
   layers stage loaded    1625 files, 101566855 bytes (Sdf layer sizes via stage.GetUsedLayers())
   custom code required   60 lines (this function)
   translucent found      26
-  time (best/3)          217.8 ms   all: 253.5 ms, 228.1 ms, 217.8 ms
+  time (best/3)          217.5 ms   all: 357.6 ms, 230.9 ms, 217.5 ms
 
 -- weft: pull("where:finish=translucent") on the LoadNone context --
   members                26
   layers consulted       59 files, 721418 bytes (manifest accounting)
-  time (best/3)          81.3 ms   all: 87.0 ms, 82.0 ms, 81.3 ms
+  time (best/3)          82.8 ms   all: 84.7 ms, 82.8 ms, 83.3 ms
 
 -- AMORTIZED SETUP -- one-time cost of deriving jitsd:bind:finish onto the interfaces weft's answer reads (run into a throwaway temp dir, does not touch the ALab tree) --
   look layers read       159 real look layers (fragment/look/surfacing/*)
   finish derived for     8/159 (8 translucent) -- rule: authored opacity < 0.999 on any Shader spec in the look layer; 8 of 159 looks author opacity at all
-  time (best/3)          713.9 ms   all: 713.9 ms, 719.5 ms, 728.4 ms
+  time (best/3)          711.6 ms   all: 715.4 ms, 711.6 ms, 731.8 ms
   this cost is paid ONCE per republish of the look layers, not once per query -- every subsequent where:finish=translucent pull reuses it
 
 -- AGREEMENT CHECK --
@@ -129,11 +133,13 @@ SCENARIO 3 -- extraction completeness ("take the asset and everything it needs")
 
 -- baseline: UsdUtils.ComputeAllDependencies -- arc-only closure, the machinery behind usdz packaging --
   chemistry_bottle01 (one entity)  layers=14   assets=6    unresolved=11   time(best/3)=1.7 ms
-  lab_workbench01 assembly         layers=2134 assets=984  unresolved=1493  time(best/3)=274.0 ms
+  lab_workbench01 assembly         layers=2134 assets=984  unresolved=1493  time(best/3)=268.4 ms
 
 -- weft/deps: dependency graph over the ALab tree's own closures --
   layers discovered      4461 (deps.discover(ALab))
-  full graph build       258.2 ms  ({'layers': 4461, 'specs': 40859, 'edges': 24761, 'resolved_edges': 6614, 'unresolved': 3525})
+  full graph build, COLD 5597.5 ms  (single-shot -- the on-disk deps cache is deleted once at the start of this scenario, so this is the real first-ever-build cost, not a leftover from a previous run)
+  full graph build, WARM 131.9 ms  (best/3, cache now populated)   all: 137.0 ms, 131.9 ms, 138.3 ms
+  {'layers': 4461, 'specs': 40859, 'edges': 24761, 'resolved_edges': 6614, 'unresolved': 3525}
   entity closure         14 layers, 6 other assets (vs baseline's 14 layers, 6 assets)
   assembly closure       2134 layers, 984 other assets (vs baseline's 2134 layers, 984 assets)
   entity (chemistry_bottle01) edges by kind:
@@ -182,13 +188,13 @@ times, across two separate runs).
 
 | scenario / method | wall time (best of 3) | bytes / prims touched | prerequisite knowledge | verifiability |
 |---|---|---|---|---|
-| S1 baseline — open entity file | **0.8 ms** | 726 B, 27 prims (1 layer) | exact file path to the entity | none — a stage, no receipt |
+| S1 baseline — open entity file | **0.9 ms** | 726 B, 27 prims (1 layer) | exact file path to the entity | none — a stage, no receipt |
 | S1 weft — pull + mask | 46.5 ms | 673,890 B, 29 prims (27 content + 2 spine) | context file + one lexical name; **not** the entity's path | SHA-256 manifest, 5,461 B, `verify()`-able |
-| S2 baseline — live shading walk | 217.8 ms | 101,566,855 B, 1,625 layers, 12,184 prims | `UsdShade` API **and** which binding purpose (`preview`) carries the authored scalar — a real discovery, disclosed above | none |
-| S2 weft — `where:finish=translucent` | 81.3 ms (+ 713.9 ms amortized, one-time) | 721,418 B, 59 layers | the query grammar; the one-time interface derivation | per-query manifest; derivation rule recorded on the interfaces themselves |
+| S2 baseline — live shading walk | 217.5 ms | 101,566,855 B, 1,625 layers, 12,184 prims | `UsdShade` API **and** which binding purpose (`preview`) carries the authored scalar — a real discovery, disclosed above | none |
+| S2 weft — `where:finish=translucent` | 82.8 ms (+ 711.6 ms amortized, one-time) | 721,418 B, 59 layers | the query grammar; the one-time interface derivation | per-query manifest; derivation rule recorded on the interfaces themselves |
 | S3 baseline — `ComputeAllDependencies` (entity) | 1.7 ms | 14 layers + 6 assets | none beyond the API | arc-only; no reverse query, ever |
-| S3 baseline — `ComputeAllDependencies` (assembly) | 274.0 ms | 2,134 layers + 984 assets | none beyond the API | arc-only; no reverse query, ever |
-| S3 weft/deps — full graph build | 258.2 ms warm-cache (≈5.1 s cold, first build ever) | 4,461 layers walked once | none beyond the CLI/API | every edge kept, with kind |
+| S3 baseline — `ComputeAllDependencies` (assembly) | 268.4 ms | 2,134 layers + 984 assets | none beyond the API | arc-only; no reverse query, ever |
+| S3 weft/deps — full graph build | 131.9 ms warm (best/3) · 5,597.5 ms cold — both script-measured; the cache is deleted at scenario start | 4,461 layers walked once | none beyond the CLI/API | every edge kept, with kind |
 | S3 weft/deps — entity closure | included above | same 14 layers + 6 assets as baseline, **+ 48 non-arc edges** (3 material bindings) | — | non-arc edges declared, not dropped |
 | S3 weft/deps — assembly closure | included above | same 2,134 layers + 984 assets as baseline, **+ 6,913 non-arc edges** (477 material bindings) | — | non-arc edges declared, not dropped |
 | S3 weft/deps — reverse query (`dependents`) | **0.0 ms** for 14 dependents | — | — | a capability with no baseline equivalent at all |
@@ -199,7 +205,7 @@ times, across two separate runs).
 When the practitioner already knows the exact path into a tidy,
 one-entity-per-file corpus, opening the file directly is unbeatable —
 there is no tool overhead cheaper than zero tool overhead. weft is roughly
-58× slower here (0.8 ms vs 46.5 ms) because it composes a masked view
+50× slower here (0.9 ms vs 46.5 ms) because it composes a masked view
 through a full context stage instead of opening a small file directly, and
 that cost buys two things the baseline has none of: a receipt (a
 SHA-256-hashed manifest that can be re-verified against the layers it
@@ -221,9 +227,9 @@ material. Getting the baseline right required discovering that ALab-specific
 fact empirically (documented in `compare.py`'s `s2_baseline_translucent`).
 With that fix, baseline and weft **agree exactly** — 26/26 placements,
 identical set, matching the acceptance test's own recorded spike mask too.
-weft is faster per query (81.3 ms vs 217.8 ms) but that comparison is
+weft is faster per query (82.8 ms vs 217.5 ms) but that comparison is
 incomplete without the disclosed one-time cost of deriving `jitsd:bind:finish`
-onto the interfaces in the first place (713.9 ms, run once per look-layer
+onto the interfaces in the first place (711.6 ms, run once per look-layer
 republish, amortized across every future query) — printed as its own line,
 not folded into the per-query number to make weft look better than it is.
 
@@ -240,6 +246,8 @@ nothing in its return value says so. Republishing `chemistry_bottle01`
 using only its arc-only dependency list would silently strand the **48**
 non-arc edges in its own closure (3 of them material bindings); the
 assembly's closure carries **6,913** such edges (477 material bindings).
-`deps` also answers a question `ComputeAllDependencies` cannot ask at all —
-"what depends on this" — in under a millisecond once the graph is built,
-because USD's dependency APIs are one-directional by construction.
+The graph that sees all of this costs **5,597.5 ms to build cold** (measured
+by the script itself after deleting its own cache) and **131.9 ms warm** —
+and `deps` also answers a question `ComputeAllDependencies` cannot ask at
+all — "what depends on this" — in under a millisecond once built, because
+USD's dependency APIs are one-directional by construction.

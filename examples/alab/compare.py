@@ -42,10 +42,6 @@ ENTITY_REL = "entity/chemistry_bottle01/chemistry_bottle01.usda"
 PROVIDER = "lab_workbench01"
 SEED_INSTANCE = "chemistry_bottle01_0004"
 
-TRANSLUCENT_ASSETS = ["chemistry_beaker01", "chemistry_beaker02", "chemistry_beaker03",
-                       "chemistry_bottle01", "decor_bottle_soda01", "decor_glass01",
-                       "stationary_set_square01", "stationary_set_square02"]
-
 SPIKE_TRANSLUCENT_MASK = [
     "/root/shelf01/chemistry_bottle01_0004",
     "/root/shelf01/chemistry_bottle01_0005",
@@ -489,11 +485,30 @@ def s3_deps_graph(alab: str):
 
     paths = discover(alab)
     cache_file = os.path.join(tempfile.gettempdir(), "alab-compare-deps-cache.json")
-    cache = Cache(cache_file)   # scratch cache, never written inside the ALab tree
+    # A genuinely cold start every time this script runs: delete any cache
+    # left over from a previous run (of this script, or of anything else)
+    # before timing the cold build, so that number is reproducible by
+    # anyone who re-runs compare.py rather than an artifact of this
+    # machine's /tmp state. Never written inside the ALab tree.
+    if os.path.exists(cache_file):
+        os.remove(cache_file)
+
+    cold_cache = Cache(cache_file)
     t0 = time.perf_counter()
-    g = build(paths, cache=cache)
-    cache.save()
-    build_s = time.perf_counter() - t0
+    g = build(paths, cache=cold_cache)
+    cold_s = time.perf_counter() - t0
+    cold_cache.save()
+
+    # Warm: the cache just saved is now populated -- best-of-3, same as
+    # every other timing in this script. Cold is inherently single-shot
+    # (there is no such thing as "best of 3 cold starts" without deleting
+    # the cache again each time, which would just remeasure cold), so it
+    # is reported as one number, explicitly labeled as such.
+    def run_warm():
+        warm_cache = Cache(cache_file)
+        return build(paths, cache=warm_cache)
+
+    _, warm_best, warm_times = best_of(run_warm)
 
     def kind_tally(idents):
         tally = {}
@@ -524,7 +539,8 @@ def s3_deps_graph(alab: str):
     dependents = g.dependents(entity)
 
     return {
-        "n_layers_total": len(paths), "build_s": build_s, "stats": g.stats(),
+        "n_layers_total": len(paths), "cold_s": cold_s,
+        "warm_best_s": warm_best, "warm_times": warm_times, "stats": g.stats(),
         "entity_closure_layers": len(e_layers), "entity_closure_assets": len(e_assets),
         "assembly_closure_layers": len(a_layers), "assembly_closure_assets": len(a_assets),
         "entity_tally": e_tally, "entity_binding": e_binding,
@@ -553,7 +569,14 @@ def run_s3(alab: str) -> None:
 
     sub("weft/deps: dependency graph over the ALab tree's own closures")
     print("  layers discovered      %d (deps.discover(ALab))" % d["n_layers_total"])
-    print("  full graph build       %s  (%s)" % (fmt_ms(d["build_s"]), d["stats"]))
+    print("  full graph build, COLD %s  (single-shot -- the on-disk deps "
+          "cache is deleted once at the start of this scenario, so this is "
+          "the real first-ever-build cost, not a leftover from a previous run)"
+          % fmt_ms(d["cold_s"]))
+    print("  full graph build, WARM %s  (best/3, cache now populated)   "
+          "all: %s" % (fmt_ms(d["warm_best_s"]),
+                       ", ".join(fmt_ms(t) for t in d["warm_times"])))
+    print("  %s" % d["stats"])
     print("  entity closure         %d layers, %d other assets (vs baseline's "
           "%d layers, %d assets)"
           % (d["entity_closure_layers"], d["entity_closure_assets"],
