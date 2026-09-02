@@ -116,11 +116,14 @@ def write_mask(p: Pull, path) -> None:
 
 def verify(document_text: str) -> List[str]:
     """The mandatory verification pass (spec section 8)."""
+    import os
     from pxr import Usd
     d = read_document(document_text)
     findings: List[str] = []
     if d.get("digest") != digest(d):
         findings.append("digest mismatch: manifest was edited or truncated")
+    context_path = d["context"]["path"]
+    context_missing = False
     for ident, recorded in d["layers"]:
         if not recorded:
             continue
@@ -128,13 +131,22 @@ def verify(document_text: str) -> List[str]:
             now = _sha256_file(ident)
         except OSError:
             findings.append("layer %s: missing" % ident)
+            if ident == context_path:
+                context_missing = True
             continue
         if now != recorded:
             findings.append("layer %s: hash changed since manifest" % ident)
+    if context_missing or not os.path.exists(context_path):
+        findings.append("context %s: cannot open masked stage (layer missing)" % context_path)
+        return findings
     paths = [m["path"] for m in d["members"]]
     if paths:
         mask = Usd.StagePopulationMask(paths)
-        stage = Usd.Stage.OpenMasked(d["context"]["path"], mask)
+        try:
+            stage = Usd.Stage.OpenMasked(context_path, mask)
+        except Exception as e:
+            findings.append("context %s: masked open failed: %s" % (context_path, str(e)))
+            return findings
         for path in paths:
             if not stage.GetPrimAtPath(path):
                 findings.append(

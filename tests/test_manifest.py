@@ -1,3 +1,4 @@
+import os
 import pytest
 
 pxr = pytest.importorskip("pxr")
@@ -78,3 +79,12 @@ def test_mask_file(ctx, tmp_path):
     f = tmp_path / "pull.mask"
     write_mask(p, f)
     assert f.read_text().splitlines() == mask_paths(p)
+
+
+def test_verify_reports_missing_context_instead_of_crashing(ctx, tmp_path):
+    p = pull(ctx, ["bottle_*"])
+    layer_hashes(p)
+    doc = to_document(p)
+    os.remove(ctx)
+    findings = verify(doc)   # must NOT raise
+    assert any("missing" in f for f in findings)
