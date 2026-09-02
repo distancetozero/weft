@@ -11,6 +11,10 @@ placing **437 props at real transforms** under six groups.
 
     python examples/alab/poc.py /path/to/ALab-2.3.0/ALab
 
+See [`BENCHMARK.md`](BENCHMARK.md) for an honest, steelmanned comparison of
+stock USD practice vs weft on this same corpus — three scenarios, including
+the one where stock USD wins.
+
 ## What is authored, and what is honest about it
 
 **Nothing is hand-written.** `weft/extract.py` reads the assembly and derives
