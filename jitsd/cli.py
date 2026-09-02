@@ -314,6 +314,85 @@ def cmd_bind(args) -> int:
     return 0 if res.ok else 1
 
 
+def _context_file(raw: str) -> str:
+    """A raw USD file path, or a ledger asset name resolved via the repo."""
+    if os.path.exists(raw):
+        return raw
+    repo = Repo.find()
+    rev = repo.ledger.resolve_ref(raw, "approved")
+    r = repo.ledger.read_revision(raw, rev)
+    import tempfile
+    out = Path(tempfile.mkdtemp(prefix="jitsd-ctx-")) / ("%s.usda" % raw)
+    repo.store.checkout(r.blob, out)
+    return str(out)
+
+
+def cmd_pull(args) -> int:
+    from . import manifest as _manifest
+    from . import pull as _pull
+    from .registry import parse_extractors
+
+    if args.verify:
+        findings = _manifest.verify(Path(args.verify).read_text())
+        for f in findings:
+            print("  ! %s" % f)
+        print("verify: %s" % ("ok" if not findings else "%d findings" % len(findings)))
+        return 0 if not findings else 1
+
+    if not args.context:
+        print("pull: --context FILE_OR_ASSET is required", file=sys.stderr)
+        return 1
+    extractors = []
+    if args.extractors:
+        extractors = parse_extractors(Path(args.extractors).read_text())
+    ctx = _context_file(args.context)
+    p = _pull.pull(ctx, args.seeds, follow=args.follow, depth=args.depth,
+                   extractors=extractors)
+    _manifest.layer_hashes(p)
+
+    for r in p.resolutions:
+        line = "seed %s -> %d (%s" % (r.seed.raw, r.matched, r.mode)
+        if r.complement:
+            line += ", %d do not author the key" % r.complement
+        line += ")"
+        if r.note:
+            line += "  %s" % r.note
+        print(line)
+    print("members (%d):" % len(p.members))
+    for m in p.members:
+        via = "seed" if m.via_kind == "seed" else "%s <- %s" % (m.via_kind, m.from_member)
+        print("  %-44s %s" % (m.path, via))
+    if p.boundary:
+        print("boundary (%d):" % len(p.boundary))
+        for b in p.boundary:
+            print("  %-44s %-24s %s [%s]" % (b.target, b.kind, b.reason, b.omission))
+    for d in p.declarations:
+        print("  ~ %s" % d)
+    print("fitness: %s" % p.fitness.get("statement", ""))
+
+    doc = _manifest.to_document(p)
+    findings = _manifest.verify(doc)
+    for f in findings:
+        print("  ! %s" % f, file=sys.stderr)
+    if args.out:
+        Path(args.out).write_text(doc)
+        print("manifest: %s" % args.out)
+    if args.mask_out:
+        _manifest.write_mask(p, args.mask_out)
+        print('mask: %s  (usdrecord --mask "$(cat %s | tr \'\\n\' \',\')" ...)'
+              % (args.mask_out, args.mask_out))
+    return 0 if not findings else 1
+
+
+def cmd_who(args) -> int:
+    from . import pull as _pull
+    ctx = _context_file(args.context)
+    kinds = args.kinds.split(",") if args.kinds else None
+    for src, kind, member in _pull.who(ctx, args.seeds, kinds=kinds):
+        print("  %-44s %-24s -> %s" % (src, kind, member))
+    return 0
+
+
 def cmd_check(args) -> int:
     """What would promoting this revision break?"""
     repo = Repo.find()
@@ -661,6 +740,28 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("verify", help="check stored bytes against their hashes")
     s.set_defaults(fn=cmd_verify)
+
+    s = sub.add_parser("pull", help="prim-level pull: seeds -> manifest + mask")
+    s.add_argument("seeds", nargs="*",
+                   help="glob, name:, id:, id:occ:, role:, offers:, requires:, "
+                        "where:attr=value, near:SEED,R, within:6-floats, path:")
+    s.add_argument("--context", default=None, metavar="FILE_OR_ASSET")
+    s.add_argument("--follow", default=None, metavar="TERMS",
+                   help="direction-qualified kinds: Mount, up:electrical:feeds*8")
+    s.add_argument("--depth", type=int, default=4)
+    s.add_argument("--extractors", default=None, metavar="FILE",
+                   help="a jitsd__extractors document")
+    s.add_argument("-o", "--out", default=None, help="write the manifest here")
+    s.add_argument("--mask-out", default=None, help="write member paths, one per line")
+    s.add_argument("--verify", default=None, metavar="MANIFEST",
+                   help="verify an existing manifest instead of pulling")
+    s.set_defaults(fn=cmd_pull)
+
+    s = sub.add_parser("who", help="what depends on this prim (incoming edges)")
+    s.add_argument("seeds", nargs="+")
+    s.add_argument("--context", required=True, metavar="FILE_OR_ASSET")
+    s.add_argument("--kinds", default=None)
+    s.set_defaults(fn=cmd_who)
 
     return p
 
