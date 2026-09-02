@@ -86,11 +86,24 @@ def _reverse_index(stage) -> Dict[str, List[Tuple[str, str]]]:
     return idx
 
 
-def _term_for(kind: str, terms: List[FollowTerm]) -> Optional[FollowTerm]:
-    for t in terms:
-        if t.kind == kind:
-            return t
-    return None
+def _terms_for(kind: str, terms: List[FollowTerm]) -> List[FollowTerm]:
+    """All follow terms naming this kind (a kind may be named by more than
+    one term, e.g. both a forward and an `up:` term)."""
+    return [t for t in terms if t.kind == kind]
+
+
+def _admission(kind: str, direction: str, terms: List[FollowTerm],
+               depth: int) -> Optional[int]:
+    """The depth cap for an edge of `kind` traveled in `direction`, or None
+    if no term admits it. An edge is admitted when ANY term naming its kind
+    allows that direction (`both` admits either; `up` admits reverse;
+    `down`/default admits forward). The cap is the MAX depth among the
+    admitting terms (a term's own `None` depth means the global depth)."""
+    admitting = [t for t in _terms_for(kind, terms)
+                 if t.direction == "both" or t.direction == direction]
+    if not admitting:
+        return None
+    return max(t.depth if t.depth is not None else depth for t in admitting)
 
 
 def pull(context_file: str, seeds, follow=None, depth: int = 4,
@@ -128,14 +141,11 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
             for kind, target, direction in candidates:
                 if target in members:
                     continue
-                t = _term_for(kind, terms)
-                followed = t is not None and (
-                    t.direction == "both" or t.direction == direction)
-                if not followed:
+                cap = _admission(kind, direction, terms, depth)
+                if cap is None:
                     if direction == "down":   # reverse edges only count when asked
                         not_followed.setdefault((target, kind), mpath)
                     continue
-                cap = t.depth if t.depth is not None else depth
                 if d >= cap:
                     depth_cut.setdefault((target, kind), "beyond depth %d" % cap)
                     continue
@@ -145,13 +155,24 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
             break
         frontier = nxt
     else:
+        # Exhaustion sweep: the final frontier's own edges were never
+        # examined by the loop above. It only looks at forward (authored)
+        # edges, so it must apply the SAME direction-admission rule as the
+        # main loop (an edge whose matching terms admit only "up" is
+        # "not followed" here, never "beyond depth N") — reusing
+        # `_admission` keeps the two paths from diverging.
         for mpath in frontier:
             prim = stage.GetPrimAtPath(mpath)
             if not prim:
                 continue
             for kind, target in _out_edges(prim):
-                if target not in members and _term_for(kind, terms):
-                    depth_cut.setdefault((target, kind), "beyond depth %d" % depth)
+                if target in members:
+                    continue
+                cap = _admission(kind, "down", terms, depth)
+                if cap is None:
+                    not_followed.setdefault((target, kind), mpath)
+                    continue
+                depth_cut.setdefault((target, kind), "beyond depth %d" % cap)
 
     for (target, kind), _via in sorted(not_followed.items()):
         if target not in members:
@@ -166,15 +187,32 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
 
 
 def who(context_file: str, seeds, kinds=None, depth: int = 1):
-    """Incoming edges to the seeds: (source, kind, member). Spec section 7."""
+    """Incoming edges to the seeds: (source, kind, member). Spec section 7.
+
+    Multi-hop: each hop collects (src, kind, target) rows for incoming
+    edges to the current frontier; the next frontier is those srcs. The
+    kinds filter applies at every hop, restricting both which rows are
+    reported and which srcs seed the next hop (an edge outside `kinds`
+    does not extend the interrogation)."""
     stage = _open(context_file)
     resolved = resolve_seeds(stage, list(seeds))
     targets = {path for r in resolved for path in r.paths}
     rev = _reverse_index(stage)
     want = set(kinds or ())
-    out = []
-    for t in sorted(targets):
-        for src, kind in rev.get(t, ()):
-            if not want or kind in want:
-                out.append((src, kind, t))
+    out = set()
+    frontier = set(targets)
+    visited = set(targets)
+    for _ in range(depth):
+        nxt = set()
+        for t in frontier:
+            for src, kind in rev.get(t, ()):
+                if want and kind not in want:
+                    continue
+                out.add((src, kind, t))
+                if src not in visited:
+                    nxt.add(src)
+        if not nxt:
+            break
+        visited |= nxt
+        frontier = nxt
     return sorted(out)
