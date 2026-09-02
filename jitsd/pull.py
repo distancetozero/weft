@@ -8,8 +8,11 @@ the mask as opinions; their outgoing relationships are not scanned."""
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
+
+from deps.walk import ARC, walk_file
 
 from .ask import DEFAULT_IDENTITY_KEYS, ResolvedSeed, resolve_seeds
 from .follow import FollowTerm, format_term, parse_follow
@@ -106,6 +109,88 @@ def _admission(kind: str, direction: str, terms: List[FollowTerm],
     return max(t.depth if t.depth is not None else depth for t in admitting)
 
 
+def _record_variants(prim, p: Pull) -> None:
+    vsets = prim.GetVariantSets()
+    for name in vsets.GetNames():
+        sel = vsets.GetVariantSet(name).GetVariantSelection()
+        if sel:
+            entry = "%s %s=%s" % (prim.GetPath().pathString, name, sel)
+            if entry not in p.variant_selections:
+                p.variant_selections.append(entry)
+
+
+def _unselected_variant_edges(prim, p: Pull, members) -> None:
+    """Declare edges authored in variants NOT selected (spec section 4)."""
+    vsets = prim.GetVariantSets()
+    for spec in prim.GetPrimStack():
+        for vset in spec.variantSets:
+            selected = vsets.GetVariantSet(vset.name).GetVariantSelection()
+            for variant in vset.variants:
+                if variant.name == selected:
+                    continue
+                for vspec in _iter_specs(variant.primSpec):
+                    for rel in vspec.relationships:
+                        for t in _rel_targets(rel):
+                            if t not in members:
+                                p.boundary.append(PullBoundary(
+                                    t, "usd:variant(%s=%s)" % (vset.name, variant.name),
+                                    "not in selected world"))
+
+
+def _iter_specs(spec):
+    yield spec
+    for child in spec.nameChildren:
+        yield from _iter_specs(child)
+
+
+def _rel_targets(rel):
+    items = []
+    lo = rel.targetPathList
+    for slot in ("explicitItems", "prependedItems", "appendedItems",
+                 "addedItems", "orderedItems"):
+        items.extend(getattr(lo, slot, ()) or ())
+    return [str(t.GetPrimPath()) for t in items]
+
+
+def _below_payload(stage, path, p: Pull) -> Optional[str]:
+    """Confirm `path` exists below an unloaded payload by crossing the
+    recorded ARC(payload) edge in layer space. Returns the path if the
+    interior layer defines the remainder, else None. Spec section 4."""
+    from pxr import Sdf
+    cur = path
+    prim = None
+    while cur and cur != "/":
+        cur = cur.rsplit("/", 1)[0] or "/"
+        prim = stage.GetPrimAtPath(cur)
+        if prim:
+            break
+    if not prim:
+        return None
+    rest = path[len(cur):]           # e.g. "/mtl/usd_full"
+    for spec in prim.GetPrimStack():
+        layer_path = spec.layer.realPath or spec.layer.identifier
+        rec = walk_file(layer_path)
+        if rec is None:
+            continue
+        for e in rec.edges:
+            if e.kind == ARC and e.name == "payload" and e.src_prim == str(spec.path):
+                target = os.path.normpath(os.path.join(
+                    os.path.dirname(layer_path), e.target))
+                inner = Sdf.Layer.FindOrOpen(target)
+                if not inner:
+                    continue
+                root = inner.defaultPrim or ""
+                interior = "/%s%s" % (root, rest)
+                if inner.GetPrimAtPath(interior):
+                    if (target, "") not in p.layers:
+                        p.layers.append((target, ""))
+                    p.declarations.append(
+                        "%s resolved below unloaded payload via %s"
+                        % (path, os.path.basename(target)))
+                    return path
+    return None
+
+
 def pull(context_file: str, seeds, follow=None, depth: int = 4,
          identity_keys=DEFAULT_IDENTITY_KEYS) -> Pull:
     stage = _open(context_file)
@@ -118,6 +203,17 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
     for r in p.resolutions:
         for path in r.paths:
             members.setdefault(path, PullMember(path, "seed", "", r.seed.raw))
+
+    # Seed paths arriving invalid on this LoadNone stage (e.g. a `path:`
+    # seed under an unloaded payload) get one pull-side chance: cross the
+    # payload arc in layer space and confirm the remainder is defined
+    # there. If that fails too, drop the member rather than silently
+    # keeping an unresolvable path (spec section 4).
+    for path in list(members):
+        if not stage.GetPrimAtPath(path):
+            if _below_payload(stage, path, p) is None:
+                del members[path]
+                p.declarations.append("seed path %s: not in composed world" % path)
 
     needs_up = any(t.direction in ("up", "both") for t in terms)
     rev = _reverse_index(stage) if needs_up else {}
@@ -134,6 +230,7 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
             prim = stage.GetPrimAtPath(mpath)
             candidates: List[Tuple[str, str, str]] = []   # kind, target, direction
             if prim:
+                _record_variants(prim, p)
                 for kind, target in _out_edges(prim):
                     candidates.append((kind, target, "down"))
             for src, kind in rev.get(mpath, ()):
@@ -151,6 +248,8 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
                     continue
                 members[target] = PullMember(target, kind, mpath)
                 nxt.append(target)
+            if prim:
+                _unselected_variant_edges(prim, p, members)
         if not nxt:
             break
         frontier = nxt
@@ -182,6 +281,18 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
             p.boundary.append(PullBoundary(target, kind, reason))
 
     p.members = sorted(members.values(), key=lambda m: m.path)
+
+    seen_layers = {ident for ident, _ in p.layers}
+    for m in p.members:
+        prim = stage.GetPrimAtPath(m.path)
+        if not prim:
+            continue
+        for spec in prim.GetPrimStack():
+            ident = spec.layer.identifier
+            if ident not in seen_layers:
+                seen_layers.add(ident)
+                p.layers.append((ident, ""))
+
     p.accounting["members"] = len(p.members)
     return p
 
