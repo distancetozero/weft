@@ -1,7 +1,7 @@
 [project]
 name = "weft-usd"
 version = "0.1.0"
-description = "JIT-SD reference implementation for OpenUSD -- rung 1: solo, offline, no contracts"
+description = "weft: pull threads through OpenUSD, not worlds -- identity-first addressing, measured compatibility, declared boundaries"
 requires-python = ">=3.9"
 dependencies = []
 
