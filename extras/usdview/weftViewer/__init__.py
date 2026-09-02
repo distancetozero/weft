@@ -1,11 +1,16 @@
 #
 # The weft usdview plugin: "the ask bar in the viewer" -- v1.
 #
-# Four commands on a "Weft" menu:
+# Five commands on a "Weft" menu:
 #   Ask...              resolve_seeds() against the LIVE stage, live-select
 #   Solo threads        pull() the selection's threads, view-solo the rest
 #   Restore world        reactivate whatever Solo threads deactivated
 #   Who depends on this?  incoming edges onto the selection
+#   Weft Threads...      the live thread-graph panel (see threadpanel.py):
+#                         click/pull in the graph selects AND materializes
+#                         geometry on the open stage; the panel degrades to
+#                         a clean PrintStatus, never a crash, if QtWebEngine
+#                         can't run inside this usdview process.
 #
 # Qt is used only in this file (via pxr.Usdviewq.qt, which picks the PySide
 # module usdview itself is running on). All weft/pxr-heavy imports are
@@ -78,6 +83,13 @@ class WeftViewerContainer(PluginContainer):
         # Held onto so PySide doesn't garbage-collect a dialog out from under
         # its own signal connections while it's still on screen.
         self._openDialogs = []
+        # Weft Threads panel state -- set the first time it opens
+        # successfully; see threadpanel.open_panel. None until then.
+        self._threadDock = None
+        self._threadView = None
+        self._threadBridge = None
+        self._threadChannel = None
+        self._threadSelection = None
 
     # -- registration -------------------------------------------------
 
@@ -94,6 +106,10 @@ class WeftViewerContainer(PluginContainer):
         self._whoCmd = plugRegistry.registerCommandPlugin(
             "WeftViewerContainer.who", "Who depends on this?", self._onWho,
             description="Incoming edges onto the selection.")
+        self._threadsCmd = plugRegistry.registerCommandPlugin(
+            "WeftViewerContainer.threads", "Weft Threads...", self._onThreads,
+            description="Open the live thread-graph panel: click or pull a "
+            "thread to select AND materialize that geometry on the open stage.")
 
     def configureView(self, plugRegistry, plugUIBuilder):
         menu = plugUIBuilder.findOrCreateMenu("Weft")
@@ -101,6 +117,7 @@ class WeftViewerContainer(PluginContainer):
         menu.addItem(self._soloCmd)
         menu.addItem(self._restoreCmd)
         menu.addItem(self._whoCmd)
+        menu.addItem(self._threadsCmd)
 
     # -- Ask... ---------------------------------------------------------
 
@@ -496,6 +513,15 @@ class WeftViewerContainer(PluginContainer):
             self._openDialogs.remove(dialog) if dialog in self._openDialogs else None)))
         self._openDialogs.append(dialog)
         dialog.show()
+
+    # -- Weft Threads panel -----------------------------------------------
+
+    def _onThreads(self, api):
+        try:
+            from . import threadpanel
+            threadpanel.open_panel(self, api)
+        except Exception as e:
+            api.PrintStatus("Weft Threads: %s" % e)
 
     # -- Receipt panel ----------------------------------------------------
 
