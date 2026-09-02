@@ -54,6 +54,17 @@ def _guard(api, label, fn):
     return wrapped
 
 
+def _refuse(api, msg):
+    """A REFUSAL the user must actually SEE, not just a line in the status
+    bar: PrintStatus alone landed only there, which the owner reported
+    missing twice ("nothing pops up") for the no-selection and
+    anonymous-stage guards. PrintStatus stays too, for the log/scripted
+    use. Reserved for refusals -- paths where the command does nothing at
+    all; a success stays status-bar-only, same as before."""
+    api.PrintStatus(msg)
+    QtWidgets.QMessageBox.information(api.qMainWindow, "Weft", msg)
+
+
 class WeftViewerContainer(PluginContainer):
     """Usdview plugin container for weft's Ask/Solo/Restore/Who commands."""
 
@@ -189,14 +200,13 @@ class WeftViewerContainer(PluginContainer):
 
         stageId = api.stageIdentifier
         if not stageId or not os.path.isfile(stageId):
-            api.PrintStatus(
-                "Weft Solo threads: the open stage has no file on disk "
-                "(anonymous root layer) -- pull needs a real --context file")
+            _refuse(api, "Weft Solo threads: the open stage has no file on disk "
+                    "(anonymous root layer) -- pull needs a real --context file")
             return
 
         seedPaths = [str(p) for p in api.selectedPaths]
         if not seedPaths:
-            api.PrintStatus("Weft Solo threads: select one or more prims first")
+            _refuse(api, "Weft Solo threads: select one or more prims first")
             return
 
         kinds = _core.edge_kinds(api.stage, seedPaths)
@@ -210,6 +220,21 @@ class WeftViewerContainer(PluginContainer):
         except ImportError:
             api.PrintStatus("Weft Solo threads: usd-core is required (pip install usd-core)")
             return
+
+        # FINDING 4: usdview's own GUI refresh walks the current prim AND
+        # property focus (property focus rides prim focus) -- if that path
+        # points into a region we are about to deactivate, usdview's OWN
+        # _resetGUI -> _populatePropertyInspector -> getFocusProp crashes
+        # with "RuntimeError: Accessed invalid null prim" once it's stale,
+        # which happens on ANY stage edit usdview reacts to, not only our
+        # own UpdateGUI() calls. Clear the selection before authoring ANY
+        # deactivation -- both the restore-first reactivation just below
+        # (whose own selection guard lives in `_runRestore`, reused here)
+        # and the fresh deactivation further down. A prim GUARANTEED to
+        # survive -- the first pull member -- is reselected once we know
+        # what that is.
+        api.ClearPrimSelection()
+        api.UpdateGUI()
 
         # Restore-before-solo, so a second Solo threads call is always safe
         # without an intervening Restore world: deactivation_set's
@@ -246,6 +271,14 @@ class WeftViewerContainer(PluginContainer):
         # A full restore just ran above, so there is nothing stale left to
         # union with here -- this replaces an already-empty tracking entry.
         self._deactivated[stageId] = deactivated
+
+        # Selection stayed cleared through both mutations above -- reselect
+        # now that the frontier is settled, onto the first pull member
+        # (members are exactly what stays active, by construction).
+        if memberPaths:
+            firstMember = api.stage.GetPrimAtPath(memberPaths[0])
+            if firstMember:
+                api.AddPrimToSelection(firstMember)
 
         self._showReceipt(api, p)
         api.UpdateGUI()
@@ -314,14 +347,30 @@ class WeftViewerContainer(PluginContainer):
         `core.restore_set`) for any prim carrying our marker that this
         instance never tracked -- a previous usdview process, a stage
         reopened after a crash, .... Returns the set of paths reactivated.
-        No PrintStatus/UpdateGUI here: this is also the exact code path
-        Solo threads calls FIRST on every run (see `_runSolo`), and a
-        mid-solo status message would be confusing noise."""
+        No PrintStatus/UpdateGUI here (beyond the selection guard below):
+        this is also the exact code path Solo threads calls FIRST on every
+        run (see `_runSolo`), and a mid-solo status message would be
+        confusing noise.
+
+        FINDING 4 selection guard, standalone Restore world AND the
+        restore-first step inside `_runSolo` alike: clear the selection
+        before reactivating anything -- usdview reacts to stage edits on
+        its own, so a stale prim/property focus can crash usdview's OWN
+        GUI refresh regardless of when we call UpdateGUI() ourselves -- then
+        re-add whatever of the PRE-restore selection still resolves to a
+        valid, active prim once the mutation is done. When called from
+        `_runSolo`, the selection was typically already cleared by the
+        caller a moment ago, so capturing it here just captures an empty
+        list -- a harmless no-op, not a conflict."""
         from pxr import Usd
         from . import core as _core
 
         stageId = api.stageIdentifier
         session = api.stage.GetSessionLayer()
+
+        priorSelected = [str(p) for p in api.selectedPaths]
+        api.ClearPrimSelection()
+        api.UpdateGUI()
 
         tracked = self._deactivated.pop(stageId, set())
         # core.restore_set reads the CURRENT marker set fresh off the live
@@ -338,6 +387,12 @@ class WeftViewerContainer(PluginContainer):
                     prim.ClearActive()
                     prim.ClearCustomDataByKey(_core.MARKER_KEY)
                     restored.add(path)
+
+        for path in priorSelected:
+            prim = api.stage.GetPrimAtPath(path)
+            if prim and prim.IsActive():
+                api.AddPrimToSelection(prim)
+
         return restored
 
     # -- Who depends on this? --------------------------------------------
@@ -351,13 +406,12 @@ class WeftViewerContainer(PluginContainer):
     def _showWhoDialog(self, api):
         stageId = api.stageIdentifier
         if not stageId or not os.path.isfile(stageId):
-            api.PrintStatus(
-                "Weft Who depends on this?: the open stage has no file on disk "
-                "(anonymous root layer)")
+            _refuse(api, "Weft Who depends on this?: the open stage has no file "
+                    "on disk (anonymous root layer)")
             return
         seedPaths = [str(p) for p in api.selectedPaths]
         if not seedPaths:
-            api.PrintStatus("Weft Who depends on this?: select one or more prims first")
+            _refuse(api, "Weft Who depends on this?: select one or more prims first")
             return
 
         dialog = QtWidgets.QDialog(api.qMainWindow)
@@ -426,11 +480,14 @@ class WeftViewerContainer(PluginContainer):
 
         # Not wrapped in _guard: this first call happens during dialog
         # construction, not from a live signal, and an ImportError here
-        # means the dialog should never be shown at all.
+        # means the dialog should never be shown at all. A third refusal
+        # path with the same "nothing pops up" failure mode as the two
+        # guards above (audited for finding 5), so it gets the same
+        # treatment.
         try:
             refresh()
         except ImportError:
-            api.PrintStatus("%s: usd-core is required (pip install usd-core)" % label)
+            _refuse(api, "%s: usd-core is required (pip install usd-core)" % label)
             return
 
         dialog.resize(680, 420)
