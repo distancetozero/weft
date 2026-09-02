@@ -279,6 +279,11 @@ def cmd_select(args) -> int:
             print("    ... and %d more" % (len(re.breaking) - 8))
 
     if args.out:
+        if result.selections:
+            spec.selections = [
+                {"context": s.context, "rev": s.rev, "ask": s.ask, "paths": s.paths}
+                for s in result.selections
+            ]
         Path(args.out).write_text(_slice.emit_query_document(result))
         print("\nwritten: %s  (a query document -- `jitsd compile` materialises it)"
               % args.out)

@@ -60,6 +60,11 @@ class SliceSpec:
     context: str = "review"
     label: str = ""
     rules: Optional[str] = None     # provenance: the rule set applied, "name@rev"
+    # Recorded prim selections, as plain dicts (so to_json/from_json need no
+    # special construction, unlike pins/omits): {"context", "rev", "ask",
+    # "paths"}. Written by cmd_select from a resolved SliceResult; read back
+    # by resolve_slice to enforce the authority rule against a fresh replay.
+    selections: Optional[List[Dict]] = None
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), separators=(",", ":"), sort_keys=True)
@@ -202,6 +207,19 @@ class BoundaryItem:
 
 
 @dataclass
+class Selection:
+    """A prim-level ask, scoped by a context asset and pinned at its slice
+    revision (spec section 9). `paths` is the cached resolution at
+    (context, rev); `layer_bytes` is priced from the pull manifest's own
+    accounting, not re-derived here."""
+    context: str          # ledger asset name
+    rev: str              # context revision pinned at resolve time
+    ask: str          # the raw ask, authoritative at other coordinates
+    paths: List[str] = field(default_factory=list)
+    layer_bytes: int = 0
+
+
+@dataclass
 class SliceResult:
     spec: SliceSpec
     coordinate: str                      # "baseline 000003" or "floating on @approved"
@@ -211,6 +229,7 @@ class SliceResult:
     diagnostics: List[str]               # human-readable warnings/errors
     errors: int
     untracked: List["_Untracked"] = field(default_factory=list)
+    selections: List[Selection] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -271,6 +290,34 @@ def _load_universe(repo, pins: Dict[str, str]) -> Dict[str, _AssetInfo]:
             source=getattr(r, "source", None),
         )
     return out
+
+
+# -- prim seeds: the ask grammar as slice-seed syntax, scoped by context ---
+#
+# spec section 9. A seed of the form "<context>:<ask>" is a prim seed when
+# <ask> itself starts with one of the ask grammar's plane prefixes -- so
+# "bench:role:propSocket" is a prim seed (ask "role:propSocket" inside
+# context "bench") while a bare "role:propSocket" stays the asset-level
+# predicate it always was. partition() splits on the FIRST colon, so
+# <context> can never itself contain a colon; the check is exactly "does
+# what follows the first colon look like an ask".
+
+_PRIM_PLANES = ("name:", "id:", "where:", "near:", "within:", "path:",
+                "role:", "offers:", "requires:")
+
+
+def is_prim_seed(seed: str) -> bool:
+    ctx, sep, rest = seed.partition(":")
+    if not sep or not ctx:
+        return False
+    return rest.startswith(_PRIM_PLANES)
+
+
+def split_prim_seed(seed: str) -> Tuple[str, str]:
+    """A prim seed's (context asset name, ask). Caller must have already
+    confirmed `is_prim_seed(seed)`."""
+    ctx, _, rest = seed.partition(":")
+    return ctx, rest
 
 
 # -- seed predicates -------------------------------------------------------
@@ -476,14 +523,78 @@ def resolve_slice(repo, spec: SliceSpec) -> SliceResult:
 
     members: Dict[str, Member] = {}
 
-    # seeds
-    for seed in spec.seeds:
+    prim_seeds = [s for s in spec.seeds if is_prim_seed(s)]
+    asset_seeds = [s for s in spec.seeds if not is_prim_seed(s)]
+
+    # seeds (asset-level)
+    for seed in asset_seeds:
         hits = [a for a, i in sorted(universe.items())
                 if a not in omitted_assets and _seed_matches(seed, i, repo, pins)]
         if not hits and not seed.startswith(("changed-since:",)):
             diagnostics.append("seed %r matched nothing" % seed)
         for a in hits:
             members.setdefault(a, member_from(a, Provenance("seed", seed)))
+
+    # prim seeds (spec section 9): resolved against the context asset's
+    # source, at the revision this coordinate pins it to. The context asset
+    # joins membership too, so closure/impact see it like any other seed.
+    selections: List[Selection] = []
+    for seed in prim_seeds:
+        ctx_name, ask = split_prim_seed(seed)
+        if ctx_name in omitted_assets:
+            diagnostics.append(
+                "prim seed %r: context %r is omitted" % (seed, ctx_name))
+            continue
+        if ctx_name not in universe:
+            diagnostics.append(
+                "prim seed %r: no context asset %r at this coordinate"
+                % (seed, ctx_name))
+            errors += 1
+            continue
+        info = universe[ctx_name]
+        if not info.source or not Path(info.source).exists():
+            diagnostics.append(
+                "prim seed %r: context %r has no source file" % (seed, ctx_name))
+            errors += 1
+            continue
+        from . import manifest as _manifest
+        from .pull import pull as _pull_fn
+        p = _pull_fn(info.source, [ask], follow=spec.follow or None,
+                     depth=spec.depth)
+        _manifest.layer_hashes(p)
+        sel = Selection(context=ctx_name, rev=info.rev, ask=ask,
+                        paths=[m.path for m in p.members],
+                        layer_bytes=int(p.accounting.get("layer_bytes", 0)))
+        selections.append(sel)
+        if not sel.paths:
+            diagnostics.append("prim seed %r matched nothing" % seed)
+        members.setdefault(ctx_name, member_from(ctx_name, Provenance("seed", seed)))
+
+    # authority rule: resolve_slice always re-runs the ask. A spec loaded via
+    # --from may carry selections recorded at resolve time; at the SAME
+    # context rev the recorded paths must equal the replay (a checkable
+    # invariant -- mismatch is an error). At a different rev the replay wins
+    # and the difference is only ever a diagnostic: the ask is authoritative,
+    # not the cache.
+    for rec in (spec.selections or []):
+        cur = next((s for s in selections
+                    if s.context == rec.get("context") and s.ask == rec.get("ask")), None)
+        if cur is None:
+            continue
+        if rec.get("rev") == cur.rev:
+            if rec.get("paths") != cur.paths:
+                diagnostics.append(
+                    "selection %s:%s: recorded paths differ from replay at "
+                    "the same rev %s -- invariant violated"
+                    % (cur.context, cur.ask, cur.rev))
+                errors += 1
+        else:
+            old = set(rec.get("paths") or [])
+            new = set(cur.paths)
+            diagnostics.append(
+                "selection drift %s:%s: +%d -%d vs recorded at %s (ask is "
+                "authoritative)" % (cur.context, cur.ask, len(new - old),
+                                    len(old - new), rec.get("rev")))
 
     # pins participate in closure like seeds; unknown pins are errors
     for pin in spec.pins:
@@ -601,7 +712,7 @@ def resolve_slice(repo, spec: SliceSpec) -> SliceResult:
     return SliceResult(spec=spec, coordinate=coordinate, members=ordered,
                        omitted=omitted, boundary=boundary,
                        diagnostics=diagnostics, errors=errors,
-                       untracked=untracked_refs)
+                       untracked=untracked_refs, selections=selections)
 
 
 # -- serialisation: a slice IS a query document ----------------------------
@@ -692,6 +803,12 @@ def receipt(result: SliceResult) -> str:
         lines.append("boundary (%d):  referenced but not pulled" % len(result.boundary))
         for b in result.boundary:
             lines.append("  %-14s via %-34s %s" % (b.asset, b.via, b.why_excluded))
+    if result.selections:
+        lines.append("")
+        lines.append("selections (%d):" % len(result.selections))
+        for s in result.selections:
+            lines.append("  %s@%s : %s -> %d prims, %s"
+                         % (s.context, s.rev, s.ask, len(s.paths), _human(s.layer_bytes)))
     if result.diagnostics:
         lines.append("")
         for d in result.diagnostics:
