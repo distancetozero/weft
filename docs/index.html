@@ -118,10 +118,12 @@
 </header>
 
 <figure>
-  <div class="plate"><img src="assets/weft-demo.gif" alt="Animated demo: the full ALab scene, then a mount-thread pull, then an attribute pull leaving 26 pieces of glassware, then a measured refusal transcript" width="960" height="760"></div>
-  <figcaption>Forty seconds, the whole idea: the world, two pulls, and a refusal —
-  all rendered with stock <code>usdrecord</code> from weft masks, on
-  <a href="https://dpel.aswf.io/alab/">Animal Logic's ALab</a>.</figcaption>
+  <div class="plate"><img src="assets/moment3_translucent.png" alt="26 pieces of glassware floating at their production transforms in an otherwise empty scene" width="1280" height="934"></div>
+  <figcaption><code>weft pull 'where:finish=translucent'</code> — twenty-six pieces of
+  glassware at their exact production transforms, from a scene that was never loaded.
+  No path appeared in the question. Rendered with stock <code>usdrecord</code> from a
+  weft mask; this exact pull is asserted in the test suite against a hand-built
+  reference, placement for placement.</figcaption>
 </figure>
 
 <h2>One scene, from world to thread</h2>
@@ -145,14 +147,6 @@
     same transforms — the world was simply never populated past what you asked for.</figcaption>
   </figure>
 </div>
-
-<figure>
-  <div class="plate"><img src="assets/moment3_translucent.png" alt="26 pieces of glassware floating at their production transforms in an otherwise empty scene" width="1280" height="934"></div>
-  <figcaption><b>Pull by attribute.</b> <code>weft pull 'where:finish=translucent'</code> —
-  twenty-six pieces of glassware at their exact production transforms, from a scene
-  that was never loaded. No path appeared in the question; this exact pull is
-  asserted in the test suite against a hand-built reference, placement for placement.</figcaption>
-</figure>
 
 <h2>Addresses, not paths</h2>
 <pre><code>weft pull id:hero-car                    <span class="cmt"># identity — survives restructures</span>
