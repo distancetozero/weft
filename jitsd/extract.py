@@ -252,15 +252,48 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
                        nudge: Optional[Dict[str, Vec3]] = None,
                        cost_class: str = "heavy",
                        represents: Optional[Dict[str, List[str]]] = None,
-                       shading_required: Optional[Dict[str, List[str]]] = None) -> str:
+                       shading_required: Optional[Dict[str, List[str]]] = None,
+                       carrier_rule: Optional[str] = None,
+                       load_limit: Optional[Dict[str, float]] = None,
+                       anchor: str = "asset") -> str:
     """The provider's surface: one offer per placement, grouped as authored.
 
     `nudge` shifts every offer in a group by a vector. It stands in for the
     modelling change a republish would carry -- the shelf moved -- so the
     promotion gate can be exercised without re-modelling geometry. Say so
     wherever it is used.
+
+    `carrier_rule="group-furniture"` additionally authors an ADVISORY
+    `jitsd:offer:carrier` rel on every non-furniture offer, pointing at the
+    `furniture_*` placements in its own group (a shelf is not its own
+    carrier). It is a stated, recorded rule -- not a measurement -- so it is
+    refused (`ValueError`) when `load_limit` says an offer carries physical
+    meaning: a carrier is then either authored by hand or absent, never
+    guessed.
+
+    `anchor` picks where the overs land:
+      "asset" (default) -- today's output, overs under a root prim named
+        after the provider (`ex.provider`). Unchanged for existing callers.
+      "root" -- overs are authored under "root" instead, so this layer
+        COMPOSES onto the entity's own defaultPrim (also conventionally
+        "root") rather than sitting beside it. Carrier targets follow suit:
+        `/root/<group>/<name>`, not `/<provider>/<group>/<name>`.
     """
     nudge = nudge or {}
+    if carrier_rule and load_limit and any(v for v in load_limit.values()):
+        raise ValueError("carrier derivation refused for offers with physical meaning")
+
+    root_name = "root" if anchor == "root" else ex.provider
+    root_kw = "over" if anchor == "root" else "def Xform"
+    group_kw = "over" if anchor == "root" else "def Scope"
+    offer_kw = "over" if anchor == "root" else "def Xform"
+
+    furniture_by_group: Dict[str, List[str]] = {}
+    if carrier_rule == "group-furniture":
+        for pl in ex.placements:
+            if pl.name.startswith("furniture_"):
+                furniture_by_group.setdefault(pl.group, []).append(pl.name)
+
     lines = [
         "#usda 1.0",
         "#",
@@ -273,14 +306,14 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
         "# is a human decision; replace it deliberately.",
         "#",
         "(",
-        '    defaultPrim = "%s"' % ex.provider,
+        '    defaultPrim = "%s"' % root_name,
         ")",
         "",
     ]
     schemas = ['"JitsdGeneratorAPI"']
     schemas += ['"JitsdRequireAPI:rep_%s"' % a for a in sorted(represents or {})]
     lines += [
-        'def Xform "%s" (' % ex.provider,
+        '%s "%s" (' % (root_kw, root_name),
         "    prepend apiSchemas = [%s]" % ", ".join(schemas),
         ")",
         "{",
@@ -309,12 +342,13 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
                 % (a, ", ".join('"%s"' % m for m in sorted(sh))),
             ]
     for group in ex.groups:
-        lines += ["", '    def Scope "%s"' % group, "    {"]
+        lines += ["", '    %s "%s"' % (group_kw, group), "    {"]
         d = nudge.get(group, (0.0, 0.0, 0.0))
+        carriers = furniture_by_group.get(group, [])
         for p in (q for q in ex.placements if q.group == group):
             t = (p.translate[0] + d[0], p.translate[1] + d[1], p.translate[2] + d[2])
             lines += [
-                '        def Xform "%s" (' % p.name,
+                '        %s "%s" (' % (offer_kw, p.name),
                 '            prepend apiSchemas = ["JitsdOfferAPI", "JitsdMountAPI", "JitsdEnvelopeAPI"]',
                 "        )",
                 "        {",
@@ -323,8 +357,16 @@ def provider_interface(ex: Extraction, contract: str = DEFAULT_CONTRACT,
                 '            uniform token  jitsd:mount:role      = "%s"' % p.asset,
                 "            uniform double jitsd:envelope:linear = %s" % _f(envelope),
                 "            double3 xformOp:translate = (%s, %s, %s)" % tuple(_f(x) for x in t),
-                "        }",
             ]
+            if carriers and not p.name.startswith("furniture_"):
+                targets = ", ".join(
+                    "</%s/%s/%s>" % (root_name, group, c) for c in sorted(carriers))
+                lines += [
+                    "            prepend rel jitsd:offer:carrier = [%s]" % targets,
+                    "            uniform token jitsd:offer:carrierRule = "
+                    "\"%s: furniture_* placements of the offer's group\"" % carrier_rule,
+                ]
+            lines.append("        }")
         lines.append("    }")
     lines += ["}", ""]
     return "\n".join(lines)
@@ -339,14 +381,22 @@ def consumer_interface(asset: str, contract: str = DEFAULT_CONTRACT,
                        tolerance_rule: str = "",
                        provides: Optional[List[str]] = None,
                        shading: Optional[List[str]] = None,
-                       surface_finish: Optional[str] = None) -> str:
+                       surface_finish: Optional[str] = None,
+                       anchor: str = "asset") -> str:
     """A placed asset's surface: it needs a mount meant for it, wherever offered.
 
     `tolerance` is the consumer's own limit on drift, checked at
     re-evaluation regardless of what the provider promised. Omitted when
     unknown -- an unstated tolerance means the envelope governs, which is
     honest; an invented one is not.
+
+    `anchor`, as in `provider_interface`: "asset" (default) is today's
+    output, a root prim named after the asset. "root" authors `over "root"`
+    instead, so the surface composes onto the asset entity's own
+    defaultPrim (conventionally "root") rather than sitting beside it.
     """
+    root_name = "root" if anchor == "root" else asset
+    root_kw = "over" if anchor == "root" else "def Xform"
     lines = [
         "#usda 1.0",
         "#",
@@ -354,10 +404,10 @@ def consumer_interface(asset: str, contract: str = DEFAULT_CONTRACT,
         "# never a provider, never a path inside one.",
         "#",
         "(",
-        '    defaultPrim = "%s"' % asset,
+        '    defaultPrim = "%s"' % root_name,
         ")",
         "",
-        'def Xform "%s" (' % asset,
+        '%s "%s" (' % (root_kw, root_name),
         '    prepend apiSchemas = ["JitsdGeneratorAPI", "JitsdRequireAPI:mount"]',
         ")",
         "{",
@@ -432,7 +482,9 @@ def write_interfaces(ex: Extraction, out_dir: str, contract: str = DEFAULT_CONTR
                      tolerance_fraction: Optional[float] = None,
                      represent: bool = False,
                      look_by_asset: Optional[Dict[str, str]] = None,
-                     into_assets: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+                     into_assets: Optional[Dict[str, str]] = None,
+                     carrier_rule: Optional[str] = None,
+                     anchor: str = "asset") -> Dict[str, str]:
     """Write provider + consumer interface layers. Returns {asset: path}.
 
     With `tolerance_fraction`, each consumer's tolerance is that fraction of
@@ -446,6 +498,12 @@ def write_interfaces(ex: Extraction, out_dir: str, contract: str = DEFAULT_CONTR
     interface is written to `<dir>/interface/<asset>_interface.usda` and
     inserted as a sublayer of the entity's root layer, so the surface lives
     inside the asset's own structure rather than beside it.
+
+    `carrier_rule` and `anchor` pass straight through to `provider_interface`
+    (and `anchor` to `consumer_interface` too) -- default None/"asset" is
+    today's behavior. Regeneration always goes through `write_interfaces`,
+    so this is where a caller opts into advisory carriers or root-anchored
+    (composing) interfaces.
     """
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -488,7 +546,8 @@ def write_interfaces(ex: Extraction, out_dir: str, contract: str = DEFAULT_CONTR
         ex.provider,
         provider_interface(ex, contract, envelope, nudge,
                            represents=provides if represent else None,
-                           shading_required=shading if represent else None),
+                           shading_required=shading if represent else None,
+                           carrier_rule=carrier_rule, anchor=anchor),
         "%s.iface.usda" % ex.provider)
 
     for asset in ex.assets:
@@ -501,6 +560,7 @@ def write_interfaces(ex: Extraction, out_dir: str, contract: str = DEFAULT_CONTR
         text = consumer_interface(asset, contract, tolerance=tol, tolerance_rule=rule,
                                   provides=provides.get(asset),
                                   shading=shading.get(asset),
-                                  surface_finish=finishes.get(asset))
+                                  surface_finish=finishes.get(asset),
+                                  anchor=anchor)
         paths[asset] = _place(asset, text, "%s.iface.usda" % asset)
     return paths

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import textwrap
+from pathlib import Path
 
 import pytest
 
@@ -10,7 +11,8 @@ pytest.importorskip("pxr")
 
 from jitsd.contracts import extract_text, resolve  # noqa: E402
 from jitsd.extract import (  # noqa: E402
-    consumer_interface, provider_interface, read_assembly, write_interfaces,
+    Extraction, Placement, consumer_interface, provider_interface,
+    read_assembly, write_interfaces,
 )
 from jitsd.ledger import BreakingChange, Repo  # noqa: E402
 
@@ -293,3 +295,101 @@ def Material "usd_full"
 """)
     assert finish(str(glass)) == "translucent"
     assert finish(str(metal)) is None   # nothing authored: no claim invented
+
+
+# -- advisory carriers: furniture placements carry the props on them --------
+
+def _carrier_extraction():
+    return Extraction(provider="bench", placements=[
+        Placement("/root/shelf01/chemistry_bottle01_0001", "shelf01",
+                 "chemistry_bottle01_0001", "chemistry_bottle01", (1.0, 0.0, 0.0)),
+        Placement("/root/shelf01/furniture_shelving01_0001", "shelf01",
+                 "furniture_shelving01_0001", "furniture_shelving01", (0.0, 0.0, 0.0)),
+    ])
+
+
+def test_carrier_rule_emits_advisory_carriers():
+    ex = _carrier_extraction()
+    text = provider_interface(ex, carrier_rule="group-furniture")
+    assert "jitsd:offer:carrier" in text
+    assert "furniture_shelving01_0001" in text
+    assert 'carrierRule = "group-furniture' in text
+    # the furniture offer itself carries no carrier -- a shelf is not its own
+    # carrier. "furniture_shelving01_0001" appears twice: once as a carrier
+    # target inside the bottle's offer, once as the furniture offer's own
+    # name. The second occurrence starts that offer's own block.
+    first = text.index("furniture_shelving01_0001")
+    second = text.index("furniture_shelving01_0001", first + 1)
+    assert "jitsd:offer:carrier" not in text[second:]
+
+
+def test_no_rule_no_carrier():
+    ex = _carrier_extraction()
+    assert "jitsd:offer:carrier" not in provider_interface(ex)
+
+
+def test_carrier_target_path_is_composed_under_the_provider():
+    ex = _carrier_extraction()
+    text = provider_interface(ex, carrier_rule="group-furniture")
+    assert "</bench/shelf01/furniture_shelving01_0001>" in text
+
+
+def test_load_limit_refuses_carrier_derivation():
+    ex = _carrier_extraction()
+    with pytest.raises(ValueError, match="physical meaning"):
+        provider_interface(ex, carrier_rule="group-furniture",
+                           load_limit={"chemistry_bottle01_0001": 5.0})
+
+
+def test_write_interfaces_passes_carrier_rule_through(tmp_path):
+    ex = _carrier_extraction()
+    paths = write_interfaces(ex, str(tmp_path / "iface"), carrier_rule="group-furniture")
+    text = Path(paths["bench"]).read_text()
+    assert "jitsd:offer:carrier" in text
+
+
+def test_regression_default_anchor_output_unchanged(tmp_path):
+    """anchor='asset' is the default and must reproduce exactly today's
+    output for a fixture without carriers -- the existing full test suite
+    (test_emitted_interfaces_parse_and_bind, test_nudge_moves_only_that_group,
+    test_end_to_end_gate_refuses_a_moved_shelf) is the real regression guard;
+    this pins the literal text too."""
+    ex = read_assembly(str(_assembly(tmp_path)), "bench")
+    text = provider_interface(ex, envelope=1.0)
+    assert text.startswith('#usda 1.0\n')
+    assert 'def Xform "bench" (' in text
+    assert '    def Scope "shelf01"\n    {' in text
+    assert '        def Xform "bottle01_0004" (' in text
+    assert "over " not in text
+
+
+# -- anchor="root": overs compose onto the entity's real defaultPrim -------
+
+def test_provider_anchor_root_composes_overs_under_root():
+    ex = _carrier_extraction()
+    text = provider_interface(ex, anchor="root", carrier_rule="group-furniture")
+    assert 'defaultPrim = "root"' in text
+    assert 'over "root" (' in text
+    assert '    over "shelf01"' in text
+    assert '        over "chemistry_bottle01_0001" (' in text
+    # carrier targets are under /root/..., NOT /<provider>/...
+    assert "</root/shelf01/furniture_shelving01_0001>" in text
+    assert "/bench/" not in text
+
+
+def test_consumer_anchor_root_composes_over_under_root():
+    text = consumer_interface("bottle01", anchor="root")
+    assert 'defaultPrim = "root"' in text
+    assert 'over "root" (' in text
+    assert 'def Xform "bottle01"' not in text
+
+
+def test_anchor_root_output_still_parses_with_real_sdf():
+    from pxr import Sdf
+    ex = _carrier_extraction()
+    text = provider_interface(ex, anchor="root", carrier_rule="group-furniture")
+    layer = Sdf.Layer.CreateAnonymous(".usda")
+    assert layer.ImportFromString(text)
+    ctext = consumer_interface("bottle01", anchor="root", provides=["modelling"])
+    clayer = Sdf.Layer.CreateAnonymous(".usda")
+    assert clayer.ImportFromString(ctext)
