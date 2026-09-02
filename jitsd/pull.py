@@ -405,6 +405,20 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
         _record_variants(prim, p)
         _unselected_variant_edges(prim, unselected_variant)
 
+    # Count member asset-path attributes not priced (FINALIZATION pass).
+    # For each valid member prim, count authored attributes of type
+    # Asset/AssetArray into asset_paths_not_priced.
+    asset_paths_not_priced = 0
+    for mpath in members:
+        prim = stage.GetPrimAtPath(mpath)
+        if not prim:
+            continue
+        for attr in prim.GetAttributes():
+            type_name = attr.GetTypeName()
+            if type_name in ("asset", "asset[]") and attr.HasAuthoredValue():
+                asset_paths_not_priced += 1
+    p.accounting["asset_paths_not_priced"] = asset_paths_not_priced
+
     for (target, kind), (reason, under_kind) in sorted(unselected_variant.items()):
         if target not in members:
             p.boundary.append(PullBoundary(
