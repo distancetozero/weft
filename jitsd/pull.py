@@ -16,7 +16,7 @@ from deps.walk import ARC, walk_file
 
 from .ask import DEFAULT_IDENTITY_KEYS, ResolvedSeed, resolve_seeds
 from .follow import FollowTerm, format_term, parse_follow
-from .registry import MEANING_CHANGING, omission_class
+from .registry import MEANING_CHANGING, omission_class, Extractor
 
 
 @dataclass
@@ -60,7 +60,7 @@ def _open(context_file: str):
     return Usd.Stage.Open(context_file, Usd.Stage.LoadNone)
 
 
-def _out_edges(prim) -> List[Tuple[str, str]]:
+def _out_edges(prim, extractors=()) -> List[Tuple[str, str]]:
     """(kind, composed target path) for every authored relationship, plus
     (spec §6) a contract-bearing prim's declared carrier spines exposed as
     edges of the contract's own kind."""
@@ -78,14 +78,19 @@ def _out_edges(prim) -> List[Tuple[str, str]]:
             for t in rel.GetTargets():
                 out.append((kind, t.GetPrimPath().pathString))
 
+    for ex in extractors:
+        a = prim.GetAttribute(ex.attr)
+        if a and a.HasAuthoredValue() and ex.target == "primPath":
+            out.append((ex.kind, str(a.Get())))
+
     return out
 
 
-def _reverse_index(stage) -> Dict[str, List[Tuple[str, str]]]:
+def _reverse_index(stage, extractors=()) -> Dict[str, List[Tuple[str, str]]]:
     """target path -> [(source path, kind)] over the populated stage."""
     idx: Dict[str, List[Tuple[str, str]]] = {}
     for p in stage.Traverse():
-        for kind, t in _out_edges(p):
+        for kind, t in _out_edges(p, extractors=extractors):
             idx.setdefault(t, []).append((p.GetPath().pathString, kind))
     return idx
 
@@ -299,7 +304,7 @@ def _below_payload(stage, path, p: Pull) -> Optional[str]:
 
 
 def pull(context_file: str, seeds, follow=None, depth: int = 4,
-         identity_keys=DEFAULT_IDENTITY_KEYS) -> Pull:
+         identity_keys=DEFAULT_IDENTITY_KEYS, extractors=()) -> Pull:
     stage = _open(context_file)
     terms = parse_follow(follow)
     p = Pull(context=context_file, depth=depth,
@@ -323,7 +328,7 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
                 p.declarations.append("seed path %s: not in composed world" % path)
 
     needs_up = any(t.direction in ("up", "both") for t in terms)
-    rev = _reverse_index(stage) if needs_up else {}
+    rev = _reverse_index(stage, extractors=extractors) if needs_up else {}
     if needs_up:
         p.declarations.append(
             "reverse terms present: pull is depth-bounded component closure")
@@ -337,7 +342,7 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
             prim = stage.GetPrimAtPath(mpath)
             candidates: List[Tuple[str, str, str]] = []   # kind, target, direction
             if prim:
-                for kind, target in _out_edges(prim):
+                for kind, target in _out_edges(prim, extractors=extractors):
                     candidates.append((kind, target, "down"))
             for src, kind in rev.get(mpath, ()):
                 candidates.append((kind, src, "up"))
@@ -370,7 +375,7 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
             prim = stage.GetPrimAtPath(mpath)
             if not prim:
                 continue
-            for kind, target in _out_edges(prim):
+            for kind, target in _out_edges(prim, extractors=extractors):
                 if target in members:
                     continue
                 cap = _admission(kind, "down", terms, depth)
@@ -457,6 +462,11 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
         "contact_unevaluated": contact_unevaluated,
         "statement": "contact-incomplete by construction",
     }
+
+    p.declarations.append(
+        "strand-free over relationships, arcs, and registered extractors "
+        "(%d registered); attribute-encoded references outside them are not visible"
+        % len(extractors))
 
     return p
 
