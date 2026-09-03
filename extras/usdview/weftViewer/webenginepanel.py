@@ -5,29 +5,49 @@
 # No network, no HTTP server, no token: the whole "trust boundary" is
 # "this is usdview's own embedded page," nothing else talks to it.
 #
-# ROUND 6. History, briefly (full detail in
+# ROUND 7. History, briefly (full detail in
 # .superpowers/threadpanel-report.md): round 1 built exactly this --
 # QWebEngineView + QWebChannel -- and it crashed the real usdview GUI on
-# macOS (exit 139) the moment the panel was opened, confirmed by the owner
-# testing the actual interactive GUI directly. Rounds 3-4 replaced it with
-# a native QGraphicsView panel (kept in the tree as a secondary command,
-# see threadpanel.py) to get something working, but it never reproduced
-# the d3 viewer's own lens/ask-bar/inspector interaction. Round 5 tried
-# running the d3 viewer in an external browser instead -- the owner
-# explicitly rejected that ("i don't like hacking a browser on the user").
-# Round 6 (this file) goes back to embedding WebEngine, but fixes the
-# ACTUAL root cause instead of working around it: QtWebEngine's Chromium
-# compositor needs `Qt.AA_ShareOpenGLContexts` set before usdview's own
-# `QApplication` is constructed, which no usdview PLUGIN can do (plugins
-# load after that QApplication -- and usdview's whole main window --
-# already exist) -- only a LAUNCHER standing in front of usdview's own
-# entry point can. See ../weft_usdview.py, which also forces QtWebEngine
-# onto CPU compositing (`QTWEBENGINE_CHROMIUM_FLAGS=--disable-gpu`),
-# removing the Chromium-Metal-vs-usdview-OpenGL GPU-surface conflict this
-# whole crash history traces back to. Launching usdview through that shim
-# (see extras/usdview/README.md) is a REQUIREMENT for this panel, not an
-# optional nicety -- without it, this is the exact code that crashed
-# before.
+# macOS (exit 139) the moment the panel was opened. Rounds 3-4 replaced it
+# with a native QGraphicsView panel (kept as a secondary command, see
+# threadpanel.py); round 5's external-browser bridge was rejected by the
+# owner; round 6 re-embedded WebEngine behind a launch shim
+# (AA_ShareOpenGLContexts + --disable-gpu) and STILL crashed. Round 7
+# finally captured the native crash stack and found the true root cause,
+# which is not graphics at all:
+#
+#   usdview installs a PYTHON app-wide event filter (AppEventFilter, see
+#   pxr/Usdviewq/appController.py). QtWebEngine pumps Chromium's
+#   main-thread task loop as Qt events posted to its own internal C++
+#   QObjects. The first time any such event crosses an app-level Python
+#   filter, PySide must create a Python wrapper for the (foreign,
+#   never-wrapped) receiver -- and PySide 6.11's wrapper creation calls
+#   QObject::setProperty mid-wrap, whose DynamicPropertyChange event
+#   synchronously RE-ENTERS the app filter for the same half-wrapped
+#   object and segfaults in PySide::typeName (null deref). Verified by
+#   lldb backtrace, and by the fix: with the filter removed the identical
+#   panel ran the full load + QWebChannel round-trip cleanly, repeatedly.
+#
+# So open_panel() removes usdview's AppEventFilter before the first
+# WebEngine object is created (_shield_event_filter below), permanently
+# for the life of the process -- Chromium keeps posting events for as
+# long as the process lives, so re-installing it later would re-arm the
+# crash. The cost, documented plainly: while this usdview process lives
+# on after the panel is first opened, usdview loses AppEventFilter's two
+# niceties -- focus-follows-mouse and the arrow-key TreeView routing.
+# Menus, clicks, explicit focus, and QAction hotkeys are unaffected.
+#
+# The graphics levers still matter for a separate, non-crashing reason:
+# without `Qt.AA_ShareOpenGLContexts` + `QSG_RHI_BACKEND=opengl` set
+# before usdview's QApplication exists, the QQuickWidget that presents
+# WebEngine's frames expects Metal while usdview's QOpenGLWidget viewport
+# forces the window onto an OpenGL backing store -- the panel then loads
+# and the bridge works but paints NOTHING (verified: a widget grab comes
+# back a single flat color, with "Failed to get a QRhi" warnings). Only a
+# LAUNCHER can set those in time (usdview builds its QApplication deep
+# inside Launcher.Run(), before any plugin runs) -- see
+# ../weft_usdview.py; launching through it is a REQUIREMENT for this
+# panel to be VISIBLE, while the crash fix here works either way.
 #
 # "Open as bounding boxes, materialize geometry as you navigate": the panel
 # itself never loads or unloads anything on its own. Every load happens
@@ -136,6 +156,40 @@ def _make_bridge_class():
     return ThreadPanelBridge
 
 
+def _shield_event_filter(api):
+    """Remove usdview's app-wide Python AppEventFilter before any
+    QtWebEngine object exists (see the module docstring for the full crash
+    mechanism: PySide 6.11 wrapper-creation re-entrancy on events posted
+    to WebEngine-internal C++ QObjects -- a guaranteed segfault, in
+    argument marshaling, before any Python filter code could even run).
+
+    Returns True once the filter is removed (or was never installed).
+    Returns False -- and the caller must refuse to open the panel --
+    if usdview's internals have changed such that the filter can't be
+    found: opening WebEngine with that filter still installed is a
+    certain crash, not a degraded mode."""
+    try:
+        from PySide6.QtWidgets import QApplication
+        app_controller = api._UsdviewApi__appController
+        filter_obj = getattr(app_controller, "_filterObj", None)
+        if filter_obj is None:
+            return True  # not installed (usdview change?) -- nothing to shield
+        QApplication.instance().removeEventFilter(filter_obj)
+        # Keep it findable/documented on the controller; do NOT delete it.
+        api.PrintStatus(
+            "Weft Threads: usdview's app-wide event filter removed for this "
+            "process (PySide+WebEngine crash shield; focus-follows-mouse and "
+            "arrow-key tree routing are disabled while usdview stays open)")
+        return True
+    except Exception as e:
+        api.PrintStatus(
+            "Weft Threads: BLOCKED -- could not remove usdview's app-wide "
+            "event filter (%s); opening the embedded panel with it installed "
+            "would crash usdview outright. Use 'Weft Threads (native "
+            "panel)...' instead." % e)
+        return False
+
+
 # -- panel lifecycle ----------------------------------------------------
 
 def open_panel(container, api):
@@ -173,6 +227,10 @@ def open_panel(container, api):
         api.PrintStatus("Weft Threads: could not read viewer_template.html: %s" % e)
         return False
 
+    # MUST precede the first QtWebEngine object -- see _shield_event_filter.
+    if not _shield_event_filter(api):
+        return False
+
     try:
         view = QWebEngineView()
         bridge_cls = _make_bridge_class()
@@ -183,9 +241,7 @@ def open_panel(container, api):
         view.setHtml(html)
     except Exception as e:
         api.PrintStatus("Weft Threads: BLOCKED -- QtWebEngine failed to initialize "
-                         "inside usdview (%s). Was usdview launched through "
-                         "extras/usdview/weft_usdview.py? A plain `usdview` process "
-                         "does not set the OpenGL context sharing this panel needs." % e)
+                         "inside usdview (%s)." % e)
         return False
 
     dock = QDockWidget("Weft Threads", api.qMainWindow)

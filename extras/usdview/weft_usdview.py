@@ -1,54 +1,48 @@
 #!/usr/bin/env python
 """weft's usdview launch shim -- run this in place of the `usdview` binary
-(identical arguments) to make the embedded "Weft Threads..." browser panel
-(a QWebEngineView docked in usdview, see weftViewer/threadpanel.py) survive
-on macOS.
+(identical arguments) so the embedded "Weft Threads..." panel
+(a QWebEngineView docked in usdview, see weftViewer/webenginepanel.py)
+actually PAINTS on macOS.
 
-## Why a launcher, not something the plugin itself can do
+## What this fixes -- and what it doesn't
 
-QtWebEngine's Chromium compositor needs OpenGL context sharing set up via
-`Qt.AA_ShareOpenGLContexts` -- and Qt requires that attribute be set BEFORE
-the `QApplication` is constructed; setting it after has no effect. usdview
-constructs its own `QApplication` deep inside `Usdviewq.Launcher().Run()`
-(see `pxr/usdImaging/usdviewq/__init__.py`), and a usdview PLUGIN (this
-project's own `weftViewer`) is only loaded and given a chance to run code
-well AFTER that `QApplication` -- and the main window built on top of it --
-already exist. There is no hook available to a plugin that runs early
-enough. A launcher that sets the attribute and THEN calls usdview's own
-entry point is the only place in the process's lifetime where this is
-possible at all.
+The launch shim is one of TWO independent fixes the embedded panel needs
+(the round-7 investigation in .superpowers/threadpanel-report.md separated
+them empirically):
 
-This is the actual, load-bearing difference between an app like Houdini
-(which sets this attribute itself before ever embedding a WebEngine view)
-and a bare usdview process (which never does) -- not a difference in this
-project's own plugin code, which cannot reach far enough upstream to set
-it on its own. See `.superpowers/threadpanel-report.md` for the full
-history of what was tried before landing on this fix, including why a
-scripted/headless test harness gave false confidence about a crash that
-only reproduced on a real, onscreen, interactively-composited GUI.
+1. **The crash** (exit 139 the moment the page loaded) was NOT a graphics
+   conflict at all: it is a PySide 6.11 wrapper-creation re-entrancy bug
+   triggered by usdview's app-wide Python event filter receiving Qt events
+   posted to QtWebEngine's internal C++ QObjects. That fix lives in the
+   PLUGIN (weftViewer/webenginepanel.py removes the filter before creating
+   the view) and needs no launcher: even a plain `usdview` no longer
+   crashes when the panel opens.
 
-## What this shim does, in order
+2. **Painting.** usdview's viewport is a `QOpenGLWidget`, which forces the
+   main window's backing store onto an OpenGL QRhi. QtWebEngine presents
+   its frames through a `QQuickWidget`, which requires the QtQuick
+   scenegraph's graphics API to MATCH the window it composites into -- and
+   on macOS that API defaults to Metal. Mismatch means no QRhi, which
+   means the panel loads, runs its JS, and round-trips the bridge, but
+   draws a single flat nothing ("Failed to get a QRhi from the top-level
+   widget's window" warnings; verified by pixel-grabbing the widget).
+   Matching them needs two settings Qt requires BEFORE the `QApplication`
+   is constructed -- and usdview builds its own deep inside
+   `Usdviewq.Launcher().Run()`, well before any plugin can run code. Only
+   a launcher standing in front of the real entry point can set them in
+   time:
 
-1. Forces QtWebEngine onto CPU compositing
-   (`QTWEBENGINE_CHROMIUM_FLAGS=--disable-gpu`, merged into any value
-   already present in the environment rather than clobbering it) --
-   removes the Chromium-Metal-compositor-vs-usdview's-own-OpenGL-surface
-   conflict this whole crash history traces back to. Nil practical cost
-   for a 2D UI page like the thread viewer.
-2. Sets `Qt.AA_ShareOpenGLContexts` via
-   `QCoreApplication.setAttribute(...)`, using the SAME Qt binding module
-   usdview itself resolves to (`pxr.Usdviewq.qt`) -- this MUST happen
-   before step 4 constructs the `QApplication`.
-3. Imports `PySide6.QtWebEngineWidgets` (best-effort; silently skipped if
-   unavailable) before the `QApplication` exists, so its own Chromium
-   resource initialization runs on the same terms a from-scratch
-   WebEngine application would use, rather than lazily inside an
-   already-running usdview process the first time the panel opens.
-4. Runs usdview's own real entry point (`pxr.Usdviewq.Launcher().Run()`,
-   the exact same call `<usd-install>/bin/usdview`'s own `__main__` block
-   makes) with `sys.argv` untouched, so every ordinary usdview argument
-   (`--unloaded`, `--bboxStandin`, a stage path, ...) passes through
-   exactly as it would to the real binary.
+   - `QSG_RHI_BACKEND=opengl` -- QtQuick's scenegraph (and so the
+     QQuickWidget presenting WebEngine's frames) uses OpenGL, matching
+     the backing store usdview's own viewport forces.
+   - `Qt.AA_ShareOpenGLContexts` -- WebEngine's GL resources are shared
+     with the rest of the process, the standard prerequisite for
+     embedding WebEngine in an OpenGL app.
+
+Verified (see the report, "Round 7"): with only fix 1, the panel is
+alive-but-invisible (widget grab: 1 unique color); with both, the full d3
+viewer renders and the QWebChannel bridge round-trips, 3/3 real onscreen
+runs, exit 0.
 
 ## Usage
 
@@ -65,11 +59,11 @@ import os
 import sys
 
 
-def _force_cpu_compositing():
-    existing = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
-    if "--disable-gpu" in existing:
-        return
-    os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (existing + " --disable-gpu").strip()
+def _match_quick_scenegraph_to_usdviews_opengl():
+    # Respect an explicit override from the environment, otherwise pin the
+    # QtQuick scenegraph to OpenGL so QQuickWidget can composite into
+    # usdview's OpenGL-backed main window (see module docstring).
+    os.environ.setdefault("QSG_RHI_BACKEND", "opengl")
 
 
 def _share_opengl_contexts_before_qapplication_exists():
@@ -81,17 +75,9 @@ def _share_opengl_contexts_before_qapplication_exists():
         QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts, True)
 
 
-def _preimport_webengine_best_effort():
-    try:
-        from PySide6 import QtWebEngineWidgets  # noqa: F401
-    except ImportError:
-        pass
-
-
 def main():
-    _force_cpu_compositing()
+    _match_quick_scenegraph_to_usdviews_opengl()
     _share_opengl_contexts_before_qapplication_exists()
-    _preimport_webengine_best_effort()
 
     import signal
     import pxr.Usdviewq as Usdviewq

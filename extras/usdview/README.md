@@ -15,9 +15,10 @@ own docstrings for the command-by-command detail):
   `QWebEngineView` docked into the main window, bridged in-process over
   `QWebChannel`. Click a node: it selects AND materializes that geometry
   (`stage.Load(path)`) on the open stage. **Requires usdview to be
-  launched through `weft_usdview.py`** (below) -- without that launcher,
-  this is the exact panel that crashed usdview in an earlier round. See
-  `weftViewer/webenginepanel.py`.
+  launched through `weft_usdview.py`** (below) to be VISIBLE -- without
+  that launcher the panel opens and works but paints nothing (the crash
+  that plagued earlier rounds is fixed in the plugin itself; the launcher
+  is about pixels). See `weftViewer/webenginepanel.py`.
 - **Weft Threads (native panel)...** -- a secondary, always-available
   fallback: a dockable native Qt (`QGraphicsView`, no WebEngine) view of
   the hierarchy graph, pan/zoom + expand-on-demand. Works with a plain
@@ -36,15 +37,26 @@ export PYTHONPATH=/path/to/weft:/path/to/weft/extras/usdview:$PYTHONPATH  # impo
 ## Launching for the embedded viewer: `weft_usdview.py`
 
 `Weft ▸ Weft Threads...` embeds a `QWebEngineView` (Chromium) inside
-usdview's own OpenGL-composited main window. On macOS that combination
-crashed usdview outright in an earlier round of this panel's development
--- Chromium's compositor and usdview's own OpenGL viewport fighting over
-the same native surface. The actual fix needs one thing no usdview PLUGIN
-can do: set `Qt.AA_ShareOpenGLContexts` before usdview's own
-`QApplication` is constructed (Qt requires this be set before the
-application exists; usdview builds its `QApplication` deep inside its own
-`Launcher.Run()`, well before any plugin gets a chance to run code). A
-launcher, run in PLACE of the `usdview` binary, can:
+usdview's own OpenGL-composited main window. Two independent macOS
+problems had to be separated (the round-7 investigation in
+`.superpowers/threadpanel-report.md` has the full evidence):
+
+- **The crash** (exit 139) that plagued earlier rounds turned out to be a
+  PySide wrapper-creation re-entrancy bug triggered by usdview's app-wide
+  Python event filter meeting events posted to WebEngine's internal C++
+  QObjects -- nothing to do with graphics. It is fixed **in the plugin**
+  (`webenginepanel.py` removes that filter before creating the view); no
+  launcher involved, a plain `usdview` no longer crashes.
+- **Painting.** usdview's `QOpenGLWidget` viewport forces the main
+  window's backing store onto OpenGL; the `QQuickWidget` that presents
+  WebEngine's frames defaults to Metal on macOS and refuses the mismatch
+  ("Failed to get a QRhi..."), leaving the panel alive but invisible.
+  Matching them needs `QSG_RHI_BACKEND=opengl` and
+  `Qt.AA_ShareOpenGLContexts` set BEFORE usdview's own `QApplication` is
+  constructed -- which no usdview PLUGIN can do (usdview builds its
+  `QApplication` deep inside its own `Launcher.Run()`, well before any
+  plugin gets a chance to run code). A launcher, run in PLACE of the
+  `usdview` binary, can:
 
 ```sh
 export PXR_PLUGINPATH_NAME=/path/to/weft/extras/usdview
@@ -56,15 +68,23 @@ python /path/to/weft/extras/usdview/weft_usdview.py \
 ```
 
 Same arguments as `usdview` itself -- `weft_usdview.py` sets
-`QTWEBENGINE_CHROMIUM_FLAGS=--disable-gpu` (forces WebEngine onto CPU
-compositing, removing the GPU-surface conflict outright; nil cost for a
-2D UI page) and `Qt.AA_ShareOpenGLContexts`, then calls usdview's own real
-entry point (`pxr.Usdviewq.Launcher().Run()`) with `sys.argv` untouched.
-See the file's own module docstring for the full reasoning.
+`QSG_RHI_BACKEND=opengl` (respecting any value already in the
+environment) and `Qt.AA_ShareOpenGLContexts`, then calls usdview's own
+real entry point (`pxr.Usdviewq.Launcher().Run()`) with `sys.argv`
+untouched. See the file's own module docstring for the full reasoning.
 
 **A plain `usdview` process still works fine for everything else** --
 `Ask`/`Solo`/`Restore`/`Who`, and the native-panel fallback below -- the
 shim is only required for the embedded `Weft Threads...` webview.
+
+One documented trade-off of the crash fix: the first time the embedded
+panel is opened in a usdview process, usdview's own app-wide event filter
+is removed for the life of that process (it cannot safely coexist with
+WebEngine under PySide 6.11 -- see `webenginepanel.py`'s module
+docstring). What that filter provided -- focus-follows-mouse and
+arrow-key TreeView routing -- is lost from then on; menus, clicking,
+explicit focus, and all hotkeys are unaffected. usdview processes that
+never open the embedded panel keep stock behavior.
 
 ## The "bounding boxes that condense into geometry as you navigate" experience
 
@@ -85,15 +105,16 @@ own load policy; they only call `stage.Load()` on the prims a click names.
   test that it returns the identical graph whether the stage was opened
   loaded or with `--unloaded`.
 - Both panels need a running usdview process to exercise; neither is part
-  of the pytest suite. Because the whole point of `weft_usdview.py` is
-  fixing a crash that ONLY reproduced on a real, onscreen, interactively-
-  composited GUI (a headless/scripted harness gave false confidence about
-  it before), every smoke test in this tree runs a REAL (non-offscreen,
-  non-`--norender`) `testusdview` process, through the shim, and forces
-  the embedded page to actually finish loading and execute its own JS
-  (pumping the event loop past `loadFinished`, then `runJavaScript` to
-  read back a real value) -- the exact probe that used to crash the
-  process, now checked for a real result and a clean exit instead.
+  of the pytest suite. Because both bugs here ONLY reproduced on a real,
+  onscreen, interactively-composited GUI (a headless/scripted harness gave
+  false confidence about them before), every smoke test in this tree runs
+  a REAL (non-offscreen, non-`--norender`) `testusdview` process, through
+  the shim, forces the embedded page to actually finish loading and
+  execute its own JS (pumping the event loop past `loadFinished`, then
+  `runJavaScript` to read back real values, including the page-side
+  QWebChannel handshake and a `notifySelect` that must flip a prim's
+  `IsLoaded()`), and pixel-grabs the widget to prove the panel is
+  actually PAINTING, not just alive.
 - See `.superpowers/threadpanel-report.md` for the full investigation
   across every round -- the original WebEngine crash, the isolation
   testing, the native-Qt pivot, pan/zoom + expand-on-demand, the
