@@ -1,0 +1,779 @@
+<title>weft threads</title>
+<style>
+  :root{
+    --bg:#17130f;--bg2:#221c17;--ink:#f0ebe2;--muted:#9a8e7d;--line:#302820;
+    --prop:#e3a06a;--furniture:#86a6a0;--group:#cdb570;
+    --arc:#443b31;--mount:#d9895f;--finish:#74b3aa;--shading:#b49bd0;--accent:#e59a6c;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--ink);overflow:hidden;
+    font:13px/1.55 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none}
+  svg{position:fixed;inset:0;display:block;touch-action:none}
+  .panel{position:fixed;background:rgba(26,23,20,.9);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:12px}
+  #head{top:16px;left:16px;padding:13px 17px;max-width:300px}
+  #head h1{font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:1.5rem;margin:0}
+  #head p{margin:5px 0 0;color:var(--muted);font-size:11.5px}
+  #ctl{top:16px;right:16px;padding:12px 14px;width:210px}
+  .grp{font:600 10px/1 sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:2px 0 7px}
+  select,input{width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--line);
+    border-radius:7px;color:var(--ink);font:12px sans-serif}
+  select{margin-bottom:11px;cursor:pointer}
+  .chip{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer}
+  .chip .sw{width:18px;height:3px;border-radius:2px;flex:none}
+  .chip .nm{font-family:ui-monospace,Menlo,monospace;font-size:11px}
+  .chip .ct{margin-left:auto;color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
+  .chip.off{opacity:.35}.chip.off .nm{text-decoration:line-through}
+  .div{height:1px;background:var(--line);margin:10px 0}
+  #ctl button.reset{margin-top:10px;width:100%;padding:6px;border:1px solid var(--line);
+    background:transparent;color:var(--muted);border-radius:7px;cursor:pointer;font:11px sans-serif}
+  #ctl button.reset:hover{border-color:var(--accent);color:var(--accent)}
+  #insp{bottom:16px;left:16px;padding:14px 16px;width:300px;max-height:64vh;overflow-y:auto;display:none}
+  #insp .kidlist{display:flex;flex-wrap:wrap;gap:4px;margin:1px 0 7px 4px}
+  #insp .kid{font-size:10.5px;color:var(--muted);cursor:pointer;padding:1px 7px;border:1px solid var(--line);border-radius:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #insp .kid:hover{border-color:var(--accent);color:var(--accent)}
+  #insp .kid.shown{color:var(--accent);border-color:var(--accent);opacity:.65}
+  #insp .kid.more{cursor:default;border-style:dashed}
+  #insp .lbl{font-family:"Fraunces",Georgia,serif;font-size:1.1rem;font-weight:600;line-height:1.2}
+  #insp .pth{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted);word-break:break-all;margin:2px 0 9px}
+  #insp .sec{font:600 9.5px/1 sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:9px 0 5px}
+  #insp .facet{display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:20px;
+    padding:2px 9px;margin:0 4px 4px 0;font-size:11px;cursor:pointer}
+  #insp .facet:hover{border-color:var(--accent);color:var(--accent)}
+  #insp .thread{display:flex;align-items:center;gap:8px;padding:5px 8px;margin:3px 0;border:1px solid var(--line);
+    border-radius:8px;cursor:pointer;font-size:12px}
+  #insp .thread:hover{border-color:var(--accent);background:rgba(242,215,154,.06)}
+  #insp .thread .sw{width:16px;height:3px;border-radius:2px}
+  #insp .thread .k{font-family:ui-monospace,monospace;font-size:11px}
+  #insp .thread .c{margin-left:auto;color:var(--muted)}
+  #insp .thread .go{color:var(--accent);font-size:11px}
+  #insp .thread.done{opacity:.5;cursor:default}
+  #foot{position:fixed;bottom:14px;right:16px;color:var(--muted);font-size:10px;text-align:right}
+  #foot a{color:var(--mount)}
+  #live{position:fixed;top:16px;left:50%;transform:translateX(-50%);color:var(--muted);
+    font-size:10.5px;letter-spacing:.03em;display:none}
+  #live.on{display:block}
+  #live .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px}
+  text.lab{fill:var(--ink);font:11px/1 "Inter",sans-serif;pointer-events:none;paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
+  text.badge{fill:var(--bg);font:700 9px sans-serif;pointer-events:none;text-anchor:middle}
+  line.leader{stroke:var(--muted);stroke-width:.8;opacity:.5;pointer-events:none}
+  .hint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);
+    font-size:13px;text-align:center;pointer-events:none;max-width:340px}
+  #insp .btnrow{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+  #insp .ibtn{flex:1 1 42%;padding:5px 4px;border:1px solid var(--line);background:transparent;
+    color:var(--muted);border-radius:7px;cursor:pointer;font:11px sans-serif;white-space:nowrap}
+  #insp .ibtn:hover{border-color:var(--accent);color:var(--accent)}
+  #insp .gesture{color:var(--muted);font-size:10px;margin:0 0 6px;opacity:.8}
+  #crumbs{bottom:14px;left:50%;transform:translateX(-50%);max-width:56vw;padding:7px 13px;
+    font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none}
+  #crumbs .cr{cursor:pointer}
+  #crumbs .cr:hover{color:var(--accent)}
+  #crumbs .cr.cur{color:var(--ink);font-weight:600;cursor:default}
+  #crumbs .sep{opacity:.5;margin:0 5px}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+
+<svg id="svg"></svg>
+<div class="hint" id="hint">This is the scene's <b>hierarchy</b> — root and its groups.
+<b>Click</b> a node to peek (look, load nothing) ·
+<b>double-click</b> to pull (move here; a leaf materializes, a group just re-centers).
+<b>Solid</b> nodes are loadable leaves; <b>outlined</b> ones are groups to drill through.
+Or type a <b>weft ask</b> (top-right), e.g. <b>where:finish=translucent</b>.</div>
+
+<div id="live"><span class="dot"></span>live stage — clicking/pulling loads geometry in usdview</div>
+
+<div class="panel" id="head">
+  <h1>weft threads</h1>
+  <p>Pull the thread, don't load the world. Start at a seed; grow one
+  relationship at a time. Hierarchy is just one lens.</p>
+</div>
+
+<div class="panel" id="ctl">
+  <div class="grp">lens — organize by</div>
+  <select id="lens"></select>
+  <div class="grp">follow — thread kinds</div>
+  <div id="kinds"></div>
+  <div class="div"></div>
+  <input id="seedq" placeholder="weft ask · where:finish=translucent · name* · ⏎"/>
+  <div style="display:flex;gap:6px;margin-top:9px">
+    <button class="reset" id="back" style="margin-top:0;flex:1">← Back</button>
+    <button class="reset" id="reset" style="margin-top:0;flex:1">⌂ Home</button>
+  </div>
+</div>
+
+<div class="panel" id="insp"></div>
+<div class="panel" id="crumbs"></div>
+<div id="foot">click: peek · double-click: pull · drag · scroll to zoom ·
+  <a href="https://github.com/distancetozero/weft">weft</a></div>
+
+<script>
+const DATA = __DATA__;
+const cvar=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const KCOLOR={"usd:arc":cvar("--arc"),"Mount":cvar("--mount"),
+  "weft:offer:carrier":cvar("--finish"),"weft:bind:finish":cvar("--finish"),"weft:bind:shading":cvar("--shading")};
+const TCOLOR={prop:cvar("--prop"),furniture:cvar("--furniture"),group:cvar("--group"),
+  finish:cvar("--finish"),shading:cvar("--shading")};
+const KLABEL={"usd:arc":"hierarchy","Mount":"mount","weft:bind:shading":"shading","weft:bind:finish":"finish","weft:offer:carrier":"carrier"};
+const LENSES=[["usd:arc","Hierarchy"],["Mount","Mount / contract"],["weft:bind:shading","Shading"],["weft:bind:finish","Finish"]]
+  .filter(([k])=>DATA.kinds.includes(k));
+
+// synthesize a root so "nothing selected" shows the hierarchy top (root -> groups)
+DATA.nodes.push({id:"/root",label:"root",type:"group"});
+DATA.nodes.filter(n=>n.type==="group"&&n.id!=="/root").forEach(g=>
+  DATA.edges.push({source:"/root",target:g.id,kind:"usd:arc"}));
+
+// model + adjacency
+const NODE=Object.fromEntries(DATA.nodes.map(n=>[n.id,{...n}]));
+const ADJ={}; DATA.nodes.forEach(n=>ADJ[n.id]=[]);
+DATA.edges.forEach(e=>{ ADJ[e.source].push({o:e.target,kind:e.kind,dir:"out"});
+  ADJ[e.target].push({o:e.source,kind:e.kind,dir:"in"}); });
+const facetsOf=id=>{ const f={}; ADJ[id].forEach(a=>{ const t=NODE[a.o].type;
+  if(t==="finish"||t==="shading"){ (f[t]=f[t]||[]).push(NODE[a.o].label);} }); return f; };
+const threadsOf=id=>{ const g={}; ADJ[id].forEach(a=>{ g[a.kind]=(g[a.kind]||0)+1; }); return g; };
+
+// --- live bridge to the open USD stage (QWebChannel; no-op outside usdview) ---
+// `bridge` is populated asynchronously once the channel object round-trips
+// from Python, so every call site below guards on it being set. A prim-like
+// id always starts with "/" (facet/concept nodes like "finish:translucent"
+// or "shading:usd_full" never do) -- that's the only distinction the panel
+// needs to skip nodes with no backing prim.
+let bridge=null;
+const primLike=id=>typeof id==="string"&&id.charAt(0)==="/";
+function notifySelect(id){ if(bridge&&bridge.select&&primLike(id)) bridge.select(id); }
+function notifyLoaded(ids){ if(!bridge||!bridge.loaded) return;
+  const paths=ids.filter(primLike); if(paths.length) bridge.loaded(paths); }
+// exploration model (spec: 2026-09-03-thread-explorer-interaction.md):
+// peek = select + frame camera, NO load; pull = load exactly one leaf;
+// unload = focus moved off a non-pinned leaf. All silent no-ops outside
+// usdview (bridge null) so the file keeps working in a plain browser.
+function notifyPeek(id){ if(bridge&&bridge.peek&&primLike(id)) bridge.peek(id); }
+function notifyPull(id){ if(bridge&&bridge.pull&&primLike(id)) bridge.pull(id); }
+function notifyLoadSubtree(id){ if(bridge&&bridge.loadSubtree&&primLike(id)) bridge.loadSubtree(id); }
+function notifyPullSet(ids){ if(!bridge||!bridge.pullSet) return;
+  const paths=ids.filter(primLike); if(paths.length) bridge.pullSet(paths); }
+function notifyUnload(ids){ if(!bridge||!bridge.unload) return;
+  const paths=ids.filter(primLike); if(paths.length) bridge.unload(paths); }
+function onStageFocus(path){   // Python -> JS: usdview's own selection changed
+  const n=NODE[path]; if(!n) return;
+  if(!visible.has(path)){ visible.add(path); render(); }
+  selected=n; inspect(n); highlight(n);
+  if(hint) hint.style.display="none";
+}
+if(typeof QWebChannel!=="undefined" && window.qt && window.qt.webChannelTransport){
+  new QWebChannel(qt.webChannelTransport, function(channel){
+    bridge=channel.objects.bridge;
+    document.getElementById("live").classList.add("on");
+    if(bridge && bridge.focusPrim && bridge.focusPrim.connect) bridge.focusPrim.connect(onStageFocus);
+  });
+}
+
+const SEED="/root";
+const BATCH=16;                 // cap per expansion; pull again for more
+let lens="usd:arc", selected=null, hovered=null;
+
+// --- the moving focus (spec: a walk, not an accumulating tree) ---------
+// `focus` is "you are here"; `crumbs` the trail of focuses pulled
+// through; `pinned` the deliberately-assembled set that survives moves.
+// Loaded set at any time = {focus if leaf} ∪ {pinned leaves} -- bounded
+// by construction; groups are navigational and never load.
+let focus=null; const pinned=new Set(); const crumbs=[];
+// ruleLoads: owner node id -> the SET of prim paths that node's rule
+// loaded ("load all below" -> [the node]; a facet pull -> its member
+// prims). The set belongs to that node's tenure as focus: move the
+// focus off it and the whole set unloads AS A UNIT, unless the owner
+// is pinned. Keeps the bounded invariant literal:
+// loaded = {focus's load} ∪ {pinned}. (Rule -> set -> load: the JS side
+// of the seam; the Python side is _stagebridge.load_set/pull_set.)
+const ruleLoads=new Map();
+const isLeafNode=n=>!!n&&(n.type==="prop"||n.type==="furniture");
+const isGroupNode=n=>!!n&&n.type==="group";
+const isFacetNode=n=>!!n&&(n.type==="finish"||n.type==="shading");
+function releaseFocusLoad(prev){
+  if(!prev||pinned.has(prev)) return;
+  let paths=null;
+  if(ruleLoads.has(prev)){ paths=ruleLoads.get(prev); ruleLoads.delete(prev); }
+  else if(isLeafNode(NODE[prev])) paths=[prev];
+  if(!paths) return;
+  // never unload a prim that is pinned in its own right, or the new focus
+  notifyUnload(paths.filter(p=>!pinned.has(p)&&p!==focus));
+}
+function moveFocusTo(id){
+  const prev=focus; focus=id;
+  if(prev!==id) releaseFocusLoad(prev);
+  if(!primLike(id)) return;                  // facet focus: its rule loads its own set
+  if(isLeafNode(NODE[id])) notifyPull(id);   // leaf: select + materialize it
+  else notifyPeek(id);                       // group: select + frame, load NOTHING
+}
+const active=new Set(DATA.kinds);
+const visible=new Set(), expandedKind=new Set();  // "id|kind" expanded
+const seedSet=new Set();        // the current seeds — pruning anchors
+const history=[];               // stack of {actor,kind,added:Set} for Back/collapse
+
+const svg=d3.select("#svg"); let Wd=innerWidth,Ht=innerHeight;
+svg.attr("width",Wd).attr("height",Ht);
+const rootG=svg.append("g");
+const gLink=rootG.append("g").attr("fill","none");
+const gNode=rootG.append("g");
+const defs=svg.append("defs");
+const fl=defs.append("filter").attr("id","glow").attr("x","-60%").attr("y","-60%").attr("width","220%").attr("height","220%");
+fl.append("feGaussianBlur").attr("stdDeviation","3.4").attr("result","b");
+const fm=fl.append("feMerge"); fm.append("feMergeNode").attr("in","b"); fm.append("feMergeNode").attr("in","SourceGraphic");
+
+const R=n=>n.type==="finish"||n.type==="shading"?12:(n.type==="group"?9:6);
+
+const sim=d3.forceSimulation([])
+  .velocityDecay(0.55)
+  .force("link",d3.forceLink([]).id(d=>d.id).distance(92))
+  .force("charge",d3.forceManyBody().strength(-230))
+  // collide radius budgets room for the label beside the node, not just
+  // the circle -- structural spacing so names can always be placed
+  .force("collide",d3.forceCollide().radius(n=>R(n)+26))
+  .force("x",d3.forceX(Wd/2).strength(.06))
+  .force("y",d3.forceY(Ht/2).strength(.06))
+  .on("tick",tick)
+  .on("end",()=>updateLabels());   // final pass once positions settle
+
+let linkSel=gLink.selectAll("path"), nodeSel=gNode.selectAll("g");
+
+function curNodes(){ return [...visible].map(id=>NODE[id]); }
+function curLinks(){
+  const out=[]; const seen=new Set();
+  DATA.edges.forEach(e=>{ if(!active.has(e.kind))return;
+    if(visible.has(e.source)&&visible.has(e.target)){
+      const key=e.source+"|"+e.target+"|"+e.kind; if(seen.has(key))return; seen.add(key);
+      out.push({source:e.source,target:e.target,kind:e.kind}); } });
+  return out;
+}
+
+function reveal(id, near){
+  if(visible.has(id))return false;
+  const n=NODE[id];
+  if(near){ n.x=near.x+(Math.random()-.5)*80; n.y=near.y+(Math.random()-.5)*80; }
+  else { n.x=Wd/2; n.y=Ht/2; }
+  visible.add(id); return true;
+}
+function expand(id, kind){
+  const added=[]; let remaining=0;
+  for(const a of ADJ[id]){
+    if(kind&&a.kind!==kind)continue; if(!active.has(a.kind))continue; if(visible.has(a.o))continue;
+    if(added.length<BATCH){ visible.add(a.o); added.push(a.o); } else remaining++;
+  }
+  if(added.length) history.push({actor:id,kind:kind||"*",added:new Set(added)});
+  if(remaining===0) expandedKind.add(id+"|"+(kind||"*"));
+  // Reveals never load (spec: expands show bounding boxes only) -- the
+  // ONLY load paths are a double-click pull of a leaf, or pinning one.
+  placeAndSettle(added, id);
+  if(remaining) flash(`showing ${BATCH} of ${BATCH+remaining} — expand again for the rest`);
+  return added.length;
+}
+function revealChild(actorId, childId){
+  if(!visible.has(childId)){
+    visible.add(childId);
+    history.push({actor:actorId,kind:"__one__",added:new Set([childId])});
+    placeAndSettle([childId], actorId);   // reveal as bbox: NO load
+  }
+  uiPeek(childId);   // a kid chip is a quick look: select + frame, no load
+}
+
+// --- the exploration gestures ------------------------------------------
+// uiPeek/uiPull are the single entry points the DOM handlers call (and
+// what a scripted verification drives -- same code path, minus the event).
+function uiPeek(id){
+  const d=NODE[id]; if(!d) return;
+  selected=d; inspect(d); highlight(d);
+  if(hint) hint.style.display="none";
+  notifyPeek(id);                          // select + frame; never loads
+}
+function uiPull(id){
+  const d=NODE[id]; if(!d) return;
+  if(!primLike(id)){ uiPullFacet(id); return; }   // facet pull: load its whole member set
+  moveFocusTo(id);                          // leaf: load it (+unload prev); group: nothing loads
+  pushCrumb(id);
+  recenter(id);
+}
+// "Load all below": an explicit pull-plus -- the focus moves here (same
+// crumb/unload rules as any pull) and then the ENTIRE subtree under it
+// materializes. Rule = subtree; set = [the node] (stage.Load recurses).
+function uiLoadSubtree(id){
+  const d=NODE[id]; if(!d||!primLike(id)) return;
+  moveFocusTo(id);
+  ruleLoads.set(id,[id]);
+  notifyLoadSubtree(id);
+  pushCrumb(id);
+  recenter(id);
+  flash("loaded everything under "+d.label+" — it unloads when the focus moves on (pin to keep it)");
+}
+// Pull a FACET: rule = facet(kind,value); set = every prim bound to it
+// (the prim ends of its weft:bind:* edges in the thread graph). The set
+// loads as one unit through the same set-shaped door as every other
+// rule (bridge.pullSet -> _stagebridge.pull_set), becomes the focus's
+// load, and unloads as one unit when the focus moves on.
+function facetMembers(id){
+  return [...new Set(ADJ[id].filter(a=>primLike(a.o)).map(a=>a.o))];
+}
+function uiPullFacet(id){
+  const d=NODE[id]; if(!d) return;
+  if(!isFacetNode(d)){ flash("nothing to pull here"); return; }
+  const members=facetMembers(id);
+  if(!members.length){ flash("no prims bound to "+d.label); return; }
+  moveFocusTo(id);                          // releases the previous focus's load
+  ruleLoads.set(id, members);
+  notifyPullSet(members);
+  // view the world through this facet's own lens
+  const k=d.type==="shading"?"weft:bind:shading":"weft:bind:finish";
+  if(lens!==k&&LENSES.some(([lk])=>lk===k)){ lens=k; document.getElementById("lens").value=k; }
+  pushCrumb(id);
+  recenter(id);
+  flash("loaded "+members.length+" prims bound to <b>"+d.label+"</b> — they unload when the focus moves on (pin to keep)");
+}
+function pushCrumb(id){
+  if(crumbs[crumbs.length-1]!==id) crumbs.push(id);
+  updateCrumbs();
+}
+function refocus(id){   // Back/jump: re-run the target's rule, not just point at it
+  if(isFacetNode(NODE[id])){
+    const members=facetMembers(id);
+    moveFocusTo(id); ruleLoads.set(id,members); notifyPullSet(members);
+  } else moveFocusTo(id);
+}
+function goBack(){
+  if(crumbs.length<2){ flash("at the start of the trail"); return; }
+  crumbs.pop();
+  const id=crumbs[crumbs.length-1];
+  refocus(id);                              // same load/unload rules on the way back
+  updateCrumbs(); recenter(id);
+}
+function jumpToCrumb(i){
+  if(i<0||i>=crumbs.length) return;
+  crumbs.length=i+1;
+  const id=crumbs[i];
+  refocus(id); updateCrumbs(); recenter(id);
+}
+function updateCrumbs(){
+  const el=document.getElementById("crumbs"); if(!el) return;
+  const start=Math.max(0,crumbs.length-6);
+  el.innerHTML=(start>0?'<span class="sep">…›</span>':'')+
+    crumbs.slice(start).map((id,j)=>{ const i=start+j; const n=NODE[id];
+      const lab=n?(n.label.length>16?n.label.slice(0,15)+'…':n.label):id;
+      return `<span class="cr ${i===crumbs.length-1?'cur':''}" data-i="${i}">${lab}</span>`;
+    }).join('<span class="sep">›</span>');
+  el.style.display=crumbs.length?"block":"none";
+  el.querySelectorAll(".cr").forEach(c=>c.onclick=()=>jumpToCrumb(+c.dataset.i));
+}
+// Re-center: the view becomes {focus} ∪ {its immediate lens-neighbors,
+// as bboxes} ∪ {pinned} -- never the whole stage. "Immediate
+// relationships" is whatever the ACTIVE LENS says it is.
+function recenter(id){
+  visible.clear(); expandedKind.clear(); history.length=0;
+  seedSet.clear(); seedSet.add(id); pinned.forEach(p=>seedSet.add(p));
+  Object.values(NODE).forEach(n=>{ n.fx=n.fy=null; n._settled=false; });
+  reveal(id,null); NODE[id].x=Wd/2; NODE[id].y=Ht/2;
+  pinned.forEach(p=>reveal(p,NODE[id]));
+  let shown=0, remaining=0;
+  for(const a of ADJ[id]){
+    // a prim focus shows its ACTIVE-LENS neighbours; a facet focus
+    // shows its members (its own bind edges, whatever lens was on)
+    const ok=primLike(id) ? (a.kind===lens&&active.has(a.kind)) : active.has(a.kind);
+    if(!ok) continue;
+    if(visible.has(a.o)) continue;
+    if(shown<BATCH){ reveal(a.o,NODE[id]); shown++; } else remaining++;
+  }
+  if(remaining===0) expandedKind.add(id+"|"+lens);
+  selected=NODE[id];
+  render(); applyLens(); inspect(NODE[id]); highlight(NODE[id]);
+  if(hint) hint.style.display="none";
+  if(remaining) flash(`showing ${shown} of ${shown+remaining} neighbours — Expand one level for the rest`);
+}
+function togglePin(d){
+  if(pinned.has(d.id)){
+    pinned.delete(d.id); seedSet.delete(d.id);
+    // an unpinned load that is no longer the focus goes back to bboxes
+    // (a leaf's own geometry, a subtree, or a facet's member set)
+    if(focus!==d.id){
+      if(ruleLoads.has(d.id)){
+        notifyUnload(ruleLoads.get(d.id).filter(p=>!pinned.has(p)&&p!==focus));
+        ruleLoads.delete(d.id);
+      } else if(isLeafNode(d)) notifyUnload([d.id]);
+    }
+  } else {
+    pinned.add(d.id); seedSet.add(d.id);
+    if(isLeafNode(d)) notifyLoaded([d.id]);   // pinned leaves stay loaded
+  }
+  inspect(d); render();
+}
+// Expand from here: the whole subtree under the focus, as bboxes, no
+// load, no re-center. "Subtree" = following the active lens's outgoing
+// edges. Capped defensively; the cap flashes rather than silently drops.
+function expandFromHere(d){
+  const CAP=300, added=[], q=[d.id], seen=new Set([d.id]);
+  while(q.length&&added.length<CAP){
+    const c=q.shift();
+    for(const a of ADJ[c]){
+      if(a.kind!==lens||a.dir!=="out"||seen.has(a.o)) continue;
+      seen.add(a.o); q.push(a.o);
+      if(!visible.has(a.o)){ visible.add(a.o); added.push(a.o); }
+    }
+  }
+  if(!added.length){ flash("nothing more under here on this lens"); return; }
+  history.push({actor:d.id,kind:lens,added:new Set(added)});
+  expandedKind.add(d.id+"|"+lens);
+  placeAndSettle(added, d.id);
+  inspect(d);
+  if(q.length) flash(`revealed ${added.length} (capped) — expand a deeper node for more`);
+}
+
+// --- layout dispatch: tidy tree for Hierarchy, radial fan + gentle force otherwise ---
+function fan(added, actorId){
+  const src=NODE[actorId]; const px=src.x??Wd/2, py=src.y??Ht/2;
+  let base=Math.atan2(py-Ht/2, px-Wd/2); if(!isFinite(base)) base=-Math.PI/2;
+  const M=added.length, span=Math.min(M>1?(M-1)*0.42:0, 2.9), r=115+M*6;
+  added.forEach((nid,i)=>{ const ang=base+(M>1?span*(i/(M-1)-0.5):0);
+    const n=NODE[nid]; n.x=px+Math.cos(ang)*r; n.y=py+Math.sin(ang)*r; n._settled=false; });
+}
+function tidyTree(){   // Reingold–Tilford via d3.tree over the visible usd:arc forest
+  const vis=[...visible]; const parent={};
+  DATA.edges.forEach(e=>{ if(e.kind!=="usd:arc")return;
+    if(visible.has(e.source)&&visible.has(e.target)&&parent[e.target]==null&&e.source!==e.target)
+      parent[e.target]=e.source; });
+  const R="__super__";
+  const rows=vis.map(id=>({id,parent:parent[id]!=null?parent[id]:R})); rows.push({id:R,parent:""});
+  let h; try{ h=d3.stratify().id(d=>d.id).parentId(d=>d.parent)(rows); }catch(e){ return false; }
+  // Sibling gap sized so labels actually fit beside nodes (the label
+  // planner can also use N/S slots, so big reveals get a tighter tier);
+  // default d3 separation doubles cousin gaps -- 1.15 is plenty.
+  const tierW=vis.length>40?84:112;
+  d3.tree().nodeSize([tierW,112])
+    .separation((a,b)=>a.parent===b.parent?1:1.15)(h);
+  let mn=Infinity,mx=-Infinity; h.each(d=>{ if(d.id!==R){ mn=Math.min(mn,d.x); mx=Math.max(mx,d.x);} });
+  const offx=Wd/2-(mn+mx)/2, offy=80;
+  h.each(d=>{ if(d.id===R)return; const n=NODE[d.id]; if(!n)return; n.x=d.x+offx; n.y=d.y+offy; n.fx=n.x; n.fy=n.y; });
+  return true;
+}
+function placeAndSettle(added, actorId){
+  if(lens==="usd:arc"){
+    if(tidyTree()){ render(); sim.alpha(.08).restart(); return; }
+  }
+  fan(added, actorId);
+  curNodes().forEach(n=>{ if(!added.includes(n.id) && n.x!=null){ n.fx=n.x; n.fy=n.y; } });
+  render(); sim.alpha(.3).alphaDecay(.06).restart();
+  clearTimeout(window._pinT); window._pinT=setTimeout(()=>{
+    curNodes().forEach(n=>{ n._settled=true; if(!n._dragging){ n.fx=n.x; n.fy=n.y; } });
+    sim.alphaDecay(.0228); }, 1300);
+}
+function refreshLayout(){   // after back/collapse/kind-toggle
+  if(lens==="usd:arc" && tidyTree()){ render(); sim.alpha(.08).restart(); }
+  else { render(); sim.alpha(.4).restart(); }
+}
+function prune(){   // drop anything no longer reachable from a seed — kills orphan spaghetti
+  const keep=new Set([...seedSet,...pinned]), q=[...keep];
+  while(q.length){ const c=q.shift();
+    ADJ[c].forEach(a=>{ if(active.has(a.kind)&&visible.has(a.o)&&!keep.has(a.o)){ keep.add(a.o); q.push(a.o); } }); }
+  [...visible].forEach(id=>{ if(!keep.has(id)) visible.delete(id); });
+}
+function stepBack(){
+  const e=history.pop();
+  if(!e){ flash("nothing to go back to — you're at the seed"); return; }
+  e.added.forEach(id=>visible.delete(id));
+  expandedKind.delete(e.actor+"|"+e.kind);
+  if(selected && !visible.has(selected.id)){ selected=NODE[e.actor]; }
+  prune(); refreshLayout(); highlight(selected); if(selected)inspect(selected);
+  flash("stepped back");
+}
+function collapse(id, kind){   // undo a specific expansion (from a "collapse" row)
+  for(let i=history.length-1;i>=0;i--){ const e=history[i];
+    if(e.actor===id && e.kind===kind){ e.added.forEach(x=>visible.delete(x)); history.splice(i,1); } }
+  expandedKind.delete(id+"|"+kind);
+  prune(); refreshLayout();
+}
+
+function applyLens(){
+  const lk=lens;
+  if(lk==="usd:arc"){   // Hierarchy: tidy tree, forces off, positions pinned
+    sim.force("charge").strength(0);
+    sim.force("link").strength(0);
+    sim.force("x",d3.forceX(Wd/2).strength(0)); sim.force("y",d3.forceY(Ht/2).strength(0));
+    if(tidyTree()){ render(); sim.alpha(.1).restart(); }
+    return;
+  }
+  // Facet / structural lens: force, clustering by the lens's own thread kind
+  sim.force("charge").strength(-230);
+  sim.force("link").strength(l=> l.kind===lk?0.9:0.06).distance(l=> l.kind===lk?78:130);
+  sim.force("x",d3.forceX(Wd/2).strength(.05)); sim.force("y",d3.forceY(Ht/2).strength(.05));
+  curNodes().forEach(n=>{ if(!n._dragging){ n.fx=null; n.fy=null; n._settled=false; }});
+  sim.alpha(.9).restart();
+  clearTimeout(window._pinT); window._pinT=setTimeout(()=>{
+    curNodes().forEach(n=>{ n._settled=true; if(!n._dragging){ n.fx=n.x; n.fy=n.y; }}); },2200);
+}
+function bfsDepth(){
+  const d={[SEED]:0}; const q=[SEED];
+  while(q.length){ const c=q.shift(); ADJ[c].forEach(a=>{ if(active.has(a.kind)&&visible.has(a.o)&&d[a.o]==null){ d[a.o]=d[c]+1; q.push(a.o);} }); }
+  return d;
+}
+
+function render(){
+  const ns=curNodes(), ls=curLinks();
+  sim.nodes(ns); sim.force("link").links(ls);
+
+  linkSel=gLink.selectAll("path").data(ls,d=>(d.source.id||d.source)+"|"+(d.target.id||d.target)+"|"+d.kind);
+  linkSel.exit().remove();
+  linkSel=linkSel.enter().append("path")
+    .attr("stroke",d=>KCOLOR[d.kind]||"#888")
+    .attr("stroke-width",d=>d.kind==="usd:arc"?1.1:1.7)
+    .attr("stroke-opacity",.55).merge(linkSel);
+
+  nodeSel=gNode.selectAll("g.node").data(ns,d=>d.id);
+  nodeSel.exit().remove();
+  const en=nodeSel.enter().append("g").attr("class","node").style("cursor","grab").call(drag());
+  // Leaf affordance: SOLID fill = a loadable leaf (double-click pulls
+  // its geometry in); HOLLOW outline = a navigational group (drill
+  // through, never loads). Same palette, read-at-a-glance.
+  en.append("circle").attr("r",R)
+    .attr("fill",d=>isGroupNode(d)?cvar("--bg2"):(TCOLOR[d.type]||"#aaa"))
+    .attr("stroke",cvar("--bg")).attr("stroke-width",1.6);
+  en.append("text").attr("class","badge").attr("y",3)
+    // a hollow group's fill is near the page bg, so its badge must use
+    // ink, not bg, or the "+" is dark-on-dark invisible (round-9 bug)
+    .style("fill",d=>isGroupNode(d)?cvar("--ink"):cvar("--bg"))
+    .text(d=>{ const t=threadsOf(d.id); const tot=Object.entries(t).filter(([k])=>active.has(k))
+      .reduce((s,[k,c])=>s+ (isExpanded(d.id,k)?0:c),0);
+      return (d.type==="finish"||d.type==="shading")? String(childrenCount(d.id)) : (tot>0&&hasUnexpanded(d.id)?"+":""); });
+  en.append("line").attr("class","leader");   // shown only for displaced labels
+  en.append("text").attr("class","lab").attr("x",d=>R(d)+5).attr("y",3)
+    .text(d=>d.label.length>22?d.label.slice(0,21)+"…":d.label);
+  en.append("title").text(d=>d.label+"  ("+d.id+")");   // full name on hover
+  en.on("click",(ev,d)=>{ ev.stopPropagation(); uiPeek(d.id); })      // PEEK: look, never load
+    .on("dblclick",(ev,d)=>{ ev.stopPropagation(); uiPull(d.id); })   // PULL: move the focus
+    .on("pointerenter",(ev,d)=>{ hovered=d; updateLabels(); })
+    .on("pointerleave",()=>{ hovered=null; updateLabels(); });
+  nodeSel=en.merge(nodeSel);
+  nodeSel.select("circle").attr("filter",d=>d===selected?"url(#glow)":null)
+    .attr("stroke",d=>pinned.has(d.id)?cvar("--accent")
+      :isGroupNode(d)?(TCOLOR.group||"#aaa"):cvar("--bg"))
+    .attr("stroke-width",d=>pinned.has(d.id)?2.2:isGroupNode(d)?2:1.6);
+  nodeSel.select("text.badge").text(d=> (d.type==="finish"||d.type==="shading")?String(childrenCount(d.id))
+      : (hasUnexpanded(d.id)?"+":""));
+  updateLabels();
+}
+function childrenCount(id){ return ADJ[id].filter(a=>active.has(a.kind)).length; }
+function isExpanded(id,kind){ return expandedKind.has(id+"|"+kind)||expandedKind.has(id+"|*"); }
+function hasUnexpanded(id){ return ADJ[id].some(a=>active.has(a.kind)&&!visible.has(a.o)); }
+// --- labels v2: every visible node named, nothing overlapping ---------
+// Each label tries a ring of slots around its node (right, left, above,
+// below, then farther out with a thin leader line) and takes the first
+// free one; occupied space includes every node circle and every label
+// already placed. Placement order gives the best spots to what matters
+// most (focus, pinned, hovered, groups, then the rest). Labels are
+// hidden ONLY when every slot around their node is blocked -- never as
+// routine "decluttering": that was round 9's disappearing text. On big
+// graphs (>80 nodes) the per-tick relabeling is skipped for speed; the
+// full pass runs when the simulation settles and on every interaction.
+function labelPriority(d){ if(d===selected)return 7; if(pinned.has(d.id))return 6;
+  if(d===hovered)return 6; if(d.type==="group")return 4;
+  if(d.type==="finish"||d.type==="shading")return 4;
+  if(isNbr(selected,d))return 3; return 2; }
+function updateLabels(){
+  if(!nodeSel||!nodeSel.data)return;
+  const ns=nodeSel.data().filter(d=>d.x!=null);
+  const cand=ns.map(d=>({d,p:labelPriority(d)}))
+    .sort((a,b)=>b.p-a.p||(b.d.deg||0)-(a.d.deg||0));
+  const boxes=[];   // occupied space: all node circles + placed labels
+  ns.forEach(d=>{ const r=R(d)+3; boxes.push([d.x-r,d.y-r,d.x+r,d.y+r]); });
+  const place={};
+  cand.forEach(o=>{ const d=o.d, r=R(d);
+    const w=Math.min(d.label.length,22)*5.7+8, h=13;
+    const slots=[
+      [d.x+r+5,    d.y-h/2, false],   // E  (the classic spot)
+      [d.x-r-5-w,  d.y-h/2, false],   // W
+      [d.x-w/2,    d.y-r-4-h, false], // N
+      [d.x-w/2,    d.y+r+4, false],   // S
+      [d.x+r+26,   d.y-h/2, true],    // E far + leader
+      [d.x-r-26-w, d.y-h/2, true],    // W far + leader
+      [d.x-w/2,    d.y-r-22-h, true], // N far + leader
+      [d.x-w/2,    d.y+r+22, true],   // S far + leader
+    ];
+    for(const s of slots){ const box=[s[0],s[1],s[0]+w,s[1]+h];
+      if(!boxes.some(b=>box[0]<b[2]&&b[0]<box[2]&&box[1]<b[3]&&b[1]<box[3])){
+        boxes.push(box); place[d.id]={x:s[0],y:s[1],w,h,lead:s[2]}; break; } }
+  });
+  nodeSel.select("text.lab").each(function(d){ const p=place[d.id];
+    const el=d3.select(this);
+    if(!p){ el.style("display","none"); return; }
+    el.style("display",null).attr("x",p.x-d.x).attr("y",p.y-d.y+10);
+  });
+  nodeSel.select("line.leader").each(function(d){ const p=place[d.id];
+    const el=d3.select(this);
+    if(!p||!p.lead){ el.style("display","none"); return; }
+    const cx=p.x+p.w/2-d.x, cy=p.y+p.h/2-d.y;      // label center, node-relative
+    const toRight=cx>0, horiz=Math.abs(cx)>Math.abs(cy);
+    el.style("display",null)
+      .attr("x1",horiz?(toRight?R(d)+1:-R(d)-1):0)
+      .attr("y1",horiz?0:(cy>0?R(d)+1:-R(d)-1))
+      .attr("x2",horiz?(toRight?p.x-d.x-2:p.x+p.w-d.x+2):cx)
+      .attr("y2",horiz?cy:(cy>0?p.y-d.y-1:p.y+p.h-d.y+1));
+  });
+}
+function isNbr(a,b){ if(!a||!b)return false; if(a===b)return true;
+  return ADJ[a.id].some(x=>x.o===b.id&&active.has(x.kind)); }
+function highlight(d){
+  nodeSel.attr("opacity",n=>(!d||n===d||isNbr(d,n))?1:.2);
+  nodeSel.select("circle").attr("filter",n=>n===d?"url(#glow)":null);
+  linkSel.attr("stroke-opacity",l=>(!d||l.source===d||l.target===d)?.85:.12);
+  updateLabels();
+}
+
+let tickN=0;
+function tick(){
+  linkSel.attr("d",d=>{ const s=d.source,t=d.target,dx=t.x-s.x,dy=t.y-s.y,dr=Math.hypot(dx,dy)*4.5;
+    return `M${s.x},${s.y}A${dr},${dr} 0 0,1 ${t.x},${t.y}`; });   // flatter arcs read cleaner
+  nodeSel.attr("transform",d=>`translate(${d.x},${d.y})`);
+  if((++tickN%5)===0 && visible.size<=80) updateLabels();   // live placement while settling
+                                        // (big graphs get the full pass on sim "end")
+}
+function drag(){ return d3.drag()
+  .on("start",(ev,d)=>{ if(!ev.active)sim.alphaTarget(.2).restart(); d._dragging=true; d.fx=d.x; d.fy=d.y; })
+  .on("drag",(ev,d)=>{ d.fx=ev.x; d.fy=ev.y; })
+  .on("end",(ev,d)=>{ if(!ev.active)sim.alphaTarget(0); d._dragging=false; d.fx=d.x; d.fy=d.y; d._settled=true; }); }
+
+svg.call(d3.zoom().scaleExtent([.3,3.5]).on("zoom",ev=>rootG.attr("transform",ev.transform)));
+svg.on("click",()=>{ selected=null; highlight(null); document.getElementById("insp").style.display="none"; });
+
+function inspect(d){
+  const el=document.getElementById("insp"); const t=threadsOf(d.id); const f=facetsOf(d.id);
+  let h=`<div class="lbl">${d.label}</div><div class="pth">${d.id.replace(/^\/g\//,'(group) ')}</div>`;
+  if(primLike(d.id)){
+    h+=`<div class="btnrow">
+      <button class="ibtn" id="pinbtn">${pinned.has(d.id)?"✕ unpin":"⚲ pin"}</button>
+      <button class="ibtn" id="exp1btn" title="reveal immediate relationships as bounding boxes — no load, no re-center">+1 level</button>
+      <button class="ibtn" id="expallbtn" title="reveal the whole subtree as bounding boxes — no load">reveal below</button>
+      <button class="ibtn" id="loadallbtn" title="materialize ALL geometry under this node — the deliberate bulk load; unloads when the focus moves on unless pinned">⇣ load all below</button>
+    </div>
+    <div class="gesture">${isGroupNode(d)?"double-click: re-center here (groups never load)":
+      isLeafNode(d)?"double-click: pull — load this &amp; re-center":""}</div>`;
+  } else if(isFacetNode(d)){
+    const m=facetMembers(d.id);
+    h+=`<div class="btnrow">
+      <button class="ibtn" id="pinbtn">${pinned.has(d.id)?"✕ unpin":"⚲ pin"}</button>
+      <button class="ibtn" id="loadfacetbtn" title="materialize every prim bound to this ${d.type} — one set, unloads when the focus moves on unless pinned">⇣ load all ${m.length} with this ${d.type}</button>
+    </div>
+    <div class="gesture">double-click: pull — load all ${m.length} members &amp; re-center</div>`;
+  }
+  const fk=Object.keys(f);
+  if(fk.length){ h+=`<div class="sec">facets — click to view the world this way</div>`;
+    fk.forEach(k=> f[k].forEach(v=> h+=`<span class="facet" data-lens="${k==='shading'?'weft:bind:shading':'weft:bind:finish'}">${k}: ${v}</span>`)); }
+  h+=`<div class="sec">threads — click to reveal (bboxes, no load)</div>`;
+  const kinds=Object.keys(t).filter(k=>active.has(k));
+  if(!kinds.length) h+=`<div style="color:var(--muted);font-size:12px">no followed threads here</div>`;
+  kinds.forEach(k=>{ const shown=isExpanded(d.id,k)||!hasKindUnexpanded(d.id,k);
+    const collapsible=history.some(e=>(e.actor===d.id&&e.kind===k));
+    h+=`<div class="thread ${shown&&!collapsible?'done':''}" data-k="${k}" data-mode="${collapsible?'collapse':'pull'}">
+      <span class="sw" style="background:${KCOLOR[k]||'#888'}"></span>
+      <span class="k">${KLABEL[k]||k}</span><span class="c">${t[k]}</span>
+      <span class="go">${collapsible?'× collapse':(shown?'✓':'▸ reveal')}</span></div>`;
+    // the children behind this thread, as a list — so you see what's there
+    const kids=ADJ[d.id].filter(a=>a.kind===k&&active.has(a.kind));
+    h+=`<div class="kidlist">`+kids.slice(0,24).map(a=>{ const kn=NODE[a.o];
+        return `<span class="kid ${visible.has(a.o)?'shown':''}" data-o="${a.o}" title="${kn.label}">${kn.label.length>18?kn.label.slice(0,17)+'…':kn.label}</span>`;
+      }).join("")+(kids.length>24?`<span class="kid more">+${kids.length-24} more</span>`:"")+`</div>`; });
+  el.innerHTML=h; el.style.display="block";
+  const pinBtn=el.querySelector("#pinbtn");
+  if(pinBtn) pinBtn.onclick=(ev)=>{ ev.stopPropagation(); togglePin(d); };
+  const exp1=el.querySelector("#exp1btn");
+  if(exp1) exp1.onclick=(ev)=>{ ev.stopPropagation(); expand(d.id,lens); inspect(d); };
+  const expall=el.querySelector("#expallbtn");
+  if(expall) expall.onclick=(ev)=>{ ev.stopPropagation(); expandFromHere(d); };
+  const loadall=el.querySelector("#loadallbtn");
+  if(loadall) loadall.onclick=(ev)=>{ ev.stopPropagation(); uiLoadSubtree(d.id); };
+  const loadfacet=el.querySelector("#loadfacetbtn");
+  if(loadfacet) loadfacet.onclick=(ev)=>{ ev.stopPropagation(); uiPullFacet(d.id); };
+  el.querySelectorAll(".thread").forEach(row=>{ const k=row.dataset.k;
+    if(row.dataset.mode==="collapse") row.onclick=()=>{ collapse(d.id,k); inspect(d); };
+    else if(!row.classList.contains("done")) row.onclick=()=>{ expand(d.id,k); inspect(d); };
+  });
+  el.querySelectorAll(".kid:not(.more)").forEach(c=>c.onclick=(ev)=>{ ev.stopPropagation(); revealChild(d.id,c.dataset.o); });
+  el.querySelectorAll(".facet").forEach(fc=>fc.onclick=()=>{ setLens(fc.dataset.lens); expand(d.id,fc.dataset.lens); inspect(d); });
+}
+function hasKindUnexpanded(id,k){ return ADJ[id].some(a=>a.kind===k&&active.has(a.kind)&&!visible.has(a.o)); }
+
+function setLens(l){ lens=l; document.getElementById("lens").value=l; applyLens(); }
+
+// controls
+const lensSel=d3.select("#lens");
+LENSES.forEach(([k,lab])=>lensSel.append("option").attr("value",k).text(lab));
+lensSel.property("value","usd:arc").on("change",function(){ setLens(this.value); });
+
+const kc={}; DATA.edges.forEach(e=>kc[e.kind]=(kc[e.kind]||0)+1);
+const kd=d3.select("#kinds");
+DATA.kinds.forEach(k=>{ const row=kd.append("div").attr("class","chip");
+  row.html(`<span class="sw" style="background:${KCOLOR[k]||'#888'}"></span><span class="nm">${KLABEL[k]||k}</span><span class="ct">${kc[k]||0}</span>`);
+  row.on("click",function(){ active.has(k)?active.delete(k):active.add(k); this.classList.toggle("off",!active.has(k));
+    render(); if(selected)inspect(selected); sim.alpha(.4).restart(); }); });
+
+document.getElementById("reset").onclick=()=>{ resetToSeed(); flash("Home — the scene's hierarchy. Click to peek; double-click to pull."); };
+document.getElementById("back").onclick=()=>goBack();   // breadcrumb back: previous focus, same load/unload rules
+addEventListener("keydown",ev=>{ if((ev.metaKey||ev.ctrlKey)&&ev.key==="z"){ ev.preventDefault(); stepBack(); } });
+document.getElementById("seedq").addEventListener("keydown",function(ev){ if(ev.key!=="Enter")return;
+  const r=parseAsk(this.value);
+  if(!r){ resetToSeed(); return; }
+  if(r.error){ flash(r.error); return; }
+  // a where:-ask names a facet: it is rule -> set -> load like any
+  // other facet pull -- LOAD the matching set, don't just show it
+  if(r.ids.length&&isFacetNode(NODE[r.ids[0]])){ uiPullFacet(r.ids[0]); return; }
+  resetToSeed(r.ids); flash(r.msg + " — click one, then pull its threads.");
+});
+
+const hint=document.getElementById("hint");
+function flash(msg){ hint.innerHTML=msg; hint.style.display="block";
+  clearTimeout(window._flashT); window._flashT=setTimeout(()=>hint.style.display="none",3200); }
+
+function resetToSeed(seedIds){
+  visible.clear(); expandedKind.clear(); selected=null;
+  Object.values(NODE).forEach(n=>{ n.x=n.y=n.fx=n.fy=null; n._settled=false; });
+  document.getElementById("insp").style.display="none";
+  history.length=0; seedSet.clear();
+  const seeds = seedIds ? (Array.isArray(seedIds)?seedIds:[seedIds]) : [SEED];
+  const revealedNow=[];
+  seeds.forEach(id=>{ seedSet.add(id); if(reveal(id,null)) revealedNow.push(id);
+    NODE[id].x=Wd/2+(Math.random()-.5)*120; NODE[id].y=Ht/2+(Math.random()-.5)*120; });
+  if(!seedIds){ // default home view: the hierarchy top (root -> groups)
+    ADJ[SEED].forEach(a=>{ if(a.kind==="usd:arc" && reveal(a.o, NODE[SEED])) revealedNow.push(a.o); });
+    expandedKind.add(SEED+"|usd:arc");
+    // Home is a focus move to /root: the previous focus's load (leaf,
+    // subtree, or facet set) releases; the trail restarts. (/root is a
+    // group -- nothing loads.)
+    const prev=focus; focus=SEED;
+    if(prev&&prev!==SEED) releaseFocusLoad(prev);
+    crumbs.length=0; crumbs.push(SEED); updateCrumbs();
+  }
+  pinned.forEach(p=>{ seedSet.add(p); reveal(p,NODE[seeds[0]]); });  // pins survive Home/asks
+  // Only a user-driven seed (a weft ask) materializes on arrival; the default
+  // home view loads NOTHING -- geometry appears only when the user clicks a
+  // node. This is the "predictable behaviour" rule: nothing loads on open.
+  if(seedIds) notifyLoaded(revealedNow);
+  render(); applyLens(); sim.alpha(1).restart();
+  if(seeds.length===1){ setTimeout(()=>{ selected=NODE[seeds[0]]; inspect(NODE[seeds[0]]); highlight(NODE[seeds[0]]);
+    if(seedIds) notifySelect(seeds[0]); },350); }
+}
+
+// parse any weft ask against the loaded scene (prototype subset)
+function parseAsk(q){
+  q=q.trim(); if(!q) return null;
+  let m=q.match(/^where:(\w+)\s*=\s*(.+)$/);
+  if(m){ const attr=m[1].trim(), val=m[2].trim();
+    const cid=(attr==="finish"?"finish:":"shading:")+val;
+    if(!NODE[cid]) return {error:`no prim has ${attr} = ${val} in this scene`};
+    const props=ADJ[cid].filter(a=>active.has(a.kind)).map(a=>a.o);
+    return {ids:[cid,...props], msg:`${props.length} prims where <b>${attr}=${val}</b>`}; }
+  if(/^(id|role|offers|requires|near|within|path):/.test(q))
+    return {error:`<b>${q.split(":")[0]}:</b> needs live USD — in this prototype try a name, <b>where:finish=translucent</b>, or <b>where:shading=usd_full</b>`};
+  const re=new RegExp("^"+q.split("*").map(s=>s.replace(/[.+?^${}()|[\]\\]/g,"\\$&")).join(".*")+"$","i");
+  const hits=DATA.nodes.filter(n=>re.test(n.label)&&n.type!=="finish"&&n.type!=="shading").map(n=>n.id);
+  if(!hits.length) return {error:`nothing matches "${q}"`};
+  return {ids:hits.slice(0,40), msg:`${hits.length} match "<b>${q}</b>"${hits.length>40?" (first 40)":""}`};
+}
+addEventListener("resize",()=>{ Wd=innerWidth;Ht=innerHeight;svg.attr("width",Wd).attr("height",Ht); });
+resetToSeed();
+</script>

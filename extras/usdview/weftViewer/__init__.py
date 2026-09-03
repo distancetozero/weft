@@ -1,11 +1,29 @@
 #
 # The weft usdview plugin: "the ask bar in the viewer" -- v1.
 #
-# Four commands on a "Weft" menu:
+# Six commands on a "Weft" menu:
 #   Ask...              resolve_seeds() against the LIVE stage, live-select
 #   Solo threads        pull() the selection's threads, view-solo the rest
 #   Restore world        reactivate whatever Solo threads deactivated
 #   Who depends on this?  incoming edges onto the selection
+#   Weft Threads...      the HEADLINE command: the full d3 thread viewer,
+#                         EMBEDDED in a QWebEngineView docked into usdview
+#                         itself (see webenginepanel.py), bridged over an
+#                         in-process QWebChannel -- no network, no server.
+#                         Clicking a node there selects AND materializes
+#                         that geometry on the open stage. REQUIRES usdview
+#                         to be launched via ../weft_usdview.py (a launch
+#                         shim setting Qt.AA_ShareOpenGLContexts before
+#                         usdview's own QApplication exists, which no
+#                         plugin can do after the fact) -- see
+#                         extras/usdview/README.md.
+#   Weft Threads (native panel)...
+#                         a native-Qt (QGraphicsView, no QtWebEngine)
+#                         in-usdview panel -- kept as a secondary,
+#                         guaranteed-safe fallback (see threadpanel.py);
+#                         the embedded viewer above is where weft's fuller
+#                         lens/ask-bar/inspector interaction actually
+#                         lives, which this panel never reimplemented.
 #
 # Qt is used only in this file (via pxr.Usdviewq.qt, which picks the PySide
 # module usdview itself is running on). All weft/pxr-heavy imports are
@@ -78,6 +96,23 @@ class WeftViewerContainer(PluginContainer):
         # Held onto so PySide doesn't garbage-collect a dialog out from under
         # its own signal connections while it's still on screen.
         self._openDialogs = []
+        # Weft Threads embedded-webview state (the headline command) -- set
+        # the first time it opens successfully; see
+        # webenginepanel.open_panel. None until then. QWebEngineView +
+        # QWebChannel, docked in usdview itself -- see webenginepanel.py.
+        self._threadWebDock = None
+        self._threadWebView = None
+        self._threadWebBridge = None
+        self._threadWebChannel = None
+        self._threadWebSelection = None
+        # Weft Threads native-panel state (secondary command) -- set the
+        # first time IT opens successfully; see threadpanel.open_panel.
+        # None until then. Native QGraphicsView/Scene, not QtWebEngine.
+        self._threadDock = None
+        self._threadView = None
+        self._threadScene = None
+        self._threadController = None
+        self._threadSelection = None
 
     # -- registration -------------------------------------------------
 
@@ -94,6 +129,16 @@ class WeftViewerContainer(PluginContainer):
         self._whoCmd = plugRegistry.registerCommandPlugin(
             "WeftViewerContainer.who", "Who depends on this?", self._onWho,
             description="Incoming edges onto the selection.")
+        self._threadsCmd = plugRegistry.registerCommandPlugin(
+            "WeftViewerContainer.threads", "Weft Threads...", self._onThreads,
+            description="Open the full thread-graph viewer, embedded in usdview: "
+            "click a node to select AND materialize that geometry. Requires "
+            "usdview to be launched via extras/usdview/weft_usdview.py.")
+        self._threadsNativeCmd = plugRegistry.registerCommandPlugin(
+            "WeftViewerContainer.threadsNative", "Weft Threads (native panel)...",
+            self._onThreadsNative,
+            description="A native-Qt (no WebEngine) in-usdview thread-graph "
+            "panel: click a node to select AND materialize that geometry.")
 
     def configureView(self, plugRegistry, plugUIBuilder):
         menu = plugUIBuilder.findOrCreateMenu("Weft")
@@ -101,6 +146,8 @@ class WeftViewerContainer(PluginContainer):
         menu.addItem(self._soloCmd)
         menu.addItem(self._restoreCmd)
         menu.addItem(self._whoCmd)
+        menu.addItem(self._threadsCmd)
+        menu.addItem(self._threadsNativeCmd)
 
     # -- Ask... ---------------------------------------------------------
 
@@ -496,6 +543,22 @@ class WeftViewerContainer(PluginContainer):
             self._openDialogs.remove(dialog) if dialog in self._openDialogs else None)))
         self._openDialogs.append(dialog)
         dialog.show()
+
+    # -- Weft Threads: embedded webview (headline) + native panel (secondary) --
+
+    def _onThreads(self, api):
+        try:
+            from . import webenginepanel
+            webenginepanel.open_panel(self, api)
+        except Exception as e:
+            api.PrintStatus("Weft Threads: %s" % e)
+
+    def _onThreadsNative(self, api):
+        try:
+            from . import threadpanel
+            threadpanel.open_panel(self, api)
+        except Exception as e:
+            api.PrintStatus("Weft Threads (native panel): %s" % e)
 
     # -- Receipt panel ----------------------------------------------------
 
