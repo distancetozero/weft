@@ -445,10 +445,13 @@ function resetToSeed(seedIds){
     ADJ[SEED].forEach(a=>{ if(a.kind==="usd:arc" && reveal(a.o, NODE[SEED])) revealedNow.push(a.o); });
     expandedKind.add(SEED+"|usd:arc");
   }
-  notifyLoaded(revealedNow);
+  // Only a user-driven seed (a weft ask) materializes on arrival; the default
+  // home view loads NOTHING -- geometry appears only when the user clicks a
+  // node. This is the "predictable behaviour" rule: nothing loads on open.
+  if(seedIds) notifyLoaded(revealedNow);
   render(); applyLens(); sim.alpha(1).restart();
   if(seeds.length===1){ setTimeout(()=>{ selected=NODE[seeds[0]]; inspect(NODE[seeds[0]]); highlight(NODE[seeds[0]]);
-    notifySelect(seeds[0]); },350); }
+    if(seedIds) notifySelect(seeds[0]); },350); }
 }
 
 // parse any weft ask against the loaded scene (prototype subset)

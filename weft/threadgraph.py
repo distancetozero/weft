@@ -158,7 +158,12 @@ def build_graph(stage, alab_root: Optional[str] = None) -> Dict:
 
     for grp in root.GetFilteredChildren(hierarchy_predicate):
         gname = grp.GetName()
-        gid = add("/g/%s" % gname, gname, "group")
+        # Use the group's REAL prim path as its node id (not a synthetic
+        # "/g/<name>"): the panel selects+materializes a clicked node by
+        # GetPrimAtPath(id), so a group must carry a path that resolves --
+        # otherwise clicking a group is a silent no-op (invalid prim) and it
+        # never highlights in usdview's own outliner.
+        gid = add(grp.GetPath().pathString, gname, "group")
         for pl in grp.GetFilteredChildren(hierarchy_predicate):
             n = pl.GetName()
             suffix = n.rsplit("_", 1)[-1]

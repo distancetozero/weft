@@ -61,10 +61,10 @@ def scene_stage(tmp_path):
 def test_hierarchy_edges_present(scene_stage):
     g = build_graph(scene_stage)
     hier = [e for e in g["edges"] if e["kind"] == "usd:arc"]
-    assert {"source": "/g/shelf01",
+    assert {"source": "/root/shelf01",
              "target": "/root/shelf01/chemistry_bottle01_0001",
              "kind": "usd:arc"} in hier
-    assert {"source": "/g/shelf01",
+    assert {"source": "/root/shelf01",
              "target": "/root/shelf01/furniture_shelf01_0001",
              "kind": "usd:arc"} in hier
 
@@ -78,7 +78,7 @@ def test_non_placement_children_are_skipped(scene_stage):
 def test_group_and_placement_node_shape(scene_stage):
     g = build_graph(scene_stage)
     by_id = {n["id"]: n for n in g["nodes"]}
-    grp = by_id["/g/shelf01"]
+    grp = by_id["/root/shelf01"]
     assert grp["type"] == "group" and grp["label"] == "shelf01"
 
     prop = by_id["/root/shelf01/chemistry_bottle01_0001"]
@@ -112,7 +112,7 @@ def test_degree_counts_incoming_and_outgoing(scene_stage):
     # outgoing (Mount to the carrier) -> degree 2.
     assert by_id["/root/shelf01/chemistry_bottle01_0001"]["deg"] == 2
     # the group: one outgoing edge per placement -> degree 2.
-    assert by_id["/g/shelf01"]["deg"] == 2
+    assert by_id["/root/shelf01"]["deg"] == 2
 
 
 def test_facets_read_from_interface_file_when_alab_root_given(scene_stage, tmp_path):
@@ -167,7 +167,7 @@ def Xform "World"
 """)
     stage = Usd.Stage.Open(str(p))
     g = build_graph(stage)
-    assert g["nodes"] == [{"id": "/g/World", "label": "World", "type": "group", "deg": 0}]
+    assert g["nodes"] == [{"id": "/World", "label": "World", "type": "group", "deg": 0}]
     assert g["edges"] == []
     assert g["kinds"] == []
 

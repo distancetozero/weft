@@ -49,6 +49,12 @@ def select_and_load(api, path):
 
 
 def load_one(api, path):
+    # A click materializes the picked node AND what hangs off it (a group
+    # loads its members' geometry; a leaf loads its own) -- LoadWithDescendants,
+    # Stage.Load's default. This is only "pull the thread" and not "load the
+    # world" because the panel never auto-loads on open and never auto-loads
+    # the pseudo-root: nothing materializes until the user clicks a specific
+    # node, and each click loads exactly that node's subtree.
     try:
         api.stage.Load(path)
     except Exception as e:
