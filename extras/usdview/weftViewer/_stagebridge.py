@@ -1,13 +1,15 @@
 #
 # Shared, Qt-free stage-facing operations for the Weft Threads panel(s):
-# the native QGraphicsView panel (threadpanel.py) and the browser-bridge
-# server (bridgeserver.py) both need the exact same "select+materialize"
-# and "materialize a batch" semantics, so they live here once rather than
-# being copy-pasted (and drifting) between the two shells. No Qt imports --
-# every function here just takes a usdviewApi-shaped `api` object and plain
-# data; each CALLER is responsible for making sure it only runs on
-# usdview's own Qt main thread (see bridgeserver.py's module docstring for
-# why that matters for it specifically).
+# the native QGraphicsView panel (threadpanel.py) and the embedded
+# QWebEngineView panel (webenginepanel.py) both need the exact same
+# "select+materialize" and "materialize a batch" semantics, so they live
+# here once rather than being copy-pasted (and drifting) between the two
+# shells. No Qt imports -- every function here just takes a
+# usdviewApi-shaped `api` object and plain data; each CALLER is
+# responsible for making sure it only runs on usdview's own Qt main
+# thread where that matters (both current callers invoke these directly
+# from Qt slots already running on the main thread, so this is naturally
+# satisfied today -- flagged here for whichever shell adds one next).
 #
 from __future__ import annotations
 

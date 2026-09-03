@@ -6,17 +6,22 @@
 #   Solo threads        pull() the selection's threads, view-solo the rest
 #   Restore world        reactivate whatever Solo threads deactivated
 #   Who depends on this?  incoming edges onto the selection
-#   Weft Threads...      the HEADLINE command: opens weft's tuned d3 thread
-#                         viewer in the owner's own browser, bridged to the
-#                         live stage over a loopback-only, token-gated HTTP
-#                         server the plugin starts (see bridgeserver.py).
+#   Weft Threads...      the HEADLINE command: the full d3 thread viewer,
+#                         EMBEDDED in a QWebEngineView docked into usdview
+#                         itself (see webenginepanel.py), bridged over an
+#                         in-process QWebChannel -- no network, no server.
 #                         Clicking a node there selects AND materializes
-#                         that geometry on the open stage, cross-process.
+#                         that geometry on the open stage. REQUIRES usdview
+#                         to be launched via ../weft_usdview.py (a launch
+#                         shim setting Qt.AA_ShareOpenGLContexts before
+#                         usdview's own QApplication exists, which no
+#                         plugin can do after the fact) -- see
+#                         extras/usdview/README.md.
 #   Weft Threads (native panel)...
-#                         the earlier native-Qt (QGraphicsView, no
-#                         QtWebEngine) in-usdview panel -- kept as a
-#                         secondary option (see threadpanel.py); the
-#                         browser viewer above is where weft's fuller
+#                         a native-Qt (QGraphicsView, no QtWebEngine)
+#                         in-usdview panel -- kept as a secondary,
+#                         guaranteed-safe fallback (see threadpanel.py);
+#                         the embedded viewer above is where weft's fuller
 #                         lens/ask-bar/inspector interaction actually
 #                         lives, which this panel never reimplemented.
 #
@@ -91,14 +96,15 @@ class WeftViewerContainer(PluginContainer):
         # Held onto so PySide doesn't garbage-collect a dialog out from under
         # its own signal connections while it's still on screen.
         self._openDialogs = []
-        # Weft Threads browser-viewer state (the headline command) -- set
+        # Weft Threads embedded-webview state (the headline command) -- set
         # the first time it opens successfully; see
-        # bridgeserver.open_browser_viewer. None until then.
-        self._threadServer = None
-        self._threadServerThread = None
-        self._threadServerToken = None
-        self._threadServerPort = None
-        self._threadMainBridge = None
+        # webenginepanel.open_panel. None until then. QWebEngineView +
+        # QWebChannel, docked in usdview itself -- see webenginepanel.py.
+        self._threadWebDock = None
+        self._threadWebView = None
+        self._threadWebBridge = None
+        self._threadWebChannel = None
+        self._threadWebSelection = None
         # Weft Threads native-panel state (secondary command) -- set the
         # first time IT opens successfully; see threadpanel.open_panel.
         # None until then. Native QGraphicsView/Scene, not QtWebEngine.
@@ -125,14 +131,14 @@ class WeftViewerContainer(PluginContainer):
             description="Incoming edges onto the selection.")
         self._threadsCmd = plugRegistry.registerCommandPlugin(
             "WeftViewerContainer.threads", "Weft Threads...", self._onThreads,
-            description="Open weft's thread-graph viewer in your browser, live-"
-            "bridged to this stage: click a node to select AND materialize "
-            "that geometry, over a loopback-only token-gated local server.")
+            description="Open the full thread-graph viewer, embedded in usdview: "
+            "click a node to select AND materialize that geometry. Requires "
+            "usdview to be launched via extras/usdview/weft_usdview.py.")
         self._threadsNativeCmd = plugRegistry.registerCommandPlugin(
             "WeftViewerContainer.threadsNative", "Weft Threads (native panel)...",
             self._onThreadsNative,
-            description="The earlier native-Qt (no browser) in-usdview thread-"
-            "graph panel: click a node to select AND materialize that geometry.")
+            description="A native-Qt (no WebEngine) in-usdview thread-graph "
+            "panel: click a node to select AND materialize that geometry.")
 
     def configureView(self, plugRegistry, plugUIBuilder):
         menu = plugUIBuilder.findOrCreateMenu("Weft")
@@ -538,12 +544,12 @@ class WeftViewerContainer(PluginContainer):
         self._openDialogs.append(dialog)
         dialog.show()
 
-    # -- Weft Threads: browser viewer (headline) + native panel (secondary) --
+    # -- Weft Threads: embedded webview (headline) + native panel (secondary) --
 
     def _onThreads(self, api):
         try:
-            from . import bridgeserver
-            bridgeserver.open_browser_viewer(self, api)
+            from . import webenginepanel
+            webenginepanel.open_panel(self, api)
         except Exception as e:
             api.PrintStatus("Weft Threads: %s" % e)
 
