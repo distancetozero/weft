@@ -56,12 +56,13 @@
     font-size:10.5px;letter-spacing:.03em;display:none}
   #live.on{display:block}
   #live .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px}
-  text.lab{fill:var(--ink);font:11px/1 "Inter",sans-serif;pointer-events:none;paint-order:stroke;stroke:var(--bg);stroke-width:3.5px}
+  text.lab{fill:var(--ink);font:11px/1 "Inter",sans-serif;pointer-events:none;paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
   text.badge{fill:var(--bg);font:700 9px sans-serif;pointer-events:none;text-anchor:middle}
+  line.leader{stroke:var(--muted);stroke-width:.8;opacity:.5;pointer-events:none}
   .hint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);
     font-size:13px;text-align:center;pointer-events:none;max-width:340px}
-  #insp .btnrow{display:flex;gap:6px;margin:2px 0 8px}
-  #insp .ibtn{flex:1;padding:5px 4px;border:1px solid var(--line);background:transparent;
+  #insp .btnrow{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+  #insp .ibtn{flex:1 1 42%;padding:5px 4px;border:1px solid var(--line);background:transparent;
     color:var(--muted);border-radius:7px;cursor:pointer;font:11px sans-serif;white-space:nowrap}
   #insp .ibtn:hover{border-color:var(--accent);color:var(--accent)}
   #insp .gesture{color:var(--muted);font-size:10px;margin:0 0 6px;opacity:.8}
@@ -151,6 +152,7 @@ function notifyLoaded(ids){ if(!bridge||!bridge.loaded) return;
 // usdview (bridge null) so the file keeps working in a plain browser.
 function notifyPeek(id){ if(bridge&&bridge.peek&&primLike(id)) bridge.peek(id); }
 function notifyPull(id){ if(bridge&&bridge.pull&&primLike(id)) bridge.pull(id); }
+function notifyLoadSubtree(id){ if(bridge&&bridge.loadSubtree&&primLike(id)) bridge.loadSubtree(id); }
 function notifyUnload(ids){ if(!bridge||!bridge.unload) return;
   const paths=ids.filter(primLike); if(paths.length) bridge.unload(paths); }
 function onStageFocus(path){   // Python -> JS: usdview's own selection changed
@@ -177,11 +179,20 @@ let lens="usd:arc", selected=null, hovered=null;
 // Loaded set at any time = {focus if leaf} ∪ {pinned leaves} -- bounded
 // by construction; groups are navigational and never load.
 let focus=null; const pinned=new Set(); const crumbs=[];
+// Nodes whose WHOLE SUBTREE was deliberately loaded via the "load all
+// below" button. Judgment call (flagged for the owner): the subtree
+// load belongs to that node's tenure as focus -- move the focus off it
+// and it unloads like a pulled leaf does, unless pinned. Keeps the
+// bounded invariant: loaded = {focus's load} ∪ {pinned}.
+const subtreeLoaded=new Set();
 const isLeafNode=n=>!!n&&(n.type==="prop"||n.type==="furniture");
 const isGroupNode=n=>!!n&&n.type==="group";
 function moveFocusTo(id){
   const prev=focus; focus=id;
-  if(prev&&prev!==id&&isLeafNode(NODE[prev])&&!pinned.has(prev)) notifyUnload([prev]);
+  if(prev&&prev!==id&&!pinned.has(prev)){
+    if(subtreeLoaded.has(prev)){ subtreeLoaded.delete(prev); notifyUnload([prev]); }
+    else if(isLeafNode(NODE[prev])) notifyUnload([prev]);
+  }
   if(isLeafNode(NODE[id])) notifyPull(id);   // leaf: select + materialize it
   else notifyPeek(id);                       // group: select + frame, load NOTHING
 }
@@ -204,12 +215,15 @@ const R=n=>n.type==="finish"||n.type==="shading"?12:(n.type==="group"?9:6);
 
 const sim=d3.forceSimulation([])
   .velocityDecay(0.55)
-  .force("link",d3.forceLink([]).id(d=>d.id).distance(74))
-  .force("charge",d3.forceManyBody().strength(-190))
-  .force("collide",d3.forceCollide().radius(n=>R(n)+13))
+  .force("link",d3.forceLink([]).id(d=>d.id).distance(92))
+  .force("charge",d3.forceManyBody().strength(-230))
+  // collide radius budgets room for the label beside the node, not just
+  // the circle -- structural spacing so names can always be placed
+  .force("collide",d3.forceCollide().radius(n=>R(n)+26))
   .force("x",d3.forceX(Wd/2).strength(.06))
   .force("y",d3.forceY(Ht/2).strength(.06))
-  .on("tick",tick);
+  .on("tick",tick)
+  .on("end",()=>updateLabels());   // final pass once positions settle
 
 let linkSel=gLink.selectAll("path"), nodeSel=gNode.selectAll("g");
 
@@ -269,6 +283,18 @@ function uiPull(id){
   pushCrumb(id);
   recenter(id);
 }
+// "Load all below": an explicit pull-plus -- the focus moves here (same
+// crumb/unload rules as any pull) and then the ENTIRE subtree under it
+// materializes. The one deliberate bulk-load in the panel.
+function uiLoadSubtree(id){
+  const d=NODE[id]; if(!d||!primLike(id)) return;
+  moveFocusTo(id);
+  subtreeLoaded.add(id);
+  notifyLoadSubtree(id);
+  pushCrumb(id);
+  recenter(id);
+  flash("loaded everything under "+d.label+" — it unloads when the focus moves on (pin to keep it)");
+}
 function pushCrumb(id){
   if(crumbs[crumbs.length-1]!==id) crumbs.push(id);
   updateCrumbs();
@@ -321,8 +347,11 @@ function recenter(id){
 function togglePin(d){
   if(pinned.has(d.id)){
     pinned.delete(d.id); seedSet.delete(d.id);
-    // an unpinned leaf that is no longer the focus goes back to a bbox
-    if(isLeafNode(d)&&focus!==d.id) notifyUnload([d.id]);
+    // an unpinned load that is no longer the focus goes back to bboxes
+    // (a plain leaf's own geometry, or a "load all below" subtree)
+    if(focus!==d.id&&(isLeafNode(d)||subtreeLoaded.has(d.id))){
+      subtreeLoaded.delete(d.id); notifyUnload([d.id]);
+    }
   } else {
     pinned.add(d.id); seedSet.add(d.id);
     if(isLeafNode(d)) notifyLoaded([d.id]);   // pinned leaves stay loaded
@@ -354,7 +383,7 @@ function expandFromHere(d){
 function fan(added, actorId){
   const src=NODE[actorId]; const px=src.x??Wd/2, py=src.y??Ht/2;
   let base=Math.atan2(py-Ht/2, px-Wd/2); if(!isFinite(base)) base=-Math.PI/2;
-  const M=added.length, span=Math.min(M>1?(M-1)*0.42:0, 2.7), r=95+M*5;
+  const M=added.length, span=Math.min(M>1?(M-1)*0.42:0, 2.9), r=115+M*6;
   added.forEach((nid,i)=>{ const ang=base+(M>1?span*(i/(M-1)-0.5):0);
     const n=NODE[nid]; n.x=px+Math.cos(ang)*r; n.y=py+Math.sin(ang)*r; n._settled=false; });
 }
@@ -366,7 +395,12 @@ function tidyTree(){   // Reingold–Tilford via d3.tree over the visible usd:ar
   const R="__super__";
   const rows=vis.map(id=>({id,parent:parent[id]!=null?parent[id]:R})); rows.push({id:R,parent:""});
   let h; try{ h=d3.stratify().id(d=>d.id).parentId(d=>d.parent)(rows); }catch(e){ return false; }
-  d3.tree().nodeSize([74,116])(h);   // wider tiers so labels have room
+  // Sibling gap sized so labels actually fit beside nodes (the label
+  // planner can also use N/S slots, so big reveals get a tighter tier);
+  // default d3 separation doubles cousin gaps -- 1.15 is plenty.
+  const tierW=vis.length>40?84:112;
+  d3.tree().nodeSize([tierW,112])
+    .separation((a,b)=>a.parent===b.parent?1:1.15)(h);
   let mn=Infinity,mx=-Infinity; h.each(d=>{ if(d.id!==R){ mn=Math.min(mn,d.x); mx=Math.max(mx,d.x);} });
   const offx=Wd/2-(mn+mx)/2, offy=80;
   h.each(d=>{ if(d.id===R)return; const n=NODE[d.id]; if(!n)return; n.x=d.x+offx; n.y=d.y+offy; n.fx=n.x; n.fy=n.y; });
@@ -419,8 +453,8 @@ function applyLens(){
     return;
   }
   // Facet / structural lens: force, clustering by the lens's own thread kind
-  sim.force("charge").strength(-190);
-  sim.force("link").strength(l=> l.kind===lk?0.9:0.06).distance(l=> l.kind===lk?55:120);
+  sim.force("charge").strength(-230);
+  sim.force("link").strength(l=> l.kind===lk?0.9:0.06).distance(l=> l.kind===lk?78:130);
   sim.force("x",d3.forceX(Wd/2).strength(.05)); sim.force("y",d3.forceY(Ht/2).strength(.05));
   curNodes().forEach(n=>{ if(!n._dragging){ n.fx=null; n.fy=null; n._settled=false; }});
   sim.alpha(.9).restart();
@@ -454,11 +488,16 @@ function render(){
     .attr("fill",d=>isGroupNode(d)?cvar("--bg2"):(TCOLOR[d.type]||"#aaa"))
     .attr("stroke",cvar("--bg")).attr("stroke-width",1.6);
   en.append("text").attr("class","badge").attr("y",3)
+    // a hollow group's fill is near the page bg, so its badge must use
+    // ink, not bg, or the "+" is dark-on-dark invisible (round-9 bug)
+    .style("fill",d=>isGroupNode(d)?cvar("--ink"):cvar("--bg"))
     .text(d=>{ const t=threadsOf(d.id); const tot=Object.entries(t).filter(([k])=>active.has(k))
       .reduce((s,[k,c])=>s+ (isExpanded(d.id,k)?0:c),0);
       return (d.type==="finish"||d.type==="shading")? String(childrenCount(d.id)) : (tot>0&&hasUnexpanded(d.id)?"+":""); });
+  en.append("line").attr("class","leader");   // shown only for displaced labels
   en.append("text").attr("class","lab").attr("x",d=>R(d)+5).attr("y",3)
     .text(d=>d.label.length>22?d.label.slice(0,21)+"…":d.label);
+  en.append("title").text(d=>d.label+"  ("+d.id+")");   // full name on hover
   en.on("click",(ev,d)=>{ ev.stopPropagation(); uiPeek(d.id); })      // PEEK: look, never load
     .on("dblclick",(ev,d)=>{ ev.stopPropagation(); uiPull(d.id); })   // PULL: move the focus
     .on("pointerenter",(ev,d)=>{ hovered=d; updateLabels(); })
@@ -475,20 +514,60 @@ function render(){
 function childrenCount(id){ return ADJ[id].filter(a=>active.has(a.kind)).length; }
 function isExpanded(id,kind){ return expandedKind.has(id+"|"+kind)||expandedKind.has(id+"|*"); }
 function hasUnexpanded(id){ return ADJ[id].some(a=>active.has(a.kind)&&!visible.has(a.o)); }
-function labelPriority(d){ if(d===selected)return 6; if(d===hovered)return 5;
-  if(d.type==="group")return 4; if(d.type==="finish"||d.type==="shading")return 4;
-  if(isNbr(selected,d))return 3; return 0; }
+// --- labels v2: every visible node named, nothing overlapping ---------
+// Each label tries a ring of slots around its node (right, left, above,
+// below, then farther out with a thin leader line) and takes the first
+// free one; occupied space includes every node circle and every label
+// already placed. Placement order gives the best spots to what matters
+// most (focus, pinned, hovered, groups, then the rest). Labels are
+// hidden ONLY when every slot around their node is blocked -- never as
+// routine "decluttering": that was round 9's disappearing text. On big
+// graphs (>80 nodes) the per-tick relabeling is skipped for speed; the
+// full pass runs when the simulation settles and on every interaction.
+function labelPriority(d){ if(d===selected)return 7; if(pinned.has(d.id))return 6;
+  if(d===hovered)return 6; if(d.type==="group")return 4;
+  if(d.type==="finish"||d.type==="shading")return 4;
+  if(isNbr(selected,d))return 3; return 2; }
 function updateLabels(){
   if(!nodeSel||!nodeSel.data)return;
-  const cand=nodeSel.data().filter(d=>labelPriority(d)>0)
-    .sort((a,b)=>labelPriority(b)-labelPriority(a)||(b.deg||0)-(a.deg||0));
-  const boxes=[], show=new Set();
-  cand.forEach(d=>{ if(d.x==null)return;
-    const w=Math.min(d.label.length,22)*5.7+8, h=13, bx=d.x+R(d)+3, by=d.y-7;
-    const box=[bx,by,bx+w,by+h];
-    const hit=boxes.some(o=>box[0]<o[2]&&o[0]<box[2]&&box[1]<o[3]&&o[1]<box[3]);
-    if(!hit){ boxes.push(box); show.add(d.id); } });
-  nodeSel.select("text.lab").style("display",d=>show.has(d.id)?null:"none");
+  const ns=nodeSel.data().filter(d=>d.x!=null);
+  const cand=ns.map(d=>({d,p:labelPriority(d)}))
+    .sort((a,b)=>b.p-a.p||(b.d.deg||0)-(a.d.deg||0));
+  const boxes=[];   // occupied space: all node circles + placed labels
+  ns.forEach(d=>{ const r=R(d)+3; boxes.push([d.x-r,d.y-r,d.x+r,d.y+r]); });
+  const place={};
+  cand.forEach(o=>{ const d=o.d, r=R(d);
+    const w=Math.min(d.label.length,22)*5.7+8, h=13;
+    const slots=[
+      [d.x+r+5,    d.y-h/2, false],   // E  (the classic spot)
+      [d.x-r-5-w,  d.y-h/2, false],   // W
+      [d.x-w/2,    d.y-r-4-h, false], // N
+      [d.x-w/2,    d.y+r+4, false],   // S
+      [d.x+r+26,   d.y-h/2, true],    // E far + leader
+      [d.x-r-26-w, d.y-h/2, true],    // W far + leader
+      [d.x-w/2,    d.y-r-22-h, true], // N far + leader
+      [d.x-w/2,    d.y+r+22, true],   // S far + leader
+    ];
+    for(const s of slots){ const box=[s[0],s[1],s[0]+w,s[1]+h];
+      if(!boxes.some(b=>box[0]<b[2]&&b[0]<box[2]&&box[1]<b[3]&&b[1]<box[3])){
+        boxes.push(box); place[d.id]={x:s[0],y:s[1],w,h,lead:s[2]}; break; } }
+  });
+  nodeSel.select("text.lab").each(function(d){ const p=place[d.id];
+    const el=d3.select(this);
+    if(!p){ el.style("display","none"); return; }
+    el.style("display",null).attr("x",p.x-d.x).attr("y",p.y-d.y+10);
+  });
+  nodeSel.select("line.leader").each(function(d){ const p=place[d.id];
+    const el=d3.select(this);
+    if(!p||!p.lead){ el.style("display","none"); return; }
+    const cx=p.x+p.w/2-d.x, cy=p.y+p.h/2-d.y;      // label center, node-relative
+    const toRight=cx>0, horiz=Math.abs(cx)>Math.abs(cy);
+    el.style("display",null)
+      .attr("x1",horiz?(toRight?R(d)+1:-R(d)-1):0)
+      .attr("y1",horiz?0:(cy>0?R(d)+1:-R(d)-1))
+      .attr("x2",horiz?(toRight?p.x-d.x-2:p.x+p.w-d.x+2):cx)
+      .attr("y2",horiz?cy:(cy>0?p.y-d.y-1:p.y+p.h-d.y+1));
+  });
 }
 function isNbr(a,b){ if(!a||!b)return false; if(a===b)return true;
   return ADJ[a.id].some(x=>x.o===b.id&&active.has(x.kind)); }
@@ -504,7 +583,8 @@ function tick(){
   linkSel.attr("d",d=>{ const s=d.source,t=d.target,dx=t.x-s.x,dy=t.y-s.y,dr=Math.hypot(dx,dy)*4.5;
     return `M${s.x},${s.y}A${dr},${dr} 0 0,1 ${t.x},${t.y}`; });   // flatter arcs read cleaner
   nodeSel.attr("transform",d=>`translate(${d.x},${d.y})`);
-  if((++tickN%5)===0) updateLabels();   // periodic declutter while nodes settle
+  if((++tickN%5)===0 && visible.size<=80) updateLabels();   // live placement while settling
+                                        // (big graphs get the full pass on sim "end")
 }
 function drag(){ return d3.drag()
   .on("start",(ev,d)=>{ if(!ev.active)sim.alphaTarget(.2).restart(); d._dragging=true; d.fx=d.x; d.fy=d.y; })
@@ -521,7 +601,8 @@ function inspect(d){
     h+=`<div class="btnrow">
       <button class="ibtn" id="pinbtn">${pinned.has(d.id)?"✕ unpin":"⚲ pin"}</button>
       <button class="ibtn" id="exp1btn" title="reveal immediate relationships as bounding boxes — no load, no re-center">+1 level</button>
-      <button class="ibtn" id="expallbtn" title="reveal the whole subtree as bounding boxes — no load">whole subtree</button>
+      <button class="ibtn" id="expallbtn" title="reveal the whole subtree as bounding boxes — no load">reveal below</button>
+      <button class="ibtn" id="loadallbtn" title="materialize ALL geometry under this node — the deliberate bulk load; unloads when the focus moves on unless pinned">⇣ load all below</button>
     </div>
     <div class="gesture">${isGroupNode(d)?"double-click: re-center here (groups never load)":
       isLeafNode(d)?"double-click: pull — load this &amp; re-center":""}</div>`;
@@ -550,6 +631,8 @@ function inspect(d){
   if(exp1) exp1.onclick=(ev)=>{ ev.stopPropagation(); expand(d.id,lens); inspect(d); };
   const expall=el.querySelector("#expallbtn");
   if(expall) expall.onclick=(ev)=>{ ev.stopPropagation(); expandFromHere(d); };
+  const loadall=el.querySelector("#loadallbtn");
+  if(loadall) loadall.onclick=(ev)=>{ ev.stopPropagation(); uiLoadSubtree(d.id); };
   el.querySelectorAll(".thread").forEach(row=>{ const k=row.dataset.k;
     if(row.dataset.mode==="collapse") row.onclick=()=>{ collapse(d.id,k); inspect(d); };
     else if(!row.classList.contains("done")) row.onclick=()=>{ expand(d.id,k); inspect(d); };

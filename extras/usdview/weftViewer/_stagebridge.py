@@ -129,6 +129,21 @@ def pull_leaf(api, path):
     _refresh_viewport(api, frame=True)
 
 
+def load_subtree(api, path):
+    """The inspector's "load all below" button: deliberately materialize
+    EVERYTHING under this node (stage.Load's default LoadWithDescendants
+    pulls every payload beneath it). This is the one opt-in bulk-load in
+    the whole panel -- a conscious button press on a named node, never a
+    side effect of navigation. Select + frame it so the materialized
+    subtree is what the camera is looking at."""
+    prim = _valid_prim(api, path)
+    if prim is None:
+        return
+    _select(api, prim)
+    load_one(api, path)
+    _refresh_viewport(api, frame=True)
+
+
 def unload_paths(api, paths):
     """The focus moved off a non-pinned leaf: drop its geometry back to a
     bounding-box standin (`stage.Unload`). Selection untouched. Same

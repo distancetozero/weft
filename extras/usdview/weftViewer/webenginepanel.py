@@ -173,6 +173,15 @@ def _make_bridge_class():
             except Exception as e:
                 self._api.PrintStatus("Weft Threads: pull(%r) failed: %s" % (path, e))
 
+        @Slot(str)
+        def loadSubtree(self, path):
+            """The inspector's "load all below": opt-in bulk materialize
+            of everything under one named node."""
+            try:
+                _stagebridge.load_subtree(self._api, path)
+            except Exception as e:
+                self._api.PrintStatus("Weft Threads: loadSubtree(%r) failed: %s" % (path, e))
+
         @Slot(list)
         def unload(self, paths):
             """Focus moved off non-pinned leaves: back to bbox standins."""
