@@ -183,6 +183,17 @@ def _make_bridge_class():
                 self._api.PrintStatus("Weft Threads: loadSubtree(%r) failed: %s" % (path, e))
 
         @Slot(list)
+        def pullSet(self, paths):
+            """A rule's evaluated set (e.g. a facet's member prims)
+            becomes the focus's load: select it all, materialize it,
+            frame the camera to fit it. The set-shaped door every
+            rule kind funnels through (_stagebridge.pull_set)."""
+            try:
+                _stagebridge.pull_set(self._api, paths)
+            except Exception as e:
+                self._api.PrintStatus("Weft Threads: pullSet(...) failed: %s" % e)
+
+        @Slot(list)
         def unload(self, paths):
             """Focus moved off non-pinned leaves: back to bbox standins."""
             try:

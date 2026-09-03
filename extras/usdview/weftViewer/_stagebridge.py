@@ -112,42 +112,64 @@ def peek(api, path):
                 "selects/highlights only" % e)
 
 
-def pull_leaf(api, path):
-    """Double-click PULL on a leaf: select AND materialize exactly this
-    leaf (`stage.Load`, default LoadWithDescendants, so a leaf whose own
-    geometry sits behind nested payloads actually appears -- never a
-    cascade, because only leaves are ever pulled; the JS side routes
-    group pulls to re-center-only and never calls this for them). Then
-    frame the camera on it -- a pull flies to and SHOWS what it just
-    loaded (which also forces the viewport re-render the load needs to
-    be visible at all; see _refresh_viewport)."""
-    prim = _valid_prim(api, path)
-    if prim is None:
+# -- the rule -> set -> load seam ---------------------------------------
+#
+# Every way of materializing geometry in this panel is a RULE that
+# evaluates to a SET of prim paths, and every set goes through the same
+# two doors below -- never a bespoke load path per feature:
+#
+#   load_set(api, paths, frame=)   materialize a set (+ one viewport
+#                                  refresh; optional camera framing)
+#   pull_set(api, paths)           the set BECOMES the focus's load:
+#                                  select it all, materialize it, frame
+#                                  the camera to fit it
+#   unload_set(api, paths)         drop a set back to bbox standins
+#
+# Rule kinds so far: a leaf (set = [leaf]), a subtree (set = [root] --
+# stage.Load's default LoadWithDescendants carries the recursion), a
+# facet (set = the facet's member prims, computed by the viewer from
+# the thread graph's weft:bind:* edges). A future rule (spatial,
+# frustum, ask-driven...) computes its own path list and calls these
+# same functions to get identical load/refresh/framing behaviour.
+
+def load_set(api, paths, frame=False):
+    """THE one bulk-materialize door. Loads every valid prim path in the
+    set (stage.Load, default LoadWithDescendants per member), then does
+    a single viewport refresh -- framing the camera to the current
+    selection when frame=True. Selection is untouched here."""
+    if not isinstance(paths, (list, tuple)):
         return
-    _select(api, prim)
-    load_one(api, path)
-    _refresh_viewport(api, frame=True)
+    loaded = False
+    for path in paths:
+        if _valid_prim(api, path) is not None:
+            load_one(api, path)
+            loaded = True
+    if loaded:
+        _refresh_viewport(api, frame=frame)
 
 
-def load_subtree(api, path):
-    """The inspector's "load all below" button: deliberately materialize
-    EVERYTHING under this node (stage.Load's default LoadWithDescendants
-    pulls every payload beneath it). This is the one opt-in bulk-load in
-    the whole panel -- a conscious button press on a named node, never a
-    side effect of navigation. Select + frame it so the materialized
-    subtree is what the camera is looking at."""
-    prim = _valid_prim(api, path)
-    if prim is None:
+def pull_set(api, paths):
+    """A rule's set becomes the current focus's load: select every prim
+    in the set (so usdview's own selection shows exactly what the rule
+    named), materialize it through load_set, and frame the camera to
+    fit the whole set."""
+    prims = [p for p in (paths if isinstance(paths, (list, tuple)) else [])
+             if _valid_prim(api, p) is not None]
+    if not prims:
         return
-    _select(api, prim)
-    load_one(api, path)
-    _refresh_viewport(api, frame=True)
+    api.ClearPrimSelection()
+    for p in prims:
+        api.AddPrimToSelection(api.stage.GetPrimAtPath(p))
+    api.UpdateGUI()
+    load_set(api, prims, frame=True)
 
 
-def unload_paths(api, paths):
-    """The focus moved off a non-pinned leaf: drop its geometry back to a
-    bounding-box standin (`stage.Unload`). Selection untouched. Same
-    batch/guard shape as load_paths."""
+def unload_set(api, paths):
+    """The focus moved off a rule's set (a leaf, a subtree root, a
+    facet's members): drop it back to bounding-box standins
+    (`stage.Unload`), with one symmetric viewport refresh so the
+    geometry visibly condenses back rather than lingering until a
+    camera move. Selection untouched."""
     if not isinstance(paths, (list, tuple)):
         return
     unloaded = False
@@ -160,9 +182,23 @@ def unload_paths(api, paths):
         except Exception as e:
             api.PrintStatus("Weft Threads: unload %s failed: %s" % (path, e))
     if unloaded:
-        # symmetric with load: the geometry must visibly condense back
-        # into its bounding-box standin, not linger until a camera move
         _refresh_viewport(api)
+
+
+def pull_leaf(api, path):
+    """Double-click PULL on a leaf: rule = this one leaf; set = [leaf]."""
+    pull_set(api, [path])
+
+
+def load_subtree(api, path):
+    """"Load all below": rule = everything under this node; set = [node]
+    (stage.Load's default LoadWithDescendants carries the recursion)."""
+    pull_set(api, [path])
+
+
+# Compatibility name kept for existing callers; unload_set is canonical.
+def unload_paths(api, paths):
+    unload_set(api, paths)
 
 
 def select_and_load(api, path):
@@ -196,16 +232,6 @@ def load_one(api, path):
 
 
 def load_paths(api, paths):
-    """A batch of nodes were revealed (an expand in the native panel, or
-    POSTed to /load by the browser viewer) -- materialize every one that
-    names a real, valid prim. Selection is untouched here; only
-    `select_and_load` moves the live selection."""
-    if not isinstance(paths, (list, tuple)):
-        return
-    loaded = False
-    for path in paths:
-        if _valid_prim(api, path) is not None:
-            load_one(api, path)
-            loaded = True
-    if loaded:
-        _refresh_viewport(api)
+    """Compatibility name kept for existing callers (the native panel,
+    the bridge's pin-load); load_set is canonical."""
+    load_set(api, paths)

@@ -153,6 +153,8 @@ function notifyLoaded(ids){ if(!bridge||!bridge.loaded) return;
 function notifyPeek(id){ if(bridge&&bridge.peek&&primLike(id)) bridge.peek(id); }
 function notifyPull(id){ if(bridge&&bridge.pull&&primLike(id)) bridge.pull(id); }
 function notifyLoadSubtree(id){ if(bridge&&bridge.loadSubtree&&primLike(id)) bridge.loadSubtree(id); }
+function notifyPullSet(ids){ if(!bridge||!bridge.pullSet) return;
+  const paths=ids.filter(primLike); if(paths.length) bridge.pullSet(paths); }
 function notifyUnload(ids){ if(!bridge||!bridge.unload) return;
   const paths=ids.filter(primLike); if(paths.length) bridge.unload(paths); }
 function onStageFocus(path){   // Python -> JS: usdview's own selection changed
@@ -179,20 +181,30 @@ let lens="usd:arc", selected=null, hovered=null;
 // Loaded set at any time = {focus if leaf} ∪ {pinned leaves} -- bounded
 // by construction; groups are navigational and never load.
 let focus=null; const pinned=new Set(); const crumbs=[];
-// Nodes whose WHOLE SUBTREE was deliberately loaded via the "load all
-// below" button. Judgment call (flagged for the owner): the subtree
-// load belongs to that node's tenure as focus -- move the focus off it
-// and it unloads like a pulled leaf does, unless pinned. Keeps the
-// bounded invariant: loaded = {focus's load} ∪ {pinned}.
-const subtreeLoaded=new Set();
+// ruleLoads: owner node id -> the SET of prim paths that node's rule
+// loaded ("load all below" -> [the node]; a facet pull -> its member
+// prims). The set belongs to that node's tenure as focus: move the
+// focus off it and the whole set unloads AS A UNIT, unless the owner
+// is pinned. Keeps the bounded invariant literal:
+// loaded = {focus's load} ∪ {pinned}. (Rule -> set -> load: the JS side
+// of the seam; the Python side is _stagebridge.load_set/pull_set.)
+const ruleLoads=new Map();
 const isLeafNode=n=>!!n&&(n.type==="prop"||n.type==="furniture");
 const isGroupNode=n=>!!n&&n.type==="group";
+const isFacetNode=n=>!!n&&(n.type==="finish"||n.type==="shading");
+function releaseFocusLoad(prev){
+  if(!prev||pinned.has(prev)) return;
+  let paths=null;
+  if(ruleLoads.has(prev)){ paths=ruleLoads.get(prev); ruleLoads.delete(prev); }
+  else if(isLeafNode(NODE[prev])) paths=[prev];
+  if(!paths) return;
+  // never unload a prim that is pinned in its own right, or the new focus
+  notifyUnload(paths.filter(p=>!pinned.has(p)&&p!==focus));
+}
 function moveFocusTo(id){
   const prev=focus; focus=id;
-  if(prev&&prev!==id&&!pinned.has(prev)){
-    if(subtreeLoaded.has(prev)){ subtreeLoaded.delete(prev); notifyUnload([prev]); }
-    else if(isLeafNode(NODE[prev])) notifyUnload([prev]);
-  }
+  if(prev!==id) releaseFocusLoad(prev);
+  if(!primLike(id)) return;                  // facet focus: its rule loads its own set
   if(isLeafNode(NODE[id])) notifyPull(id);   // leaf: select + materialize it
   else notifyPeek(id);                       // group: select + frame, load NOTHING
 }
@@ -278,39 +290,68 @@ function uiPeek(id){
 }
 function uiPull(id){
   const d=NODE[id]; if(!d) return;
-  if(!primLike(id)){ flash("facet nodes don't pull — switch the lens to view the world that way"); return; }
+  if(!primLike(id)){ uiPullFacet(id); return; }   // facet pull: load its whole member set
   moveFocusTo(id);                          // leaf: load it (+unload prev); group: nothing loads
   pushCrumb(id);
   recenter(id);
 }
 // "Load all below": an explicit pull-plus -- the focus moves here (same
 // crumb/unload rules as any pull) and then the ENTIRE subtree under it
-// materializes. The one deliberate bulk-load in the panel.
+// materializes. Rule = subtree; set = [the node] (stage.Load recurses).
 function uiLoadSubtree(id){
   const d=NODE[id]; if(!d||!primLike(id)) return;
   moveFocusTo(id);
-  subtreeLoaded.add(id);
+  ruleLoads.set(id,[id]);
   notifyLoadSubtree(id);
   pushCrumb(id);
   recenter(id);
   flash("loaded everything under "+d.label+" — it unloads when the focus moves on (pin to keep it)");
 }
+// Pull a FACET: rule = facet(kind,value); set = every prim bound to it
+// (the prim ends of its weft:bind:* edges in the thread graph). The set
+// loads as one unit through the same set-shaped door as every other
+// rule (bridge.pullSet -> _stagebridge.pull_set), becomes the focus's
+// load, and unloads as one unit when the focus moves on.
+function facetMembers(id){
+  return [...new Set(ADJ[id].filter(a=>primLike(a.o)).map(a=>a.o))];
+}
+function uiPullFacet(id){
+  const d=NODE[id]; if(!d) return;
+  if(!isFacetNode(d)){ flash("nothing to pull here"); return; }
+  const members=facetMembers(id);
+  if(!members.length){ flash("no prims bound to "+d.label); return; }
+  moveFocusTo(id);                          // releases the previous focus's load
+  ruleLoads.set(id, members);
+  notifyPullSet(members);
+  // view the world through this facet's own lens
+  const k=d.type==="shading"?"weft:bind:shading":"weft:bind:finish";
+  if(lens!==k&&LENSES.some(([lk])=>lk===k)){ lens=k; document.getElementById("lens").value=k; }
+  pushCrumb(id);
+  recenter(id);
+  flash("loaded "+members.length+" prims bound to <b>"+d.label+"</b> — they unload when the focus moves on (pin to keep)");
+}
 function pushCrumb(id){
   if(crumbs[crumbs.length-1]!==id) crumbs.push(id);
   updateCrumbs();
+}
+function refocus(id){   // Back/jump: re-run the target's rule, not just point at it
+  if(isFacetNode(NODE[id])){
+    const members=facetMembers(id);
+    moveFocusTo(id); ruleLoads.set(id,members); notifyPullSet(members);
+  } else moveFocusTo(id);
 }
 function goBack(){
   if(crumbs.length<2){ flash("at the start of the trail"); return; }
   crumbs.pop();
   const id=crumbs[crumbs.length-1];
-  moveFocusTo(id);                          // same load/unload rules on the way back
+  refocus(id);                              // same load/unload rules on the way back
   updateCrumbs(); recenter(id);
 }
 function jumpToCrumb(i){
   if(i<0||i>=crumbs.length) return;
   crumbs.length=i+1;
   const id=crumbs[i];
-  moveFocusTo(id); updateCrumbs(); recenter(id);
+  refocus(id); updateCrumbs(); recenter(id);
 }
 function updateCrumbs(){
   const el=document.getElementById("crumbs"); if(!el) return;
@@ -334,7 +375,10 @@ function recenter(id){
   pinned.forEach(p=>reveal(p,NODE[id]));
   let shown=0, remaining=0;
   for(const a of ADJ[id]){
-    if(a.kind!==lens||!active.has(a.kind)) continue;
+    // a prim focus shows its ACTIVE-LENS neighbours; a facet focus
+    // shows its members (its own bind edges, whatever lens was on)
+    const ok=primLike(id) ? (a.kind===lens&&active.has(a.kind)) : active.has(a.kind);
+    if(!ok) continue;
     if(visible.has(a.o)) continue;
     if(shown<BATCH){ reveal(a.o,NODE[id]); shown++; } else remaining++;
   }
@@ -348,9 +392,12 @@ function togglePin(d){
   if(pinned.has(d.id)){
     pinned.delete(d.id); seedSet.delete(d.id);
     // an unpinned load that is no longer the focus goes back to bboxes
-    // (a plain leaf's own geometry, or a "load all below" subtree)
-    if(focus!==d.id&&(isLeafNode(d)||subtreeLoaded.has(d.id))){
-      subtreeLoaded.delete(d.id); notifyUnload([d.id]);
+    // (a leaf's own geometry, a subtree, or a facet's member set)
+    if(focus!==d.id){
+      if(ruleLoads.has(d.id)){
+        notifyUnload(ruleLoads.get(d.id).filter(p=>!pinned.has(p)&&p!==focus));
+        ruleLoads.delete(d.id);
+      } else if(isLeafNode(d)) notifyUnload([d.id]);
     }
   } else {
     pinned.add(d.id); seedSet.add(d.id);
@@ -606,6 +653,13 @@ function inspect(d){
     </div>
     <div class="gesture">${isGroupNode(d)?"double-click: re-center here (groups never load)":
       isLeafNode(d)?"double-click: pull — load this &amp; re-center":""}</div>`;
+  } else if(isFacetNode(d)){
+    const m=facetMembers(d.id);
+    h+=`<div class="btnrow">
+      <button class="ibtn" id="pinbtn">${pinned.has(d.id)?"✕ unpin":"⚲ pin"}</button>
+      <button class="ibtn" id="loadfacetbtn" title="materialize every prim bound to this ${d.type} — one set, unloads when the focus moves on unless pinned">⇣ load all ${m.length} with this ${d.type}</button>
+    </div>
+    <div class="gesture">double-click: pull — load all ${m.length} members &amp; re-center</div>`;
   }
   const fk=Object.keys(f);
   if(fk.length){ h+=`<div class="sec">facets — click to view the world this way</div>`;
@@ -633,6 +687,8 @@ function inspect(d){
   if(expall) expall.onclick=(ev)=>{ ev.stopPropagation(); expandFromHere(d); };
   const loadall=el.querySelector("#loadallbtn");
   if(loadall) loadall.onclick=(ev)=>{ ev.stopPropagation(); uiLoadSubtree(d.id); };
+  const loadfacet=el.querySelector("#loadfacetbtn");
+  if(loadfacet) loadfacet.onclick=(ev)=>{ ev.stopPropagation(); uiPullFacet(d.id); };
   el.querySelectorAll(".thread").forEach(row=>{ const k=row.dataset.k;
     if(row.dataset.mode==="collapse") row.onclick=()=>{ collapse(d.id,k); inspect(d); };
     else if(!row.classList.contains("done")) row.onclick=()=>{ expand(d.id,k); inspect(d); };
@@ -663,6 +719,9 @@ document.getElementById("seedq").addEventListener("keydown",function(ev){ if(ev.
   const r=parseAsk(this.value);
   if(!r){ resetToSeed(); return; }
   if(r.error){ flash(r.error); return; }
+  // a where:-ask names a facet: it is rule -> set -> load like any
+  // other facet pull -- LOAD the matching set, don't just show it
+  if(r.ids.length&&isFacetNode(NODE[r.ids[0]])){ uiPullFacet(r.ids[0]); return; }
   resetToSeed(r.ids); flash(r.msg + " — click one, then pull its threads.");
 });
 
@@ -682,10 +741,11 @@ function resetToSeed(seedIds){
   if(!seedIds){ // default home view: the hierarchy top (root -> groups)
     ADJ[SEED].forEach(a=>{ if(a.kind==="usd:arc" && reveal(a.o, NODE[SEED])) revealedNow.push(a.o); });
     expandedKind.add(SEED+"|usd:arc");
-    // Home is a focus move to /root: previous non-pinned leaf unloads,
-    // the trail restarts. (/root is a group -- nothing loads.)
+    // Home is a focus move to /root: the previous focus's load (leaf,
+    // subtree, or facet set) releases; the trail restarts. (/root is a
+    // group -- nothing loads.)
     const prev=focus; focus=SEED;
-    if(prev&&prev!==SEED&&isLeafNode(NODE[prev])&&!pinned.has(prev)) notifyUnload([prev]);
+    if(prev&&prev!==SEED) releaseFocusLoad(prev);
     crumbs.length=0; crumbs.push(SEED); updateCrumbs();
   }
   pinned.forEach(p=>{ seedSet.add(p); reveal(p,NODE[seeds[0]]); });  // pins survive Home/asks
