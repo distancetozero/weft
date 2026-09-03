@@ -54,6 +54,8 @@ except ImportError as _e:
           "Threads panel cannot be built outside usdview" % _e, file=sys.stderr)
     QtCore = QtGui = QtWidgets = None
 
+from . import _stagebridge
+
 _BG = "#17130f"
 _INK = "#f0ebe2"
 _LINE = "#443b31"
@@ -63,47 +65,6 @@ _TYPE_COLOR = {"group": "#cdb570", "prop": "#e3a06a", "furniture": "#86a6a0"}
 _MIN_ZOOM = 0.15
 _MAX_ZOOM = 4.0
 _ZOOM_STEP = 1.15
-
-
-def _guard(api, label, fn):
-    """Wrap a Qt slot (or a signal handler connected here) so any exception
-    becomes a PrintStatus message, never an uncaught exception inside Qt's
-    event loop. Same discipline as weftViewer/__init__.py's own `_guard`;
-    duplicated rather than imported to avoid a circular import."""
-    def wrapped(*args, **kwargs):
-        try:
-            return fn(*args, **kwargs)
-        except Exception as e:
-            api.PrintStatus("%s: %s" % (label, e))
-    return wrapped
-
-
-# -- stage-facing operations (guarded; never raise into a Qt slot) ----------
-
-def _select_and_load(api, path):
-    """Node click -> select `path` in usdview's own selection AND
-    materialize it: `stage.Load` on a prim with a payload condenses its
-    bounding-box standin into real geometry; on anything else it is a
-    harmless no-op. Only usd:arc hierarchy nodes are ever rendered in this
-    cut, so every node id is a real prim path -- but the leading-"/" guard
-    is kept anyway since a future facet/concept node (finish:/shading:,
-    never starting with "/") would reuse this same callback."""
-    if not isinstance(path, str) or not path.startswith("/"):
-        return
-    prim = api.stage.GetPrimAtPath(path)
-    if not prim or not prim.IsValid():
-        return
-    api.ClearPrimSelection()
-    api.AddPrimToSelection(prim)
-    api.UpdateGUI()
-    _load_one(api, path)
-
-
-def _load_one(api, path):
-    try:
-        api.stage.Load(path)
-    except Exception as e:
-        api.PrintStatus("Weft Threads: load %s failed: %s" % (path, e))
 
 
 def _wire_stage_selection(container, api, on_stage_selection):
@@ -130,7 +91,7 @@ def _wire_stage_selection(container, api, on_stage_selection):
             return
         on_stage_selection(path)
 
-    handler = _guard(api, "Weft Threads", _on_changed)
+    handler = _stagebridge.guard(api, "Weft Threads", _on_changed)
     try:
         selection.signalPrimSelectionChanged.connect(handler)
     except Exception as e:
@@ -317,12 +278,7 @@ class _GraphController:
     # -- stage-facing ------------------------------------------------------
 
     def _load_paths(self, paths):
-        for p in paths:
-            if not isinstance(p, str) or not p.startswith("/"):
-                continue
-            prim = self.api.stage.GetPrimAtPath(p)
-            if prim and prim.IsValid():
-                _load_one(self.api, p)
+        _stagebridge.load_paths(self.api, paths)
 
     def on_stage_selection(self, path):
         """Stage -> graph: highlight the matching node ONLY if it's already
@@ -339,7 +295,7 @@ class _GraphController:
 
     def on_node_clicked(self, node_id):
         try:
-            _select_and_load(self.api, node_id)
+            _stagebridge.select_and_load(self.api, node_id)
         except Exception as e:
             self.api.PrintStatus("Weft Threads: select(%r) failed: %s" % (node_id, e))
 
@@ -497,7 +453,7 @@ def open_panel(container, api):
 
     home_button = QtWidgets.QPushButton("⌂ Home")
     home_button.setToolTip("Back to /root + its first ring, refit the view")
-    home_button.clicked.connect(_guard(api, "Weft Threads", lambda: (
+    home_button.clicked.connect(_stagebridge.guard(api, "Weft Threads", lambda: (
         controller.home())))
 
     toolbar = QtWidgets.QHBoxLayout()

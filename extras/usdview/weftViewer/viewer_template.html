@@ -63,7 +63,6 @@
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="qrc:///qtwebchannel/qwebchannel.js"></script>
 
 <svg id="svg"></svg>
 <div class="hint" id="hint">This is the scene's <b>hierarchy</b> — root and its groups.
@@ -120,30 +119,33 @@ const facetsOf=id=>{ const f={}; ADJ[id].forEach(a=>{ const t=NODE[a.o].type;
   if(t==="finish"||t==="shading"){ (f[t]=f[t]||[]).push(NODE[a.o].label);} }); return f; };
 const threadsOf=id=>{ const g={}; ADJ[id].forEach(a=>{ g[a.kind]=(g[a.kind]||0)+1; }); return g; };
 
-// --- live bridge to the open USD stage (QWebChannel; no-op outside usdview) ---
-// `bridge` is populated asynchronously once the channel object round-trips
-// from Python, so every call site below guards on it being set. A prim-like
-// id always starts with "/" (facet/concept nodes like "finish:translucent"
-// or "shading:usd_full" never do) -- that's the only distinction the panel
-// needs to skip nodes with no backing prim.
-let bridge=null;
+// --- live bridge to the open USD stage (loopback HTTP; no-op standalone) ---
+// The plugin opens this page as http://127.0.0.1:PORT/?t=TOKEN (see
+// weftViewer/bridgeserver.py). Every mutating call below POSTs back to
+// that same origin with the token, over plain fetch() -- no QWebChannel,
+// no WebEngine, nothing but the browser's own networking. Opened
+// standalone (a file:// double-click, or a plain static server with no
+// ?t=), TOKEN is null, primLike() is never asked to matter, and every
+// call below is a harmless no-op -- the graph still renders from the
+// embedded DATA either way. A prim-like id always starts with "/"
+// (facet/concept nodes like "finish:translucent" or "shading:usd_full"
+// never do) -- that's the only distinction the panel needs to skip nodes
+// with no backing prim; the server repeats this same guard on its side,
+// since the page is the trust boundary either way.
+const TOKEN=new URLSearchParams(location.search).get("t");
 const primLike=id=>typeof id==="string"&&id.charAt(0)==="/";
-function notifySelect(id){ if(bridge&&bridge.select&&primLike(id)) bridge.select(id); }
-function notifyLoaded(ids){ if(!bridge||!bridge.loaded) return;
-  const paths=ids.filter(primLike); if(paths.length) bridge.loaded(paths); }
-function onStageFocus(path){   // Python -> JS: usdview's own selection changed
-  const n=NODE[path]; if(!n) return;
-  if(!visible.has(path)){ visible.add(path); render(); }
-  selected=n; inspect(n); highlight(n);
-  if(hint) hint.style.display="none";
+function bridgePost(path, body){
+  if(!TOKEN) return;
+  fetch(path+"?t="+encodeURIComponent(TOKEN), {method:"POST",
+    headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)}).catch(()=>{});
 }
-if(typeof QWebChannel!=="undefined" && window.qt && window.qt.webChannelTransport){
-  new QWebChannel(qt.webChannelTransport, function(channel){
-    bridge=channel.objects.bridge;
-    document.getElementById("live").classList.add("on");
-    if(bridge && bridge.focusPrim && bridge.focusPrim.connect) bridge.focusPrim.connect(onStageFocus);
-  });
-}
+function notifySelect(id){ if(primLike(id)) bridgePost("/select", {path:id}); }
+function notifyLoaded(ids){ const paths=ids.filter(primLike); if(paths.length) bridgePost("/load", {paths}); }
+document.getElementById("live").classList.toggle("on", !!TOKEN);
+// Stage -> viewer focus (usdview's own selection changing the viewer's
+// focus) is one-way for now -- viewer -> stage only. A GET /selection
+// poll or a push channel is explicit follow-up work
+// (.superpowers/threadpanel-report.md), not silently dropped.
 
 const SEED="/root";
 const BATCH=16;                 // cap per expansion; pull again for more
