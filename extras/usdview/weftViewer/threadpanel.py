@@ -11,6 +11,27 @@
 # an ALab scene (see extras/usdview/README.md) and each of those gestures
 # is what turns a bounding-box standin into real geometry.
 #
+# A crash report against an earlier version of this panel (macOS,
+# QQuickWidget/QRhi "OpenGL is not compatible" errors, exit 139) prompted
+# trying a separate top-level window (Qt.Window, not embedded in usdview's
+# own OpenGL-composited main window) instead of this QDockWidget. Isolation
+# testing (see .superpowers/threadpanel-report.md) does NOT support that as
+# a full fix, though: WITHOUT ever opening this panel or touching
+# Qt/WebEngine at all, loading the real weftViewer plugin and idling for
+# ~10s crashed 2 of 5 onscreen runs the same way, while an otherwise-
+# identical MINIMAL usdview plugin (a single trivial menu command, no
+# weft-specific code) survived 4 of 4 -- so the crash isn't specific to
+# WebEngine-in-an-OpenGL-window, and something else in this plugin's own
+# load-time footprint plausibly still raises its odds; that wasn't pinned
+# down further. What isolation testing DOES show clearly: every full
+# open-panel-and-exercise-the-bridge run of THIS QDockWidget version (7
+# runs total, onscreen and offscreen, real select()/loaded() bridge calls
+# included) exited cleanly, while the separate-top-level-window variant
+# introduced its own NEW, reproducible crash at process teardown on its
+# only test. Kept as the more reliable of the two architectures actually
+# tried, on that evidence -- not because the underlying intermittent
+# idle-loop crash is fully root-caused.
+#
 # All Qt and QtWebEngine imports are deferred into open_panel() and the
 # functions it calls -- never at module import time -- both to keep
 # plugin-load cheap (matching weftViewer/__init__.py's existing discipline)
@@ -171,7 +192,7 @@ def open_panel(container, api):
     """Create (first call) or raise (subsequent calls) the "Weft Threads"
     dock. Returns True once the panel is showing; on any failure -- most
     importantly QtWebEngine failing to initialize inside usdview's own
-    QApplication -- reports the exact error through `api.PrintStatus` and
+    process -- reports the exact error through `api.PrintStatus` and
     returns False. Never falls back to something else silently."""
     if getattr(container, "_threadDock", None) is not None:
         container._threadDock.show()
