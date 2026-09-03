@@ -153,7 +153,7 @@ The rest, in reading order:
 | [`docs/09-usd-audit.md`](docs/09-usd-audit.md) | what USD already holds, what is genuinely absent |
 | [`docs/08-open-questions.md`](docs/08-open-questions.md) | what is still undecided |
 | [`docs/10-slices.md`](docs/10-slices.md) | the slice interaction model |
-| [`specs/jitsdContracts/schema.usda`](specs/jitsdContracts/schema.usda) | codeless API schemas for the contract archetypes |
+| [`specs/weftContracts/schema.usda`](specs/weftContracts/schema.usda) | codeless API schemas for the contract archetypes |
 
 The design documents predate the rename and say "JIT-SD" throughout — same
 project.

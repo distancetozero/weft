@@ -28,7 +28,7 @@ def _human(n: float) -> str:
 
 
 def _author() -> str:
-    return os.environ.get("JITSD_AUTHOR") or getpass.getuser()
+    return os.environ.get("WEFT_AUTHOR") or getpass.getuser()
 
 
 # -- commands -------------------------------------------------------------
@@ -795,7 +795,7 @@ def build_parser() -> argparse.ArgumentParser:
                    help="direction-qualified kinds: Mount, up:electrical:feeds*8")
     s.add_argument("--depth", type=int, default=4)
     s.add_argument("--extractors", default=None, metavar="FILE",
-                   help="a jitsd__extractors document")
+                   help="a weft__extractors document")
     s.add_argument("-o", "--out", default=None, help="write the manifest here")
     s.add_argument("--mask-out", default=None, help="write member paths, one per line")
     s.add_argument("--verify", default=None, metavar="MANIFEST",

@@ -14,7 +14,7 @@ python -m weft save hero_car car.usdc -m "reworked front wing"
 
 | Command | |
 |---|---|
-| `init` | create a repository (`.jitsd/`) |
+| `init` | create a repository (`.weft/`) |
 | `save <asset> <file>` | store a revision, move `@wip` |
 | `log <asset>` | revision history |
 | `channels [asset]` | show channel pointers |
@@ -46,9 +46,9 @@ $ weft compile examples/shot.usda --context review -o stage.usda
 stage.usda  context review  baseline floating
   bindings   1
   bounds     (-1.87, -0.33, -0.903) .. (1.87, 1.41, 0.903)
-  phase A       0.38 ms   relational -- parameters, contracts, bounds
-  phase B       1.00 ms   materialise -- geometry
-  digest     sha256:186d110a5835791d
+  phase A       0.28 ms   relational -- parameters, contracts, bounds
+  phase B       0.33 ms   materialise -- geometry
+  digest     sha256:a708249907d3cc61
 ```
 
 ### The contract surface is computed, not authored
@@ -68,11 +68,11 @@ That is the scenario the project opened with, executable.
 
 | context | meshes | points | phase B | note |
 |---|---|---|---|---|
-| hero | 5 | 520 | 1.41 ms | |
-| review | 5 | 200 | 0.60 ms | |
-| proxy | 5 | 104 | 0.44 ms | |
-| engineering | **6** | 528 | 1.48 ms | includes the battery cell |
-| collision | 5 | 72 | 0.32 ms | |
+| hero | 5 | 520 | 0.47 ms | |
+| review | 5 | 200 | 0.22 ms | |
+| proxy | 5 | 104 | 0.13 ms | |
+| engineering | **6** | 528 | 0.54 ms | includes the battery cell |
+| collision | 5 | 72 | 0.10 ms | |
 
 `engineering` is a **different derivation, not a coarser one** — the other four
 never generate the internal cell at all. Each context yields a distinct digest,
@@ -174,7 +174,7 @@ exists to validate the model, not to ship.
   hierarchy, which arrives with the resolver.
 - **No pxr dependency.** Revision and baseline files are real `.usda` that open
   in usdview, but machine-readable state travels in a JSON string inside
-  `customLayerData` (`jitsd__meta`) because parsing `.usda` without USD is not
+  `customLayerData` (`weft__meta`) because parsing `.usda` without USD is not
   worth doing. With pxr present this is read through the API instead; the files
   on disk do not change.
 - **Generators are Python callables, not sandboxed kernels.** `docs/02` calls
@@ -218,7 +218,7 @@ Wiring it found five real syntax bugs that nothing else would have caught:
 |---|---|
 | `prepend payload` emitted in the prim **body** | it is prim metadata; belongs in the `( )` block. In `write_revision`, on the payload-backed path the demo never exercised |
 | `over "World" ( … )` with **no `{ }` body** | in `write_baseline`, and in the spec draft |
-| `uniform rel` | relationships cannot be uniform (`specs/jitsdContracts/schema.usda`) |
+| `uniform rel` | relationships cannot be uniform (`specs/weftContracts/schema.usda`) |
 | the same payload bug in `specs/revision-layer.usda` | hand-written in the design phase, never validated |
 | the same bodyless `over` in `specs/baseline-layer.usda` | likewise |
 
@@ -292,7 +292,7 @@ the resolution accessor from `06-storage.md` is the identified mechanism.
 Slices, above, resolve which *assets* to load. `weft pull` (spec sections
 4–8, `weft/ask.py`, `weft/follow.py`, `weft/pull.py`, `weft/manifest.py`)
 works one level down, directly against a composed USD stage opened with
-`Usd.Stage.LoadNone` — no `.jitsd/` repository required. A seed resolves by
+`Usd.Stage.LoadNone` — no `.weft/` repository required. A seed resolves by
 identity, a bound attribute, spatial bounds, or a bare path/name to a set of
 composed prims; `--follow` names which relationship kinds (a contract like
 `Mount`, or any USD kind — bindings, arcs, inherits) closure is allowed to

@@ -30,8 +30,8 @@ jobs:
         # the pair USD actually loads.
         run: |
           python "$(python -c 'import pxr, pathlib; print(pathlib.Path(pxr.__path__[0])/"Usd"/"usdGenSchema.py")')" \
-            specs/jitsdContracts/schema.usda specs/jitsdContracts
-          git diff --exit-code specs/jitsdContracts/
+            specs/weftContracts/schema.usda specs/weftContracts
+          git diff --exit-code specs/weftContracts/
 
   bare:
     # The job that matters. docs/07-adoption.md, the README and pyproject all

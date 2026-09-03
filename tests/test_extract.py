@@ -311,7 +311,7 @@ def _carrier_extraction():
 def test_carrier_rule_emits_advisory_carriers():
     ex = _carrier_extraction()
     text = provider_interface(ex, carrier_rule="group-furniture")
-    assert "jitsd:offer:carrier" in text
+    assert "weft:offer:carrier" in text
     assert "furniture_shelving01_0001" in text
     assert 'carrierRule = "group-furniture' in text
     # the furniture offer itself carries no carrier -- a shelf is not its own
@@ -320,12 +320,12 @@ def test_carrier_rule_emits_advisory_carriers():
     # name. The second occurrence starts that offer's own block.
     first = text.index("furniture_shelving01_0001")
     second = text.index("furniture_shelving01_0001", first + 1)
-    assert "jitsd:offer:carrier" not in text[second:]
+    assert "weft:offer:carrier" not in text[second:]
 
 
 def test_no_rule_no_carrier():
     ex = _carrier_extraction()
-    assert "jitsd:offer:carrier" not in provider_interface(ex)
+    assert "weft:offer:carrier" not in provider_interface(ex)
 
 
 def test_carrier_target_path_is_composed_under_the_provider():
@@ -345,7 +345,7 @@ def test_write_interfaces_passes_carrier_rule_through(tmp_path):
     ex = _carrier_extraction()
     paths = write_interfaces(ex, str(tmp_path / "iface"), carrier_rule="group-furniture")
     text = Path(paths["bench"]).read_text()
-    assert "jitsd:offer:carrier" in text
+    assert "weft:offer:carrier" in text
 
 
 def test_regression_default_anchor_output_unchanged(tmp_path):

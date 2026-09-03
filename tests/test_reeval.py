@@ -122,21 +122,21 @@ def test_a_view_ignores_attributes_outside_it():
 
 def test_attributes_round_trip_through_usda_and_json():
     src = '''#usda 1.0
-def Xform "shelf" ( prepend apiSchemas = ["JitsdOfferAPI"] )
+def Xform "shelf" ( prepend apiSchemas = ["WeftOfferAPI"] )
 {
-    uniform token  jitsd:offer:contract = "Mount@1"
-    uniform token  jitsd:mount:role     = "cup"
-    uniform token  jitsd:bind:material  = "glass"
-    uniform token[] jitsd:bind:purposes = ["render", "proxy"]
-    uniform double jitsd:envelope:linear = 1
+    uniform token  weft:offer:contract = "Mount@1"
+    uniform token  weft:mount:role     = "cup"
+    uniform token  weft:bind:material  = "glass"
+    uniform token[] weft:bind:purposes = ["render", "proxy"]
+    uniform double weft:envelope:linear = 1
     double3 xformOp:translate = (1, 2, 3)
 }
-def Xform "cup" ( prepend apiSchemas = ["JitsdRequireAPI:mount"] )
+def Xform "cup" ( prepend apiSchemas = ["WeftRequireAPI:mount"] )
 {
-    uniform token  jitsd:require:mount:contract = "Mount@1"
-    uniform token  jitsd:require:mount:role     = "cup"
-    uniform token  jitsd:require:mount:bind:material = "glass"
-    uniform double jitsd:require:mount:tolerance:linear = 0.25
+    uniform token  weft:require:mount:contract = "Mount@1"
+    uniform token  weft:require:mount:role     = "cup"
+    uniform token  weft:require:mount:bind:material = "glass"
+    uniform double weft:require:mount:tolerance:linear = 0.25
 }
 '''
     s = extract_text(src)
@@ -155,19 +155,19 @@ def Xform "cup" ( prepend apiSchemas = ["JitsdRequireAPI:mount"] )
 def test_promotion_refuses_on_consumer_tolerance(tmp_path):
     def iface(shelf_y, tol=0.5):
         return '''#usda 1.0
-def Xform "shelf" ( prepend apiSchemas = ["JitsdOfferAPI"] )
+def Xform "shelf" ( prepend apiSchemas = ["WeftOfferAPI"] )
 {
-    uniform token jitsd:offer:contract = "Mount@1"
-    uniform token jitsd:mount:role = "cup"
-    uniform double jitsd:envelope:linear = 1
+    uniform token weft:offer:contract = "Mount@1"
+    uniform token weft:mount:role = "cup"
+    uniform double weft:envelope:linear = 1
     double3 xformOp:translate = (0, %s, 0)
 }
 ''' % shelf_y, '''#usda 1.0
-def Xform "cup" ( prepend apiSchemas = ["JitsdRequireAPI:mount"] )
+def Xform "cup" ( prepend apiSchemas = ["WeftRequireAPI:mount"] )
 {
-    uniform token jitsd:require:mount:contract = "Mount@1"
-    uniform token jitsd:require:mount:role = "cup"
-    uniform double jitsd:require:mount:tolerance:linear = %s
+    uniform token weft:require:mount:contract = "Mount@1"
+    uniform token weft:require:mount:role = "cup"
+    uniform double weft:require:mount:tolerance:linear = %s
 }
 ''' % tol
 

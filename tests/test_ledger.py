@@ -45,7 +45,7 @@ def test_revision_file_is_readable_usda(tmp_path):
     rev = r.save("car", f, "tester", "hello")
     text = (r.ledger._revdir("car") / "v001.usda").read_text()
     assert text.startswith("#usda 1.0")
-    assert "jitsd__revision" in text and rev.blob[:16] in text
+    assert "weft__revision" in text and rev.blob[:16] in text
     assert r.ledger.read_revision("car", "v001").message == "hello"
 
 

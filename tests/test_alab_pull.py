@@ -1,5 +1,5 @@
 """Acceptance: the spike's three asks, reproduced from one-line pulls on the
-real ALab tree (spec section 11). Skips cleanly without JITSD_ALAB."""
+real ALab tree (spec section 11). Skips cleanly without WEFT_ALAB."""
 
 import os
 
@@ -7,9 +7,9 @@ import pytest
 
 pxr = pytest.importorskip("pxr")
 
-ALAB = os.environ.get("JITSD_ALAB")
+ALAB = os.environ.get("WEFT_ALAB") or os.environ.get("JITSD_ALAB")
 pytestmark = pytest.mark.skipif(
-    not ALAB, reason="set JITSD_ALAB to the ALab directory to run acceptance")
+    not ALAB, reason="set WEFT_ALAB to the ALab directory to run acceptance")
 
 WORKBENCH = "entity/lab_workbench01/lab_workbench01.usda"
 
@@ -67,7 +67,7 @@ def _needs_regen() -> bool:
     if not os.path.exists(iface):
         return True
     text = open(iface).read()
-    return "jitsd:offer:carrier" not in text or 'over "root"' not in text
+    return "weft:offer:carrier" not in text or 'over "root"' not in text
 
 
 @pytest.fixture(scope="module", autouse=True)

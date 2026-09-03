@@ -2,7 +2,7 @@
 
     python -m absent shot.usda
     python -m absent shot.usda --json
-    python -m absent shot.usda --anchor-key "jitsd:id"
+    python -m absent shot.usda --anchor-key "weft:id"
 
 Exits 1 if anything is dead, so it can gate a publish.
 """

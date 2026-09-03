@@ -8,7 +8,7 @@ The three-layer model from docs/03-versioning.md:
 
 Revision and baseline files are real .usda layers, so they open in usdview and
 diff as text. Rung 1 has no pxr dependency, so machine-readable state travels
-in a compact JSON string inside customLayerData (`jitsd__meta`) which one regex
+in a compact JSON string inside customLayerData (`weft__meta`) which one regex
 recovers. When pxr is available this is read properly through the USD API and
 the shim goes away -- the file on disk does not change either way.
 """
@@ -26,7 +26,7 @@ from typing import Dict, List, Optional, Tuple
 from .contracts import Surface, Resolution, Violation, check_compatibility, extract_text, resolve
 from .store import ObjectStore
 
-META_RE = re.compile(r'string\s+jitsd__meta\s*=\s*"""(.*?)"""', re.DOTALL)
+META_RE = re.compile(r'string\s+weft__meta\s*=\s*"""(.*?)"""', re.DOTALL)
 
 DEFAULT_CHANNELS = ("wip", "review", "approved")
 
@@ -112,7 +112,7 @@ class Revision:
     generator: Optional[str] = None
     params: Optional[Dict] = None
     # Which *function* produced this, not just which name was typed.
-    # specs/revision-layer.usda has always specified jitsd:generatorVersion;
+    # specs/revision-layer.usda has always specified weft:generatorVersion;
     # without it a baseline pins its inputs and not its function, so the same
     # coordinate can resolve to different geometry after a generator edit.
     generator_version: Optional[str] = None
@@ -187,31 +187,31 @@ class Ledger:
         meta = json.dumps(asdict(r), separators=(",", ":"))
         if r.generator:
             plist = "".join(
-                "    uniform double jitsd:param:%s = %s\n" % (k, v)
+                "    uniform double weft:param:%s = %s\n" % (k, v)
                 for k, v in sorted((r.params or {}).items()))
-            body_attrs = ('    uniform string jitsd:generator = "%s"\n%s'
+            body_attrs = ('    uniform string weft:generator = "%s"\n%s'
                           % (_esc(r.generator), plist))
             prim_meta = ""
         else:
-            body_attrs = "    uniform int64 jitsd:payloadSize = %d\n" % r.size
+            body_attrs = "    uniform int64 weft:payloadSize = %d\n" % r.size
             # payload is prim METADATA -- it belongs in the ( ) block. Real USD
             # rejects it in the prim body.
-            prim_meta = "\n    prepend payload = @jitsd:obj/sha256:%s@" % r.blob
+            prim_meta = "\n    prepend payload = @weft:obj/sha256:%s@" % r.blob
         body = f'''#usda 1.0
 (
     customLayerData = {{
-        string jitsd__revision = "{r.rev}"
-        string jitsd__asset    = "{_esc(r.asset)}"
-        string jitsd__parent   = "{r.parent or ""}"
-        string jitsd__author   = "{_esc(r.author)}"
-        string jitsd__created  = "{r.created}"
-        string jitsd__message  = "{_esc(r.message)}"
-        string jitsd__meta = """{meta}"""
+        string weft__revision = "{r.rev}"
+        string weft__asset    = "{_esc(r.asset)}"
+        string weft__parent   = "{r.parent or ""}"
+        string weft__author   = "{_esc(r.author)}"
+        string weft__created  = "{r.created}"
+        string weft__message  = "{_esc(r.message)}"
+        string weft__meta = """{meta}"""
     }}
 )
 
 def "{r.asset}" (
-    prepend apiSchemas = ["JitsdGeneratorAPI"]{prim_meta}
+    prepend apiSchemas = ["WeftGeneratorAPI"]{prim_meta}
 )
 {{
 {body_attrs}}}
@@ -242,7 +242,7 @@ def "{r.asset}" (
             raise KeyError("no such revision: %s %s" % (asset, rev))
         m = META_RE.search(p.read_text())
         if not m:
-            raise IOError("revision %s/%s has no jitsd__meta block" % (asset, rev))
+            raise IOError("revision %s/%s has no weft__meta block" % (asset, rev))
         return Revision(**json.loads(m.group(1)))
 
     # -- channels ---------------------------------------------------------
@@ -309,19 +309,19 @@ def "{r.asset}" (
         body = f'''#usda 1.0
 (
     customLayerData = {{
-        string jitsd__baseline   = "{b.number}"
-        string jitsd__label      = "{_esc(b.label)}"
-        string jitsd__parent     = "{b.parent or ""}"
-        string jitsd__cut        = "{b.cut}"
-        string jitsd__cutBy      = "{_esc(b.cut_by)}"
-        string jitsd__merkleRoot = "sha256:{b.merkle_root}"
-        string jitsd__meta = """{meta}"""
+        string weft__baseline   = "{b.number}"
+        string weft__label      = "{_esc(b.label)}"
+        string weft__parent     = "{b.parent or ""}"
+        string weft__cut        = "{b.cut}"
+        string weft__cutBy      = "{_esc(b.cut_by)}"
+        string weft__merkleRoot = "sha256:{b.merkle_root}"
+        string weft__meta = """{meta}"""
     }}
 )
 
 over "World" (
     customData = {{
-        dictionary jitsd__pins = {{
+        dictionary weft__pins = {{
 {pins}
         }}
     }}
@@ -339,7 +339,7 @@ over "World" (
             raise KeyError("no such baseline: %s" % number)
         m = META_RE.search(p.read_text())
         if not m:
-            raise IOError("baseline %s has no jitsd__meta block" % number)
+            raise IOError("baseline %s has no weft__meta block" % number)
         return Baseline(**json.loads(m.group(1)))
 
 
@@ -352,7 +352,7 @@ class BreakingChange(Exception):
 class Repo:
     """A weft working root: object store + ledger."""
 
-    DIRNAME = ".jitsd"
+    DIRNAME = ".weft"
 
     def __init__(self, root: Path):
         self.root = Path(root)
@@ -366,7 +366,7 @@ class Repo:
         for cand in [cur, *cur.parents]:
             if (cand / cls.DIRNAME).is_dir():
                 return cls(cand)
-        raise SystemExit("not a weft repository (no .jitsd found) -- run `weft init`")
+        raise SystemExit("not a weft repository (no .weft found) -- run `weft init`")
 
     def exists(self) -> bool:
         return self.dir.is_dir()

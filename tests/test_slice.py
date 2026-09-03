@@ -162,5 +162,5 @@ def test_emitted_slice_compiles_and_opens(tmp_path):
         pins=[Overlay("glass_building", "dana", "reflects into shot")]))
     c = compile_query(r, parse_query(parse(emit_query_document(res))))
     assert c.ok
-    assert "prepend payload = @jitsd:obj/sha256:" in c.stage   # the constant
+    assert "prepend payload = @weft:obj/sha256:" in c.stage   # the constant
     assert c.stage.count("def Mesh") == 5                       # body + 4 wheels
