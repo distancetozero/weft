@@ -199,3 +199,29 @@ def test_build_graph_against_real_alab_workbench():
     assert mount
     by_id = {n["id"]: n for n in g["nodes"]}
     assert any(by_id[e["target"]]["type"] == "furniture" for e in mount)
+
+
+@pytest.mark.skipif(not ALAB, reason="set WEFT_ALAB to the ALab directory to run acceptance")
+def test_build_graph_identical_on_an_unloaded_stage():
+    """The Weft Threads usdview panel is built to run against a stage
+    opened with `--unloaded` (see extras/usdview/README.md's "bounding
+    boxes that condense into geometry" invocation) -- build_graph must see
+    the exact same hierarchy either way, not just when everything happens
+    to already be loaded. Pins the regression this caught: GetChildren()'s
+    own default predicate silently drops any prim whose payload isn't
+    loaded yet, which on an --unloaded ALab stage is nearly the whole
+    tree (152 real nodes -> 9 before the fix); the fix must not
+    OVER-correct either -- Usd.PrimAllPrimsPredicate is too permissive and
+    pulled in abstract/inactive placeholder prims, nearly tripling the
+    count (152 -> 447) in earlier testing -- so this also guards against
+    regressing back to that."""
+    from pxr import Usd
+    loaded_stage = Usd.Stage.Open(os.path.join(ALAB, WORKBENCH))
+    unloaded_stage = Usd.Stage.Open(os.path.join(ALAB, WORKBENCH), load=Usd.Stage.LoadNone)
+
+    g_loaded = build_graph(loaded_stage)
+    g_unloaded = build_graph(unloaded_stage)
+
+    assert len(g_unloaded["nodes"]) == len(g_loaded["nodes"]) == 152
+    assert len(g_unloaded["edges"]) == len(g_loaded["edges"]) == 1018
+    assert {n["id"] for n in g_unloaded["nodes"]} == {n["id"] for n in g_loaded["nodes"]}

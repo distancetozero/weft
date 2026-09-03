@@ -140,10 +140,26 @@ def build_graph(stage, alab_root: Optional[str] = None) -> Dict:
     if root is None:
         return {"nodes": [], "edges": [], "kinds": []}
 
-    for grp in root.GetChildren():
+    # UsdPrimDefaultPredicate is "active && defined && loaded && !abstract"
+    # (see pxr/usd/usd/primFlags.h) -- GetChildren()'s own default. The
+    # panel's whole point is showing the graph BEFORE anything is loaded
+    # ("open as bounding boxes"), and on a stage opened with `--unloaded` a
+    # prim that has no local "def" opinion outside its own payload composes
+    # as present-but-not-yet-loaded -- GetChildren() would skip it, quietly
+    # shrinking the graph to whatever happened to already be loaded.
+    # Usd.PrimAllPrimsPredicate is NOT the fix: it drops every other term
+    # too (active, defined, abstract), which pulled in inactive/abstract/
+    # undefined placeholder prims and nearly tripled the node count in
+    # testing against this ALab workbench. The right predicate is the
+    # default MINUS the loaded requirement: still only real, active,
+    # defined, non-abstract prims, just not gated on payload load state.
+    from pxr import Usd
+    hierarchy_predicate = Usd.PrimIsActive & Usd.PrimIsDefined & ~Usd.PrimIsAbstract
+
+    for grp in root.GetFilteredChildren(hierarchy_predicate):
         gname = grp.GetName()
         gid = add("/g/%s" % gname, gname, "group")
-        for pl in grp.GetChildren():
+        for pl in grp.GetFilteredChildren(hierarchy_predicate):
             n = pl.GetName()
             suffix = n.rsplit("_", 1)[-1]
             if not suffix.isdigit():

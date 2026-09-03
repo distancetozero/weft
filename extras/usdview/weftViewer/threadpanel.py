@@ -1,69 +1,72 @@
 #
-# The "Weft Threads" panel: the d3 thread viewer (viewer_template.html),
-# live inside usdview -- a QWebEngineView docked into the main window,
-# wired to the open stage over a QWebChannel bridge.
+# The "Weft Threads" panel: a live thread-graph view docked into usdview,
+# wired to the open stage -- NATIVE Qt (QGraphicsView/QGraphicsScene), no
+# QtWebEngine, no QWebChannel, no Chromium.
+#
+# History: the first cut of this panel embedded weft's tuned d3 viewer in a
+# QWebEngineView. That crashed the real usdview GUI (macOS, exit 139) when
+# the panel was opened -- confirmed definitive by the owner testing the
+# actual interactive GUI directly (usdview launches and the rest of the
+# Weft menu works fine; only opening this panel crashed it). A separate
+# top-level WebEngine window was tried as a fix and also found unreliable
+# in isolation testing (see .superpowers/threadpanel-report.md for the full
+# investigation). Decision: drop WebEngine entirely. A QGraphicsView uses
+# no separate GPU compositor of its own -- it paints through the same
+# QWidget/QPainter stack usdview's rest of the UI already uses -- so it
+# coexists with usdview's own OpenGL-composited Storm viewport instead of
+# fighting it for a native surface.
 #
 # "Open as bounding boxes, materialize geometry as you navigate": the panel
 # itself never loads or unloads anything on its own. Every load happens
-# because the bridge below was told to -- by a click or a pulled thread in
-# the viewer (JS -> Python: `select`/`loaded`), which is exactly the
+# because a node click calls into `_select_and_load` below -- the exact
 # gesture a person makes navigating the graph. Run usdview `--unloaded` on
-# an ALab scene (see extras/usdview/README.md) and each of those gestures
-# is what turns a bounding-box standin into real geometry.
+# an ALab scene (see extras/usdview/README.md) and that gesture is what
+# turns a bounding-box standin into real geometry.
 #
-# A crash report against an earlier version of this panel (macOS,
-# QQuickWidget/QRhi "OpenGL is not compatible" errors, exit 139) prompted
-# trying a separate top-level window (Qt.Window, not embedded in usdview's
-# own OpenGL-composited main window) instead of this QDockWidget. Isolation
-# testing (see .superpowers/threadpanel-report.md) does NOT support that as
-# a full fix, though: WITHOUT ever opening this panel or touching
-# Qt/WebEngine at all, loading the real weftViewer plugin and idling for
-# ~10s crashed 2 of 5 onscreen runs the same way, while an otherwise-
-# identical MINIMAL usdview plugin (a single trivial menu command, no
-# weft-specific code) survived 4 of 4 -- so the crash isn't specific to
-# WebEngine-in-an-OpenGL-window, and something else in this plugin's own
-# load-time footprint plausibly still raises its odds; that wasn't pinned
-# down further. What isolation testing DOES show clearly: every full
-# open-panel-and-exercise-the-bridge run of THIS QDockWidget version (7
-# runs total, onscreen and offscreen, real select()/loaded() bridge calls
-# included) exited cleanly, while the separate-top-level-window variant
-# introduced its own NEW, reproducible crash at process teardown on its
-# only test. Kept as the more reliable of the two architectures actually
-# tried, on that evidence -- not because the underlying intermittent
-# idle-loop crash is fully root-caused.
+# Scope of this cut (first native version, matches the brief): the
+# HIERARCHY lens only -- the full usd:arc tree from build_graph, laid out
+# with a simple tidy-tree algorithm ported from viewer_template.html's d3
+# layout, rendered once when the panel opens. Mount/finish/shading lenses,
+# progressive pull/expand, and the weft-ask seed bar are the d3 viewer's
+# own richer interaction model (still reference-able there, and in
+# viewer_template.html, which remains valid as a standalone browser demo --
+# just no longer embedded live here) and are follow-up work once this
+# native shell is proven not to crash.
 #
-# All Qt and QtWebEngine imports are deferred into open_panel() and the
-# functions it calls -- never at module import time -- both to keep
-# plugin-load cheap (matching weftViewer/__init__.py's existing discipline)
-# and because QtWebEngine's availability inside an already-running usdview
-# process is exactly the thing this module has to verify defensively: if it
-# genuinely cannot initialize, open_panel() reports that through
-# `api.PrintStatus` and returns False rather than silently degrading into
-# something else.
+# Qt is imported the same way weftViewer/__init__.py imports it --
+# `pxr.Usdviewq.qt`, which picks whatever PySide/PyQt binding usdview
+# itself is running on -- not raw PySide6. Unlike the old QtWebEngine
+# import, this one is cheap and carries none of Chromium's initialization
+# risk, so it is safe at module import time (matching __init__.py's own
+# top-level Qt import, guarded the same way for the case this module is
+# ever imported outside a running usdview).
 #
 # Qt-free, unit-testable graph logic lives in weft/threadgraph.py -- this
 # file is the wiring only.
 #
 from __future__ import annotations
 
-import json
-import os
+import sys
 
-_VIEWER_TEMPLATE = os.path.join(os.path.dirname(__file__), "viewer_template.html")
+try:
+    from pxr.Usdviewq.qt import QtCore, QtGui, QtWidgets
+except ImportError as _e:
+    print("weftViewer.threadpanel: pxr.Usdviewq.qt unavailable (%s); the Weft "
+          "Threads panel cannot be built outside usdview" % _e, file=sys.stderr)
+    QtCore = QtGui = QtWidgets = None
 
-
-def _load_viewer_html(data: dict) -> str:
-    with open(_VIEWER_TEMPLATE, "r") as fh:
-        tpl = fh.read()
-    return tpl.replace("__DATA__", json.dumps(data))
+_BG = "#17130f"
+_INK = "#f0ebe2"
+_LINE = "#443b31"
+_ACCENT = "#e59a6c"
+_TYPE_COLOR = {"group": "#cdb570", "prop": "#e3a06a", "furniture": "#86a6a0"}
 
 
 def _guard(api, label, fn):
-    """Local copy of weftViewer/__init__.py's `_guard`: wrap a Qt slot (or a
-    signal handler connected here) so any exception becomes a PrintStatus
-    message, never an uncaught exception inside Qt's event loop. Duplicated
-    rather than imported to avoid a circular import between this module and
-    the package `__init__.py` that imports it."""
+    """Wrap a Qt slot (or a signal handler connected here) so any exception
+    becomes a PrintStatus message, never an uncaught exception inside Qt's
+    event loop. Same discipline as weftViewer/__init__.py's own `_guard`;
+    duplicated rather than imported to avoid a circular import."""
     def wrapped(*args, **kwargs):
         try:
             return fn(*args, **kwargs)
@@ -75,14 +78,13 @@ def _guard(api, label, fn):
 # -- stage-facing operations (guarded; never raise into a Qt slot) ----------
 
 def _select_and_load(api, path):
-    """JS -> Python `select(path)`: select `path` in usdview's own
-    selection AND materialize it -- `stage.Load` on a prim with a payload
-    condenses its bounding-box standin into real geometry; on anything else
-    it is a harmless no-op. A facet/concept node id (e.g. "finish:
-    translucent", "shading:usd_full") never starts with "/" -- the viewer
-    itself already filters those out before calling this, but the guard is
-    repeated here since this is also the trust boundary for whatever the
-    page sends."""
+    """Node click -> select `path` in usdview's own selection AND
+    materialize it: `stage.Load` on a prim with a payload condenses its
+    bounding-box standin into real geometry; on anything else it is a
+    harmless no-op. Only usd:arc hierarchy nodes are ever rendered in this
+    cut, so every node id is a real prim path -- but the leading-"/" guard
+    is kept anyway since a future facet/concept node (finish:/shading:,
+    never starting with "/") would reuse this same callback."""
     if not isinstance(path, str) or not path.startswith("/"):
         return
     prim = api.stage.GetPrimAtPath(path)
@@ -91,77 +93,24 @@ def _select_and_load(api, path):
     api.ClearPrimSelection()
     api.AddPrimToSelection(prim)
     api.UpdateGUI()
-    _load_one(api, path)
-
-
-def _load_one(api, path):
     try:
         api.stage.Load(path)
     except Exception as e:
         api.PrintStatus("Weft Threads: load %s failed: %s" % (path, e))
 
 
-def _load_paths(api, paths):
-    """JS -> Python `loaded(paths)`: a thread was pulled / nodes were
-    revealed in the viewer -- materialize every one of them that names a
-    real, valid prim. Selection is untouched here; only `select` moves the
-    live selection."""
-    if not isinstance(paths, (list, tuple)):
-        return
-    for path in paths:
-        if not isinstance(path, str) or not path.startswith("/"):
-            continue
-        prim = api.stage.GetPrimAtPath(path)
-        if prim and prim.IsValid():
-            _load_one(api, path)
-
-
-def _make_bridge_class():
-    """Built lazily so PySide6.QtCore is never imported at module load
-    time. QWebChannel marshals a JS array argument into a Python list for
-    a slot declared `@Slot(list)`, and a JS string into `str` for
-    `@Slot(str)` -- no manual (de)serialization needed on either side."""
-    from PySide6.QtCore import QObject, Signal, Slot
-
-    class ThreadPanelBridge(QObject):
-        # Python -> JS: usdview's own prim selection changed; the panel
-        # focuses (and reveals, if not already visible) the matching node.
-        focusPrim = Signal(str)
-
-        def __init__(self, api, parent=None):
-            super().__init__(parent)
-            self._api = api
-
-        @Slot(str)
-        def select(self, path):
-            try:
-                _select_and_load(self._api, path)
-            except Exception as e:
-                self._api.PrintStatus("Weft Threads: select(%r) failed: %s" % (path, e))
-
-        @Slot(list)
-        def loaded(self, paths):
-            try:
-                _load_paths(self._api, paths)
-            except Exception as e:
-                self._api.PrintStatus("Weft Threads: loaded(...) failed: %s" % e)
-
-    return ThreadPanelBridge
-
-
-def _wire_stage_selection(container, api, bridge):
-    """Stage -> JS: connect usdview's own selection-changed signal so
-    selecting a prim in the tree/viewport focuses the matching node in the
-    panel. Best-effort, exactly as the brief allows: if the signal isn't
-    reachable off `api.dataModel.selection`, the panel still works
-    viewer -> stage, just not the other way, and that is reported (once)
-    rather than silently swallowed."""
+def _wire_stage_selection(container, api, apply_highlight):
+    """Stage -> graph: connect usdview's own selection-changed signal so
+    selecting a prim in the tree/viewport highlights the matching node in
+    the panel. Best-effort: if the signal isn't reachable off
+    `api.dataModel`, the panel still works graph -> stage, just not the
+    other way, and that is reported once rather than silently swallowed."""
     try:
         selection = api.dataModel.selection
     except Exception as e:
         api.PrintStatus(
-            "Weft Threads: stage -> viewer selection sync unavailable (%s); "
-            "viewer -> stage still works" % e)
+            "Weft Threads: stage -> graph selection sync unavailable (%s); "
+            "graph -> stage still works" % e)
         return
 
     def _on_changed(added, _removed):
@@ -171,43 +120,193 @@ def _wire_stage_selection(container, api, bridge):
             path = sorted(str(p) for p in added)[0]
         except Exception:
             return
-        bridge.focusPrim.emit(path)
+        apply_highlight(path)
 
     handler = _guard(api, "Weft Threads", _on_changed)
     try:
         selection.signalPrimSelectionChanged.connect(handler)
     except Exception as e:
         api.PrintStatus(
-            "Weft Threads: stage -> viewer selection sync unavailable (%s); "
-            "viewer -> stage still works" % e)
+            "Weft Threads: stage -> graph selection sync unavailable (%s); "
+            "graph -> stage still works" % e)
         return
     # Held on the container so neither the connection nor its closure is
     # garbage-collected out from under Qt while the dock is alive.
     container._threadSelection = (selection, handler)
 
 
+# -- graph shaping (pure-ish: dict/list in, no Qt) ---------------------------
+
+def _synthesize_root(data):
+    """Mirrors viewer_template.html's own `DATA.nodes.push({id:"/root",...})`
+    step: build_graph never emits a /root node or its edges to each group
+    (see weft/threadgraph.py's own docstring on this) -- the renderer adds
+    both, exactly as the d3 viewer did, so "nothing selected" still shows
+    a real tree rooted at /root."""
+    nodes = list(data.get("nodes", []))
+    edges = list(data.get("edges", []))
+    ids = {n["id"] for n in nodes}
+    if "/root" not in ids:
+        nodes.append({"id": "/root", "label": "root", "type": "group"})
+    for n in nodes:
+        if n.get("type") == "group" and n["id"] != "/root":
+            edges.append({"source": "/root", "target": n["id"], "kind": "usd:arc"})
+    return nodes, edges
+
+
+def _tidy_tree_positions(nodes, edges, root_id="/root", dx=90.0, dy=110.0):
+    """A simple tidy-tree layout over the usd:arc-only subgraph: each leaf
+    gets the next slot along the sibling axis, each internal node centers
+    over its children's slots, depth maps to the other axis. Ported in
+    spirit from viewer_template.html's `tidyTree()` (which calls d3.tree(),
+    a full Reingold-Tilford implementation) -- this is the same idea
+    (recursive in-order leaf placement, parent = average of children)
+    without d3's contour-based compaction, which is a fine trade for a
+    first native cut: it never overlaps siblings, it just isn't always as
+    tight. Nodes unreachable from `root_id` via usd:arc edges (there
+    shouldn't be any -- see threadgraph.py -- but if there are, e.g. a
+    malformed stage) simply get no position and are skipped by the caller,
+    same as `edges.append` skips edges whose endpoints have none."""
+    children = {}
+    for e in edges:
+        if e.get("kind") != "usd:arc":
+            continue
+        children.setdefault(e["source"], []).append(e["target"])
+    for kids in children.values():
+        kids.sort()
+
+    positions = {}
+    next_x = [0.0]
+
+    def layout(node_id, depth):
+        kids = children.get(node_id, [])
+        if not kids:
+            x = next_x[0]
+            next_x[0] += dx
+            positions[node_id] = (x, depth * dy)
+            return x
+        xs = [layout(k, depth + 1) for k in kids]
+        x = sum(xs) / len(xs)
+        positions[node_id] = (x, depth * dy)
+        return x
+
+    node_ids = {n["id"] for n in nodes}
+    if root_id in node_ids:
+        layout(root_id, 0)
+    return positions
+
+
+# -- Qt scene building --------------------------------------------------
+
+class _NodeItem(QtWidgets.QGraphicsEllipseItem if QtWidgets else object):
+    """A hierarchy node: an ellipse that knows its own prim path and calls
+    back into Python on click. This IS the entire "bridge" now -- no
+    QWebChannel, no JS round-trip, just a Qt mouse event calling a Python
+    closure directly."""
+
+    def __init__(self, node_id, radius, on_click):
+        super().__init__(-radius, -radius, 2 * radius, 2 * radius)
+        self._node_id = node_id
+        self._on_click = on_click
+        self.setAcceptHoverEvents(True)
+        self.setCursor(QtCore.Qt.PointingHandCursor)
+        self.setToolTip(node_id)
+
+    def mousePressEvent(self, event):
+        self._on_click(self._node_id)
+        super().mousePressEvent(event)
+
+
+def _pen(color, width):
+    pen = QtGui.QPen(QtGui.QColor(color))
+    pen.setWidthF(width)
+    return pen
+
+
+def _build_scene(nodes, edges, positions, api):
+    """Builds the QGraphicsScene for the (already root-synthesized,
+    already-positioned) hierarchy graph. Returns (scene, node_items,
+    apply_highlight) -- `node_items` maps prim path -> the QGraphicsEllipseItem
+    so `_wire_stage_selection` can highlight a node the STAGE selected;
+    `apply_highlight` is what a node's own click uses to highlight itself."""
+    scene = QtWidgets.QGraphicsScene()
+    scene.setBackgroundBrush(QtGui.QColor(_BG))
+
+    line_pen = _pen(_LINE, 1.2)
+    for e in edges:
+        if e.get("kind") != "usd:arc":
+            continue
+        s, t = e.get("source"), e.get("target")
+        if s not in positions or t not in positions:
+            continue
+        sx, sy = positions[s]
+        tx, ty = positions[t]
+        scene.addLine(sx, sy, tx, ty, line_pen)
+
+    node_items = {}
+    state = {"highlighted": None}
+
+    def apply_highlight(node_id):
+        prev = state.get("highlighted")
+        if prev is not None and prev in node_items:
+            node_items[prev].setPen(_pen(_BG, 1.6))
+        item = node_items.get(node_id)
+        if item is not None:
+            item.setPen(_pen(_ACCENT, 3))
+            state["highlighted"] = node_id
+        else:
+            state["highlighted"] = None
+
+    def on_click(node_id):
+        try:
+            _select_and_load(api, node_id)
+        except Exception as e:
+            api.PrintStatus("Weft Threads: select(%r) failed: %s" % (node_id, e))
+        apply_highlight(node_id)
+
+    for node in nodes:
+        nid = node.get("id")
+        if nid not in positions:
+            continue
+        x, y = positions[nid]
+        radius = 9 if node.get("type") == "group" else 6
+        color = _TYPE_COLOR.get(node.get("type"), "#aaaaaa")
+
+        item = _NodeItem(nid, radius, on_click)
+        item.setBrush(QtGui.QBrush(QtGui.QColor(color)))
+        item.setPen(_pen(_BG, 1.6))
+        item.setPos(x, y)
+        item.setZValue(1)
+        scene.addItem(item)
+        node_items[nid] = item
+
+        label = QtWidgets.QGraphicsSimpleTextItem(node.get("label", nid))
+        label.setBrush(QtGui.QBrush(QtGui.QColor(_INK)))
+        font = label.font()
+        font.setPointSize(8)
+        label.setFont(font)
+        label.setPos(x + radius + 4, y - 8)
+        label.setZValue(1)
+        scene.addItem(label)
+
+    return scene, node_items, apply_highlight
+
+
 # -- panel lifecycle ----------------------------------------------------
 
 def open_panel(container, api):
     """Create (first call) or raise (subsequent calls) the "Weft Threads"
-    dock. Returns True once the panel is showing; on any failure -- most
-    importantly QtWebEngine failing to initialize inside usdview's own
-    process -- reports the exact error through `api.PrintStatus` and
-    returns False. Never falls back to something else silently."""
+    dock. Returns True once the panel is showing; on any failure reports
+    the exact error through `api.PrintStatus` and returns False. Never
+    falls back to something else silently."""
     if getattr(container, "_threadDock", None) is not None:
         container._threadDock.show()
         container._threadDock.raise_()
         return True
 
-    try:
-        from PySide6.QtCore import Qt
-        from PySide6.QtWebChannel import QWebChannel
-        from PySide6.QtWebEngineWidgets import QWebEngineView
-        from PySide6.QtWidgets import QDockWidget
-    except ImportError as e:
-        api.PrintStatus(
-            "Weft Threads: BLOCKED -- QtWebEngine is not importable in this "
-            "usdview process (%s)" % e)
+    if QtWidgets is None:
+        api.PrintStatus("Weft Threads: BLOCKED -- pxr.Usdviewq.qt is unavailable "
+                         "in this process")
         return False
 
     try:
@@ -218,40 +317,31 @@ def open_panel(container, api):
         data = {"nodes": [], "edges": [], "kinds": []}
 
     try:
-        html = _load_viewer_html(data)
-    except OSError as e:
-        api.PrintStatus("Weft Threads: could not read viewer_template.html: %s" % e)
-        return False
-
-    try:
-        view = QWebEngineView()
-        bridge_cls = _make_bridge_class()
-        bridge = bridge_cls(api)
-        channel = QWebChannel()
-        channel.registerObject("bridge", bridge)
-        view.page().setWebChannel(channel)
-        view.setHtml(html)
+        nodes, edges = _synthesize_root(data)
+        positions = _tidy_tree_positions(nodes, edges)
+        scene, node_items, apply_highlight = _build_scene(nodes, edges, positions, api)
+        view = QtWidgets.QGraphicsView(scene)
+        view.setRenderHint(QtGui.QPainter.Antialiasing)
+        view.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
     except Exception as e:
-        api.PrintStatus("Weft Threads: BLOCKED -- QtWebEngine failed to initialize "
-                         "inside usdview (%s)" % e)
+        api.PrintStatus("Weft Threads: failed to build the graph view: %s" % e)
         return False
 
-    dock = QDockWidget("Weft Threads", api.qMainWindow)
+    dock = QtWidgets.QDockWidget("Weft Threads", api.qMainWindow)
     dock.setWidget(view)
-    api.qMainWindow.addDockWidget(Qt.RightDockWidgetArea, dock)
+    api.qMainWindow.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
     dock.show()
     dock.raise_()
 
     # Held on the container (the WeftViewerContainer instance, which
-    # outlives this call) so PySide doesn't garbage-collect the bridge or
-    # channel out from under the page's live JS <-> Python connection.
+    # outlives this call) so PySide doesn't garbage-collect the scene or
+    # its items out from under the dock.
     container._threadDock = dock
     container._threadView = view
-    container._threadBridge = bridge
-    container._threadChannel = channel
+    container._threadScene = scene
+    container._threadNodeItems = node_items
 
-    _wire_stage_selection(container, api, bridge)
+    _wire_stage_selection(container, api, apply_highlight)
 
-    api.PrintStatus("Weft Threads: panel open (%d nodes, %d edges)"
-                     % (len(data.get("nodes", [])), len(data.get("edges", []))))
+    api.PrintStatus("Weft Threads: panel open (%d hierarchy nodes)" % len(node_items))
     return True

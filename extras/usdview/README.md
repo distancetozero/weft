@@ -9,12 +9,20 @@ own docstrings for the command-by-command detail):
   session-layer deactivation on) everything else.
 - **Restore world** -- reactivate whatever Solo threads deactivated.
 - **Who depends on this?** -- incoming edges onto the selection.
-- **Weft Threads...** -- the live thread-graph panel: a dockable
-  `QWebEngineView` running weft's d3 thread viewer, wired to the open stage
-  over `QWebChannel`. Clicking or pulling a thread in the graph selects
-  the matching prim in usdview AND materializes it (`stage.Load(path)`).
-  See `weftViewer/threadpanel.py` for the bridge, and
-  `weft/threadgraph.py` for the pure graph-building logic it renders.
+- **Weft Threads...** -- the live thread-graph panel: a dockable, NATIVE
+  Qt view (`QGraphicsView`/`QGraphicsScene` -- no QtWebEngine, no
+  QWebChannel, no Chromium) drawing the hierarchy graph. Clicking a node
+  selects the matching prim in usdview AND materializes it
+  (`stage.Load(path)`). See `weftViewer/threadpanel.py` for the scene
+  building and click-to-select wiring, and `weft/threadgraph.py` for the
+  pure graph-building logic it renders. (An earlier version embedded
+  weft's tuned d3 thread viewer in a `QWebEngineView`; that crashed the
+  real usdview GUI on macOS -- confirmed by direct interactive testing,
+  not just headless. See `.superpowers/threadpanel-report.md` for the full
+  investigation and why native Qt replaced it. The d3 viewer itself, and
+  its richer pull/expand/lens interaction model, still lives in
+  `weftViewer/viewer_template.html` as a standalone browser demo -- just
+  not embedded live in usdview anymore.)
 
 ## Making the plugin discoverable
 
@@ -37,12 +45,14 @@ usdview --unloaded --bboxStandin \
   /path/to/ALab/entity/lab_workbench01/lab_workbench01.usda
 ```
 
-Then **Weft ▸ Weft Threads...** opens the panel. Click any prop, furniture,
-group, or facet node: the matching prim (if it names one -- facet/concept
-nodes like `finish:translucent` have none) is selected in usdview's own
-tree/viewport and, if it has a payload, its bounding-box standin condenses
-into real geometry. Pulling a thread (or the group children a lens reveals)
-materializes every node it adds the same way.
+Then **Weft ▸ Weft Threads...** opens the panel: the full `usd:arc`
+hierarchy (groups and their placements), laid out as a tree. Click any
+node: the matching prim is selected in usdview's own tree/viewport and, if
+it has a payload, its bounding-box standin condenses into real geometry.
+(This first native cut renders the hierarchy lens only -- the d3 viewer's
+richer pull/expand progressive-disclosure model and its Mount/finish/
+shading lenses are follow-up work; see `weftViewer/threadpanel.py`'s
+module docstring.)
 
 `--unloaded` is what makes the payload-bearing prims start as bounding
 boxes in the first place; `--bboxStandin` is what draws them as boxes
@@ -54,12 +64,19 @@ the prims a click or a pull names.
 
 - `weft/threadgraph.py`'s `build_graph()` is pure (no Qt) and unit-tested
   in `tests/test_threadgraph.py`, including an acceptance test against the
-  real ALab workbench gated on `WEFT_ALAB`/`JITSD_ALAB`.
-- The panel itself (Qt + QtWebEngine + the QWebChannel bridge) needs a
-  running usdview process to exercise; it isn't part of the pytest suite.
-  A `testusdview --testScript` smoke run is the way to check it -- open
-  with `--unloaded`, open the panel via the same registered command the
-  menu item uses, then call the bridge's `select()`/`loaded()` exactly as
-  the JS side would and assert `IsLoaded()` flips. See
-  `.superpowers/threadpanel-report.md` for a worked example and its
-  output.
+  real ALab workbench gated on `WEFT_ALAB`/`JITSD_ALAB`, and a regression
+  test that it returns the identical graph whether the stage was opened
+  loaded or with `--unloaded` (payload-unloaded prims still have to be
+  walked to build the graph in the first place).
+- The panel itself (native Qt: `QGraphicsView`/`QGraphicsScene`, click ->
+  select-and-load) needs a running usdview process to exercise; it isn't
+  part of the pytest suite. Because the earlier QtWebEngine version's
+  crash only reproduced in a REAL (non-offscreen, non-`--norender`)
+  usdview process, this panel's own smoke test must be run the same way,
+  not headless -- a `testusdview --testScript` run that opens with
+  `--unloaded`, opens the panel via the same registered command the menu
+  item uses, calls a node item's own click handler exactly as a real
+  mouse click would, and asserts `IsLoaded()` flips and usdview's own
+  selection moved. See `.superpowers/threadpanel-report.md` for the full
+  investigation, the isolation testing that ruled out a simpler
+  WebEngine-vs-OpenGL explanation, and the real-GUI verification runs.

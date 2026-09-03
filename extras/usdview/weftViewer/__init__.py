@@ -7,10 +7,9 @@
 #   Restore world        reactivate whatever Solo threads deactivated
 #   Who depends on this?  incoming edges onto the selection
 #   Weft Threads...      the live thread-graph panel (see threadpanel.py):
-#                         click/pull in the graph selects AND materializes
-#                         geometry on the open stage; the panel degrades to
-#                         a clean PrintStatus, never a crash, if QtWebEngine
-#                         can't run inside this usdview process.
+#                         native Qt (QGraphicsView), no QtWebEngine -- click
+#                         a node in the hierarchy graph and it both selects
+#                         AND materializes that geometry on the open stage.
 #
 # Qt is used only in this file (via pxr.Usdviewq.qt, which picks the PySide
 # module usdview itself is running on). All weft/pxr-heavy imports are
@@ -84,11 +83,12 @@ class WeftViewerContainer(PluginContainer):
         # its own signal connections while it's still on screen.
         self._openDialogs = []
         # Weft Threads panel state -- set the first time it opens
-        # successfully; see threadpanel.open_panel. None until then.
+        # successfully; see threadpanel.open_panel. None until then. Native
+        # QGraphicsView/Scene, not QtWebEngine -- see threadpanel.py.
         self._threadDock = None
         self._threadView = None
-        self._threadBridge = None
-        self._threadChannel = None
+        self._threadScene = None
+        self._threadNodeItems = None
         self._threadSelection = None
 
     # -- registration -------------------------------------------------
