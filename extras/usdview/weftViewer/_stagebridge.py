@@ -46,6 +46,49 @@ def _select(api, prim):
     api.UpdateGUI()
 
 
+def _refresh_viewport(api, frame=False):
+    """Make a just-completed stage.Load/Unload VISIBLE in the viewport.
+
+    Under `usdview --bboxStandin` (UsdImagingGL's
+    `displayUnloadedPrimsWithBounds`), the imaging scene does NOT resync
+    a prim whose load state changes: stage.Load() succeeds, IsLoaded()
+    flips, but the viewport keeps drawing the bounding-box standin
+    forever. Measured directly (round 9, pixel-level, camera fixed):
+    even usdview's OWN outliner-Load refresh path
+    (`appController.editComplete` -> `updateView(forceComputeBBox=True)`)
+    leaves the render byte-identical (0.24% diff, all of it the HUD
+    text), and `SetForceRefresh(True)` changes nothing either; only
+    rebuilding the imaging engine (`stageView.closeRenderer()`, then a
+    repaint lazily recreating it) makes the loaded geometry appear
+    (8.6% of the frame changed = the actual model). This is an upstream
+    UsdImagingGL limitation of the bounds-standin mode in USD v26.08,
+    not a usdview-plugin problem -- and rebuilding the engine per
+    load/unload is the price of a correct picture. Cheap on scenes where
+    most prims are unloaded standins (exactly this panel's use case);
+    revisit if upstream teaches the standin mode to resync.
+
+    With frame=True, `_frameSelection()` afterwards flies the camera to
+    the selection (its updateView(resetCam=True, forceComputeBBox=True)
+    also repaints, triggering the lazy engine rebuild). Best-effort on
+    private surfaces, reported once if unreachable."""
+    try:
+        controller = api._UsdviewApi__appController
+        view = controller._stageView
+        if view is None:
+            return
+        view.closeRenderer()
+        if frame:
+            controller._frameSelection()
+        else:
+            view.updateView(resetCam=False, forceComputeBBox=True)
+    except Exception as e:
+        if not getattr(api, "_weft_refresh_unavailable", False):
+            api._weft_refresh_unavailable = True
+            api.PrintStatus(
+                "Weft Threads: viewport refresh unavailable (%s); loads/"
+                "unloads may not appear until the camera moves" % e)
+
+
 def peek(api, path):
     """Single-click PEEK (see docs/superpowers/specs/
     2026-09-03-thread-explorer-interaction.md): select the prim in
@@ -74,12 +117,16 @@ def pull_leaf(api, path):
     leaf (`stage.Load`, default LoadWithDescendants, so a leaf whose own
     geometry sits behind nested payloads actually appears -- never a
     cascade, because only leaves are ever pulled; the JS side routes
-    group pulls to re-center-only and never calls this for them)."""
+    group pulls to re-center-only and never calls this for them). Then
+    frame the camera on it -- a pull flies to and SHOWS what it just
+    loaded (which also forces the viewport re-render the load needs to
+    be visible at all; see _refresh_viewport)."""
     prim = _valid_prim(api, path)
     if prim is None:
         return
     _select(api, prim)
     load_one(api, path)
+    _refresh_viewport(api, frame=True)
 
 
 def unload_paths(api, paths):
@@ -88,13 +135,19 @@ def unload_paths(api, paths):
     batch/guard shape as load_paths."""
     if not isinstance(paths, (list, tuple)):
         return
+    unloaded = False
     for path in paths:
         if _valid_prim(api, path) is None:
             continue
         try:
             api.stage.Unload(path)
+            unloaded = True
         except Exception as e:
             api.PrintStatus("Weft Threads: unload %s failed: %s" % (path, e))
+    if unloaded:
+        # symmetric with load: the geometry must visibly condense back
+        # into its bounding-box standin, not linger until a camera move
+        _refresh_viewport(api)
 
 
 def select_and_load(api, path):
@@ -111,6 +164,7 @@ def select_and_load(api, path):
         return
     _select(api, prim)
     load_one(api, path)
+    _refresh_viewport(api)
 
 
 def load_one(api, path):
@@ -133,9 +187,10 @@ def load_paths(api, paths):
     `select_and_load` moves the live selection."""
     if not isinstance(paths, (list, tuple)):
         return
+    loaded = False
     for path in paths:
-        if not isinstance(path, str) or not path.startswith("/"):
-            continue
-        prim = api.stage.GetPrimAtPath(path)
-        if prim and prim.IsValid():
+        if _valid_prim(api, path) is not None:
             load_one(api, path)
+            loaded = True
+    if loaded:
+        _refresh_viewport(api)

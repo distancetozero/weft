@@ -80,6 +80,7 @@
 <div class="hint" id="hint">This is the scene's <b>hierarchy</b> — root and its groups.
 <b>Click</b> a node to peek (look, load nothing) ·
 <b>double-click</b> to pull (move here; a leaf materializes, a group just re-centers).
+<b>Solid</b> nodes are loadable leaves; <b>outlined</b> ones are groups to drill through.
 Or type a <b>weft ask</b> (top-right), e.g. <b>where:finish=translucent</b>.</div>
 
 <div id="live"><span class="dot"></span>live stage — clicking/pulling loads geometry in usdview</div>
@@ -446,7 +447,11 @@ function render(){
   nodeSel=gNode.selectAll("g.node").data(ns,d=>d.id);
   nodeSel.exit().remove();
   const en=nodeSel.enter().append("g").attr("class","node").style("cursor","grab").call(drag());
-  en.append("circle").attr("r",R).attr("fill",d=>TCOLOR[d.type]||"#aaa")
+  // Leaf affordance: SOLID fill = a loadable leaf (double-click pulls
+  // its geometry in); HOLLOW outline = a navigational group (drill
+  // through, never loads). Same palette, read-at-a-glance.
+  en.append("circle").attr("r",R)
+    .attr("fill",d=>isGroupNode(d)?cvar("--bg2"):(TCOLOR[d.type]||"#aaa"))
     .attr("stroke",cvar("--bg")).attr("stroke-width",1.6);
   en.append("text").attr("class","badge").attr("y",3)
     .text(d=>{ const t=threadsOf(d.id); const tot=Object.entries(t).filter(([k])=>active.has(k))
@@ -460,8 +465,9 @@ function render(){
     .on("pointerleave",()=>{ hovered=null; updateLabels(); });
   nodeSel=en.merge(nodeSel);
   nodeSel.select("circle").attr("filter",d=>d===selected?"url(#glow)":null)
-    .attr("stroke",d=>pinned.has(d.id)?cvar("--accent"):cvar("--bg"))
-    .attr("stroke-width",d=>pinned.has(d.id)?2.2:1.6);
+    .attr("stroke",d=>pinned.has(d.id)?cvar("--accent")
+      :isGroupNode(d)?(TCOLOR.group||"#aaa"):cvar("--bg"))
+    .attr("stroke-width",d=>pinned.has(d.id)?2.2:isGroupNode(d)?2:1.6);
   nodeSel.select("text.badge").text(d=> (d.type==="finish"||d.type==="shading")?String(childrenCount(d.id))
       : (hasUnexpanded(d.id)?"+":""));
   updateLabels();
