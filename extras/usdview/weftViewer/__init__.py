@@ -88,7 +88,7 @@ class WeftViewerContainer(PluginContainer):
         self._threadDock = None
         self._threadView = None
         self._threadScene = None
-        self._threadNodeItems = None
+        self._threadController = None
         self._threadSelection = None
 
     # -- registration -------------------------------------------------
