@@ -27,12 +27,15 @@ Term = { op: "∪" | "∩" | "∖",           // vs the accumulator; first term'
          pred: Predicate }
 Predicate =
   | { kind: "facet", facet: "finish"|"shading", value: string }
-  | { kind: "path",  value: string }      // prefix match on prim id
+  | { kind: "path",  value: string, scope: "below"|"children" }  // below=prefix; children=direct only
   | { kind: "name",  glob: string }       // glob on node label
   | { kind: "mount", of: string }         // prims Mount-carried by `of` (depth 1)
 ```
 
-v1 is a **flat left-to-right fold** — `A ∪ B ∩ C` = `((A ∪ B) ∩ C)`. Nested
+**Operators are ASCII** (owner decision): `+` = union (∪), `&` = intersect (∩),
+`-` = difference (∖), in both the typed text and the chip operator selector.
+
+v1 is a **flat left-to-right fold** — `A + B & C` = `((A ∪ B) ∩ C)`. Nested
 parentheses are v2. Keep the data structure ready for nesting (a term could
 later hold a sub-Expression) but don't build the UI for it yet.
 
@@ -43,8 +46,9 @@ later hold a sub-Expression) but don't build the UI for it yet.
 folds with the term operators:
 
 - `facet`: prims on the other end of this facet node's `weft:bind:*` edges.
-- `path`: prim nodes whose id starts with `value` (prefix; `/root/shelf01`
-  matches everything under it).
+- `path`: `path:/root/shelf01` (scope `below`) = prim nodes under it (prefix,
+  and-below); `path:/root/shelf01/*` (scope `children`) = its direct children
+  only. The parser reads a trailing `/*` as scope `children`, else `below`.
 - `name`: prim nodes whose label matches `glob` (`*`/`?`).
 - `mount`: prims that are `Mount`-carried by `of` (follow `Mount` edges; depth 1
   for v1).
@@ -59,12 +63,12 @@ A collapsible overlay panel inside the viewer (NOT a separate dock — the bridg
 to explore must be immediate). Contents, top to bottom:
 
 - **Text line** — the expression as text, editable, using the existing weft-ask
-  grammar (`where:finish=translucent ∪ name:decor_*`). Typing re-parses into
-  chips; chips edit back into text. The existing `#seedq` ask bar is the seed of
-  this — extend it, don't add a second parser.
+  grammar with `+`/`&`/`-` operators (`finish=translucent + name:decor_*`).
+  Typing re-parses into chips; chips edit back into text. The existing `#seedq`
+  ask bar is the seed of this — extend it, don't add a second parser.
 - **Chip row** — each term as a removable token: `[⊕ finish=translucent ×]`,
-  with a small operator selector (∪/∩/∖) between chips. Color chips by predicate
-  kind (reuse `--finish`/`--shading`/`--prop`/`--group` tokens).
+  with a small operator selector (`+`/`&`/`-`) between chips. Color chips by
+  predicate kind (reuse `--finish`/`--shading`/`--prop`/`--group` tokens).
 - **Cost readout** — `N prims · P% of scene` (exact count from `evalExpr`;
   live). Byte-size estimate is deferred (needs a bridge call to sum payload
   sizes — flagged, not v1).
@@ -77,10 +81,9 @@ to explore must be immediate). Contents, top to bottom:
 The graph is the palette. Without breaking peek(single)/pull(double):
 
 - **Shift-click a node** = add it to the expression as a **union** term:
-  a facet node → `facet:…`; a group → `path:<its path>`; a leaf → `path:<leaf>`
-  (or `name:<leaf>` — pick path, it's unambiguous).
-- **Shift-alt-click** = add as **intersect**; **shift-cmd/ctrl-click** = add as
-  **difference**. (Confirm modifier choices in review.)
+  a facet node → `facet:…`; a group → `path:<its path>`; a leaf → `path:<leaf>`.
+  **Always union on add** (owner decision); change the operator afterward via the
+  chip's `+`/`&`/`-` selector. One gesture to learn, no modifier combos.
 - Adding a term opens the compose panel if collapsed and updates text + chips +
   preview together.
 - Facet chips in a node's inspector also get an **"＋ add to expression"**
@@ -140,13 +143,11 @@ estimate; saving/naming expressions to disk or a manifest; `UsdCollectionAPI`
 round-trip; minimal-rule *inference* beyond the single exact-facet
 "generalize?" hint.
 
-## 10. Open questions for review
+## 10. Review decisions (settled 2026-09-03)
 
-1. **Shift-click modifier map** — is shift=union / shift-alt=intersect /
-   shift-cmd=difference comfortable, or should adding always be union and
-   operators be set only in the chip row?
-2. **Text grammar for operators** — spell them `∪ ∩ ∖`, or ASCII (`or`/`and`/
-   `not`, or `+`/`&`/`-`)? ASCII is more typeable; symbols read cleaner in chips.
-3. **Does `path:` prefix want an explicit "just this level" vs "and below"
-   distinction in v1**, or is prefix-and-below always fine (matches how pull
-   works)?
+1. **Add gesture** — shift-click always adds as **union**; the operator is
+   changed afterward in the chip's `+`/`&`/`-` selector. No modifier combos.
+2. **Operator syntax** — **ASCII `+` / `&` / `-`** (union / intersect /
+   difference) in both text and chips.
+3. **Path scope** — support **both**: `path:X` = that prim and everything below;
+   `path:X/*` = its direct children only.
