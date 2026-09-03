@@ -28,6 +28,75 @@ def guard(api, label, fn):
     return wrapped
 
 
+def _valid_prim(api, path):
+    """The shared trust-boundary guard: a prim-like id always starts with
+    "/" (facet/concept ids like "finish:translucent" never do), and must
+    resolve to a valid prim on the open stage. Returns the prim or None."""
+    if not isinstance(path, str) or not path.startswith("/"):
+        return None
+    prim = api.stage.GetPrimAtPath(path)
+    if not prim or not prim.IsValid():
+        return None
+    return prim
+
+
+def _select(api, prim):
+    api.ClearPrimSelection()
+    api.AddPrimToSelection(prim)
+    api.UpdateGUI()
+
+
+def peek(api, path):
+    """Single-click PEEK (see docs/superpowers/specs/
+    2026-09-03-thread-explorer-interaction.md): select the prim in
+    usdview and FRAME the camera to it -- a quick look around the current
+    focus. Explicitly NO stage.Load: peeking must never materialize
+    anything. Framing uses appController._frameSelection() (the same op
+    as usdview's own View > Frame Selection); if that private surface
+    ever moves, peek degrades to select+highlight -- usdview highlights
+    the selected prim's bbox on its own -- reported once, not silently."""
+    prim = _valid_prim(api, path)
+    if prim is None:
+        return
+    _select(api, prim)
+    try:
+        api._UsdviewApi__appController._frameSelection()
+    except Exception as e:
+        if not getattr(api, "_weft_frame_unavailable", False):
+            api._weft_frame_unavailable = True
+            api.PrintStatus(
+                "Weft Threads: camera framing unavailable (%s); peek "
+                "selects/highlights only" % e)
+
+
+def pull_leaf(api, path):
+    """Double-click PULL on a leaf: select AND materialize exactly this
+    leaf (`stage.Load`, default LoadWithDescendants, so a leaf whose own
+    geometry sits behind nested payloads actually appears -- never a
+    cascade, because only leaves are ever pulled; the JS side routes
+    group pulls to re-center-only and never calls this for them)."""
+    prim = _valid_prim(api, path)
+    if prim is None:
+        return
+    _select(api, prim)
+    load_one(api, path)
+
+
+def unload_paths(api, paths):
+    """The focus moved off a non-pinned leaf: drop its geometry back to a
+    bounding-box standin (`stage.Unload`). Selection untouched. Same
+    batch/guard shape as load_paths."""
+    if not isinstance(paths, (list, tuple)):
+        return
+    for path in paths:
+        if _valid_prim(api, path) is None:
+            continue
+        try:
+            api.stage.Unload(path)
+        except Exception as e:
+            api.PrintStatus("Weft Threads: unload %s failed: %s" % (path, e))
+
+
 def select_and_load(api, path):
     """A node was picked (clicked in the native panel, or POSTed to
     /select by the browser viewer) -> select `path` in usdview's own
@@ -37,14 +106,10 @@ def select_and_load(api, path):
     "finish:translucent", "shading:usd_full") never starts with "/" --
     guarded here since this is the trust boundary for whatever called in,
     whether that's a Qt click or an HTTP request body."""
-    if not isinstance(path, str) or not path.startswith("/"):
+    prim = _valid_prim(api, path)
+    if prim is None:
         return
-    prim = api.stage.GetPrimAtPath(path)
-    if not prim or not prim.IsValid():
-        return
-    api.ClearPrimSelection()
-    api.AddPrimToSelection(prim)
-    api.UpdateGUI()
+    _select(api, prim)
     load_one(api, path)
 
 

@@ -153,6 +153,34 @@ def _make_bridge_class():
             except Exception as e:
                 self._api.PrintStatus("Weft Threads: loaded(...) failed: %s" % e)
 
+        # -- exploration-interaction model (see docs/superpowers/specs/
+        #    2026-09-03-thread-explorer-interaction.md) ------------------
+
+        @Slot(str)
+        def peek(self, path):
+            """Single-click: select + frame the camera. Never loads."""
+            try:
+                _stagebridge.peek(self._api, path)
+            except Exception as e:
+                self._api.PrintStatus("Weft Threads: peek(%r) failed: %s" % (path, e))
+
+        @Slot(str)
+        def pull(self, path):
+            """Double-click on a LEAF: select + materialize exactly it.
+            The JS side never calls this for groups (re-center only)."""
+            try:
+                _stagebridge.pull_leaf(self._api, path)
+            except Exception as e:
+                self._api.PrintStatus("Weft Threads: pull(%r) failed: %s" % (path, e))
+
+        @Slot(list)
+        def unload(self, paths):
+            """Focus moved off non-pinned leaves: back to bbox standins."""
+            try:
+                _stagebridge.unload_paths(self._api, paths)
+            except Exception as e:
+                self._api.PrintStatus("Weft Threads: unload(...) failed: %s" % e)
+
     return ThreadPanelBridge
 
 

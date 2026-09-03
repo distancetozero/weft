@@ -60,6 +60,17 @@
   text.badge{fill:var(--bg);font:700 9px sans-serif;pointer-events:none;text-anchor:middle}
   .hint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);
     font-size:13px;text-align:center;pointer-events:none;max-width:340px}
+  #insp .btnrow{display:flex;gap:6px;margin:2px 0 8px}
+  #insp .ibtn{flex:1;padding:5px 4px;border:1px solid var(--line);background:transparent;
+    color:var(--muted);border-radius:7px;cursor:pointer;font:11px sans-serif;white-space:nowrap}
+  #insp .ibtn:hover{border-color:var(--accent);color:var(--accent)}
+  #insp .gesture{color:var(--muted);font-size:10px;margin:0 0 6px;opacity:.8}
+  #crumbs{bottom:14px;left:50%;transform:translateX(-50%);max-width:56vw;padding:7px 13px;
+    font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none}
+  #crumbs .cr{cursor:pointer}
+  #crumbs .cr:hover{color:var(--accent)}
+  #crumbs .cr.cur{color:var(--ink);font-weight:600;cursor:default}
+  #crumbs .sep{opacity:.5;margin:0 5px}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
@@ -67,7 +78,8 @@
 
 <svg id="svg"></svg>
 <div class="hint" id="hint">This is the scene's <b>hierarchy</b> — root and its groups.
-Click a node to inspect it, then <b>pull a thread</b> from the inspector.
+<b>Click</b> a node to peek (look, load nothing) ·
+<b>double-click</b> to pull (move here; a leaf materializes, a group just re-centers).
 Or type a <b>weft ask</b> (top-right), e.g. <b>where:finish=translucent</b>.</div>
 
 <div id="live"><span class="dot"></span>live stage — clicking/pulling loads geometry in usdview</div>
@@ -92,7 +104,8 @@ Or type a <b>weft ask</b> (top-right), e.g. <b>where:finish=translucent</b>.</di
 </div>
 
 <div class="panel" id="insp"></div>
-<div id="foot">drag · scroll to zoom · click a node to inspect ·
+<div class="panel" id="crumbs"></div>
+<div id="foot">click: peek · double-click: pull · drag · scroll to zoom ·
   <a href="https://github.com/distancetozero/weft">weft</a></div>
 
 <script>
@@ -131,6 +144,14 @@ const primLike=id=>typeof id==="string"&&id.charAt(0)==="/";
 function notifySelect(id){ if(bridge&&bridge.select&&primLike(id)) bridge.select(id); }
 function notifyLoaded(ids){ if(!bridge||!bridge.loaded) return;
   const paths=ids.filter(primLike); if(paths.length) bridge.loaded(paths); }
+// exploration model (spec: 2026-09-03-thread-explorer-interaction.md):
+// peek = select + frame camera, NO load; pull = load exactly one leaf;
+// unload = focus moved off a non-pinned leaf. All silent no-ops outside
+// usdview (bridge null) so the file keeps working in a plain browser.
+function notifyPeek(id){ if(bridge&&bridge.peek&&primLike(id)) bridge.peek(id); }
+function notifyPull(id){ if(bridge&&bridge.pull&&primLike(id)) bridge.pull(id); }
+function notifyUnload(ids){ if(!bridge||!bridge.unload) return;
+  const paths=ids.filter(primLike); if(paths.length) bridge.unload(paths); }
 function onStageFocus(path){   // Python -> JS: usdview's own selection changed
   const n=NODE[path]; if(!n) return;
   if(!visible.has(path)){ visible.add(path); render(); }
@@ -148,6 +169,21 @@ if(typeof QWebChannel!=="undefined" && window.qt && window.qt.webChannelTranspor
 const SEED="/root";
 const BATCH=16;                 // cap per expansion; pull again for more
 let lens="usd:arc", selected=null, hovered=null;
+
+// --- the moving focus (spec: a walk, not an accumulating tree) ---------
+// `focus` is "you are here"; `crumbs` the trail of focuses pulled
+// through; `pinned` the deliberately-assembled set that survives moves.
+// Loaded set at any time = {focus if leaf} ∪ {pinned leaves} -- bounded
+// by construction; groups are navigational and never load.
+let focus=null; const pinned=new Set(); const crumbs=[];
+const isLeafNode=n=>!!n&&(n.type==="prop"||n.type==="furniture");
+const isGroupNode=n=>!!n&&n.type==="group";
+function moveFocusTo(id){
+  const prev=focus; focus=id;
+  if(prev&&prev!==id&&isLeafNode(NODE[prev])&&!pinned.has(prev)) notifyUnload([prev]);
+  if(isLeafNode(NODE[id])) notifyPull(id);   // leaf: select + materialize it
+  else notifyPeek(id);                       // group: select + frame, load NOTHING
+}
 const active=new Set(DATA.kinds);
 const visible=new Set(), expandedKind=new Set();  // "id|kind" expanded
 const seedSet=new Set();        // the current seeds — pruning anchors
@@ -201,19 +237,116 @@ function expand(id, kind){
   }
   if(added.length) history.push({actor:id,kind:kind||"*",added:new Set(added)});
   if(remaining===0) expandedKind.add(id+"|"+(kind||"*"));
-  notifyLoaded(added);
+  // Reveals never load (spec: expands show bounding boxes only) -- the
+  // ONLY load paths are a double-click pull of a leaf, or pinning one.
   placeAndSettle(added, id);
-  if(remaining) flash(`showing ${BATCH} of ${BATCH+remaining} — pull again for the rest`);
+  if(remaining) flash(`showing ${BATCH} of ${BATCH+remaining} — expand again for the rest`);
   return added.length;
 }
 function revealChild(actorId, childId){
-  if(visible.has(childId)){ selected=NODE[childId]; inspect(NODE[childId]); highlight(NODE[childId]);
-    notifySelect(childId); return; }
-  visible.add(childId);
-  history.push({actor:actorId,kind:"__one__",added:new Set([childId])});
-  notifyLoaded([childId]);
-  placeAndSettle([childId], actorId);
-  inspect(NODE[actorId]);   // list updates: the child now reads as shown
+  if(!visible.has(childId)){
+    visible.add(childId);
+    history.push({actor:actorId,kind:"__one__",added:new Set([childId])});
+    placeAndSettle([childId], actorId);   // reveal as bbox: NO load
+  }
+  uiPeek(childId);   // a kid chip is a quick look: select + frame, no load
+}
+
+// --- the exploration gestures ------------------------------------------
+// uiPeek/uiPull are the single entry points the DOM handlers call (and
+// what a scripted verification drives -- same code path, minus the event).
+function uiPeek(id){
+  const d=NODE[id]; if(!d) return;
+  selected=d; inspect(d); highlight(d);
+  if(hint) hint.style.display="none";
+  notifyPeek(id);                          // select + frame; never loads
+}
+function uiPull(id){
+  const d=NODE[id]; if(!d) return;
+  if(!primLike(id)){ flash("facet nodes don't pull — switch the lens to view the world that way"); return; }
+  moveFocusTo(id);                          // leaf: load it (+unload prev); group: nothing loads
+  pushCrumb(id);
+  recenter(id);
+}
+function pushCrumb(id){
+  if(crumbs[crumbs.length-1]!==id) crumbs.push(id);
+  updateCrumbs();
+}
+function goBack(){
+  if(crumbs.length<2){ flash("at the start of the trail"); return; }
+  crumbs.pop();
+  const id=crumbs[crumbs.length-1];
+  moveFocusTo(id);                          // same load/unload rules on the way back
+  updateCrumbs(); recenter(id);
+}
+function jumpToCrumb(i){
+  if(i<0||i>=crumbs.length) return;
+  crumbs.length=i+1;
+  const id=crumbs[i];
+  moveFocusTo(id); updateCrumbs(); recenter(id);
+}
+function updateCrumbs(){
+  const el=document.getElementById("crumbs"); if(!el) return;
+  const start=Math.max(0,crumbs.length-6);
+  el.innerHTML=(start>0?'<span class="sep">…›</span>':'')+
+    crumbs.slice(start).map((id,j)=>{ const i=start+j; const n=NODE[id];
+      const lab=n?(n.label.length>16?n.label.slice(0,15)+'…':n.label):id;
+      return `<span class="cr ${i===crumbs.length-1?'cur':''}" data-i="${i}">${lab}</span>`;
+    }).join('<span class="sep">›</span>');
+  el.style.display=crumbs.length?"block":"none";
+  el.querySelectorAll(".cr").forEach(c=>c.onclick=()=>jumpToCrumb(+c.dataset.i));
+}
+// Re-center: the view becomes {focus} ∪ {its immediate lens-neighbors,
+// as bboxes} ∪ {pinned} -- never the whole stage. "Immediate
+// relationships" is whatever the ACTIVE LENS says it is.
+function recenter(id){
+  visible.clear(); expandedKind.clear(); history.length=0;
+  seedSet.clear(); seedSet.add(id); pinned.forEach(p=>seedSet.add(p));
+  Object.values(NODE).forEach(n=>{ n.fx=n.fy=null; n._settled=false; });
+  reveal(id,null); NODE[id].x=Wd/2; NODE[id].y=Ht/2;
+  pinned.forEach(p=>reveal(p,NODE[id]));
+  let shown=0, remaining=0;
+  for(const a of ADJ[id]){
+    if(a.kind!==lens||!active.has(a.kind)) continue;
+    if(visible.has(a.o)) continue;
+    if(shown<BATCH){ reveal(a.o,NODE[id]); shown++; } else remaining++;
+  }
+  if(remaining===0) expandedKind.add(id+"|"+lens);
+  selected=NODE[id];
+  render(); applyLens(); inspect(NODE[id]); highlight(NODE[id]);
+  if(hint) hint.style.display="none";
+  if(remaining) flash(`showing ${shown} of ${shown+remaining} neighbours — Expand one level for the rest`);
+}
+function togglePin(d){
+  if(pinned.has(d.id)){
+    pinned.delete(d.id); seedSet.delete(d.id);
+    // an unpinned leaf that is no longer the focus goes back to a bbox
+    if(isLeafNode(d)&&focus!==d.id) notifyUnload([d.id]);
+  } else {
+    pinned.add(d.id); seedSet.add(d.id);
+    if(isLeafNode(d)) notifyLoaded([d.id]);   // pinned leaves stay loaded
+  }
+  inspect(d); render();
+}
+// Expand from here: the whole subtree under the focus, as bboxes, no
+// load, no re-center. "Subtree" = following the active lens's outgoing
+// edges. Capped defensively; the cap flashes rather than silently drops.
+function expandFromHere(d){
+  const CAP=300, added=[], q=[d.id], seen=new Set([d.id]);
+  while(q.length&&added.length<CAP){
+    const c=q.shift();
+    for(const a of ADJ[c]){
+      if(a.kind!==lens||a.dir!=="out"||seen.has(a.o)) continue;
+      seen.add(a.o); q.push(a.o);
+      if(!visible.has(a.o)){ visible.add(a.o); added.push(a.o); }
+    }
+  }
+  if(!added.length){ flash("nothing more under here on this lens"); return; }
+  history.push({actor:d.id,kind:lens,added:new Set(added)});
+  expandedKind.add(d.id+"|"+lens);
+  placeAndSettle(added, d.id);
+  inspect(d);
+  if(q.length) flash(`revealed ${added.length} (capped) — expand a deeper node for more`);
 }
 
 // --- layout dispatch: tidy tree for Hierarchy, radial fan + gentle force otherwise ---
@@ -254,7 +387,7 @@ function refreshLayout(){   // after back/collapse/kind-toggle
   else { render(); sim.alpha(.4).restart(); }
 }
 function prune(){   // drop anything no longer reachable from a seed — kills orphan spaghetti
-  const keep=new Set(seedSet), q=[...seedSet];
+  const keep=new Set([...seedSet,...pinned]), q=[...keep];
   while(q.length){ const c=q.shift();
     ADJ[c].forEach(a=>{ if(active.has(a.kind)&&visible.has(a.o)&&!keep.has(a.o)){ keep.add(a.o); q.push(a.o); } }); }
   [...visible].forEach(id=>{ if(!keep.has(id)) visible.delete(id); });
@@ -321,13 +454,14 @@ function render(){
       return (d.type==="finish"||d.type==="shading")? String(childrenCount(d.id)) : (tot>0&&hasUnexpanded(d.id)?"+":""); });
   en.append("text").attr("class","lab").attr("x",d=>R(d)+5).attr("y",3)
     .text(d=>d.label.length>22?d.label.slice(0,21)+"…":d.label);
-  en.on("click",(ev,d)=>{ ev.stopPropagation(); selected=d; inspect(d); highlight(d);
-      if(hint)hint.style.display="none"; notifySelect(d.id); })
-    .on("dblclick",(ev,d)=>{ ev.stopPropagation(); expand(d.id); inspect(d); })
+  en.on("click",(ev,d)=>{ ev.stopPropagation(); uiPeek(d.id); })      // PEEK: look, never load
+    .on("dblclick",(ev,d)=>{ ev.stopPropagation(); uiPull(d.id); })   // PULL: move the focus
     .on("pointerenter",(ev,d)=>{ hovered=d; updateLabels(); })
     .on("pointerleave",()=>{ hovered=null; updateLabels(); });
   nodeSel=en.merge(nodeSel);
-  nodeSel.select("circle").attr("filter",d=>d===selected?"url(#glow)":null);
+  nodeSel.select("circle").attr("filter",d=>d===selected?"url(#glow)":null)
+    .attr("stroke",d=>pinned.has(d.id)?cvar("--accent"):cvar("--bg"))
+    .attr("stroke-width",d=>pinned.has(d.id)?2.2:1.6);
   nodeSel.select("text.badge").text(d=> (d.type==="finish"||d.type==="shading")?String(childrenCount(d.id))
       : (hasUnexpanded(d.id)?"+":""));
   updateLabels();
@@ -377,10 +511,19 @@ svg.on("click",()=>{ selected=null; highlight(null); document.getElementById("in
 function inspect(d){
   const el=document.getElementById("insp"); const t=threadsOf(d.id); const f=facetsOf(d.id);
   let h=`<div class="lbl">${d.label}</div><div class="pth">${d.id.replace(/^\/g\//,'(group) ')}</div>`;
+  if(primLike(d.id)){
+    h+=`<div class="btnrow">
+      <button class="ibtn" id="pinbtn">${pinned.has(d.id)?"✕ unpin":"⚲ pin"}</button>
+      <button class="ibtn" id="exp1btn" title="reveal immediate relationships as bounding boxes — no load, no re-center">+1 level</button>
+      <button class="ibtn" id="expallbtn" title="reveal the whole subtree as bounding boxes — no load">whole subtree</button>
+    </div>
+    <div class="gesture">${isGroupNode(d)?"double-click: re-center here (groups never load)":
+      isLeafNode(d)?"double-click: pull — load this &amp; re-center":""}</div>`;
+  }
   const fk=Object.keys(f);
   if(fk.length){ h+=`<div class="sec">facets — click to view the world this way</div>`;
     fk.forEach(k=> f[k].forEach(v=> h+=`<span class="facet" data-lens="${k==='shading'?'weft:bind:shading':'weft:bind:finish'}">${k}: ${v}</span>`)); }
-  h+=`<div class="sec">threads — click to pull</div>`;
+  h+=`<div class="sec">threads — click to reveal (bboxes, no load)</div>`;
   const kinds=Object.keys(t).filter(k=>active.has(k));
   if(!kinds.length) h+=`<div style="color:var(--muted);font-size:12px">no followed threads here</div>`;
   kinds.forEach(k=>{ const shown=isExpanded(d.id,k)||!hasKindUnexpanded(d.id,k);
@@ -388,13 +531,19 @@ function inspect(d){
     h+=`<div class="thread ${shown&&!collapsible?'done':''}" data-k="${k}" data-mode="${collapsible?'collapse':'pull'}">
       <span class="sw" style="background:${KCOLOR[k]||'#888'}"></span>
       <span class="k">${KLABEL[k]||k}</span><span class="c">${t[k]}</span>
-      <span class="go">${collapsible?'× collapse':(shown?'✓':'▸ pull')}</span></div>`;
+      <span class="go">${collapsible?'× collapse':(shown?'✓':'▸ reveal')}</span></div>`;
     // the children behind this thread, as a list — so you see what's there
     const kids=ADJ[d.id].filter(a=>a.kind===k&&active.has(a.kind));
     h+=`<div class="kidlist">`+kids.slice(0,24).map(a=>{ const kn=NODE[a.o];
         return `<span class="kid ${visible.has(a.o)?'shown':''}" data-o="${a.o}" title="${kn.label}">${kn.label.length>18?kn.label.slice(0,17)+'…':kn.label}</span>`;
       }).join("")+(kids.length>24?`<span class="kid more">+${kids.length-24} more</span>`:"")+`</div>`; });
   el.innerHTML=h; el.style.display="block";
+  const pinBtn=el.querySelector("#pinbtn");
+  if(pinBtn) pinBtn.onclick=(ev)=>{ ev.stopPropagation(); togglePin(d); };
+  const exp1=el.querySelector("#exp1btn");
+  if(exp1) exp1.onclick=(ev)=>{ ev.stopPropagation(); expand(d.id,lens); inspect(d); };
+  const expall=el.querySelector("#expallbtn");
+  if(expall) expall.onclick=(ev)=>{ ev.stopPropagation(); expandFromHere(d); };
   el.querySelectorAll(".thread").forEach(row=>{ const k=row.dataset.k;
     if(row.dataset.mode==="collapse") row.onclick=()=>{ collapse(d.id,k); inspect(d); };
     else if(!row.classList.contains("done")) row.onclick=()=>{ expand(d.id,k); inspect(d); };
@@ -418,8 +567,8 @@ DATA.kinds.forEach(k=>{ const row=kd.append("div").attr("class","chip");
   row.on("click",function(){ active.has(k)?active.delete(k):active.add(k); this.classList.toggle("off",!active.has(k));
     render(); if(selected)inspect(selected); sim.alpha(.4).restart(); }); });
 
-document.getElementById("reset").onclick=()=>{ resetToSeed(); flash("Home — the scene's hierarchy. Click a group to inspect, then pull a thread."); };
-document.getElementById("back").onclick=()=>stepBack();
+document.getElementById("reset").onclick=()=>{ resetToSeed(); flash("Home — the scene's hierarchy. Click to peek; double-click to pull."); };
+document.getElementById("back").onclick=()=>goBack();   // breadcrumb back: previous focus, same load/unload rules
 addEventListener("keydown",ev=>{ if((ev.metaKey||ev.ctrlKey)&&ev.key==="z"){ ev.preventDefault(); stepBack(); } });
 document.getElementById("seedq").addEventListener("keydown",function(ev){ if(ev.key!=="Enter")return;
   const r=parseAsk(this.value);
@@ -444,7 +593,13 @@ function resetToSeed(seedIds){
   if(!seedIds){ // default home view: the hierarchy top (root -> groups)
     ADJ[SEED].forEach(a=>{ if(a.kind==="usd:arc" && reveal(a.o, NODE[SEED])) revealedNow.push(a.o); });
     expandedKind.add(SEED+"|usd:arc");
+    // Home is a focus move to /root: previous non-pinned leaf unloads,
+    // the trail restarts. (/root is a group -- nothing loads.)
+    const prev=focus; focus=SEED;
+    if(prev&&prev!==SEED&&isLeafNode(NODE[prev])&&!pinned.has(prev)) notifyUnload([prev]);
+    crumbs.length=0; crumbs.push(SEED); updateCrumbs();
   }
+  pinned.forEach(p=>{ seedSet.add(p); reveal(p,NODE[seeds[0]]); });  // pins survive Home/asks
   // Only a user-driven seed (a weft ask) materializes on arrival; the default
   // home view loads NOTHING -- geometry appears only when the user clicks a
   // node. This is the "predictable behaviour" rule: nothing loads on open.
