@@ -540,8 +540,15 @@ function uiLoadExpr(){
   ruleLoads.set(owner,res);
   notifyPullSet(res);
   pushCrumb(owner);
+  // Show what loaded (parity with a facet pull, which re-centers): the
+  // graph becomes the loaded set. The camera fits ALL members, so a
+  // small scattered set reads tiny in the viewport -- the flash points
+  // at the gesture that actually looks at one: a single-click peek
+  // flies the camera to a member WITHOUT collapsing the set (a
+  // double-click pull would move the focus and release the rest).
+  recenterOnSet(res);
   refreshPreview();
-  flash("loaded "+res.length+" prims matching the expression — unloads when the focus moves on (pin set to keep)");
+  flash("loaded "+res.length+" prims — <b>click</b> a member to fly the camera to it · unloads when the focus moves on (pin set to keep)");
 }
 function uiPinExpr(){
   const owner=exprOwner();
