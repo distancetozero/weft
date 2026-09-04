@@ -72,6 +72,28 @@
   #crumbs .cr:hover{color:var(--accent)}
   #crumbs .cr.cur{color:var(--ink);font-weight:600;cursor:default}
   #crumbs .sep{opacity:.5;margin:0 5px}
+  #compose{margin-top:9px}
+  #chips{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:4px 0 6px}
+  #chips .term{display:inline-flex;align-items:center;gap:4px;max-width:100%;
+    border:1px solid var(--line);border-radius:11px;padding:2px 7px;font-size:10.5px;
+    overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  #chips .term.k-facet{border-color:var(--finish)}
+  #chips .term.k-path{border-color:var(--prop)}
+  #chips .term.k-name{border-color:var(--muted)}
+  #chips .term.k-mount{border-color:var(--mount)}
+  #chips .term .x{cursor:pointer;color:var(--muted);margin-left:2px}
+  #chips .term .x:hover{color:var(--accent)}
+  #chips select.opsel{width:34px;padding:1px 2px;margin:0;background:var(--bg);
+    border:1px solid var(--line);border-radius:6px;color:var(--muted);font:11px ui-monospace,monospace}
+  #cost{color:var(--muted);font-size:10.5px;margin:2px 0 7px;min-height:13px}
+  #cost .warn{color:var(--mount)}
+  #genhint{margin:0 0 7px}
+  #genhint button{width:100%;padding:4px;border:1px dashed var(--finish);background:transparent;
+    color:var(--finish);border-radius:7px;cursor:pointer;font:11px sans-serif}
+  #genhint button:hover{border-style:solid}
+  #compose .btnrow2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  circle.previewring{fill:none;stroke:var(--ink);stroke-width:1.4;stroke-dasharray:3 3;
+    opacity:.85;pointer-events:none}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
@@ -98,10 +120,23 @@ Or type a <b>weft ask</b> (top-right), e.g. <b>where:finish=translucent</b>.</di
   <div class="grp">follow — thread kinds</div>
   <div id="kinds"></div>
   <div class="div"></div>
-  <input id="seedq" placeholder="weft ask · where:finish=translucent · name* · ⏎"/>
+  <input id="seedq" placeholder="ask / compose · finish=translucent + name:decor_*"/>
   <div style="display:flex;gap:6px;margin-top:9px">
     <button class="reset" id="back" style="margin-top:0;flex:1">← Back</button>
     <button class="reset" id="reset" style="margin-top:0;flex:1">⌂ Home</button>
+    <button class="reset" id="composetoggle" style="margin-top:0;flex:1" title="build a selection expression — shift-click nodes to add them">✦</button>
+  </div>
+  <div id="compose" style="display:none">
+    <div class="grp" style="margin-top:9px">compose — one selection, two views</div>
+    <div id="chips"></div>
+    <div id="cost"></div>
+    <div id="genhint" style="display:none"></div>
+    <div class="btnrow2">
+      <button class="reset" id="loadsetbtn" style="margin-top:0" title="materialize the matching set — becomes the focus's load, unloads when the focus moves on unless pinned">⇣ load set</button>
+      <button class="reset" id="pinsetbtn" style="margin-top:0" title="keep the set loaded across focus moves">⚲ pin set</button>
+      <button class="reset" id="exploresetbtn" style="margin-top:0" title="re-center the graph on the matching set (loads nothing)">◎ explore</button>
+      <button class="reset" id="describebtn" style="margin-top:0" title="write the current focus + pins as an expression">✎ describe</button>
+    </div>
   </div>
 </div>
 
@@ -131,9 +166,107 @@ const NODE=Object.fromEntries(DATA.nodes.map(n=>[n.id,{...n}]));
 const ADJ={}; DATA.nodes.forEach(n=>ADJ[n.id]=[]);
 DATA.edges.forEach(e=>{ ADJ[e.source].push({o:e.target,kind:e.kind,dir:"out"});
   ADJ[e.target].push({o:e.source,kind:e.kind,dir:"in"}); });
-const facetsOf=id=>{ const f={}; ADJ[id].forEach(a=>{ const t=NODE[a.o].type;
-  if(t==="finish"||t==="shading"){ (f[t]=f[t]||[]).push(NODE[a.o].label);} }); return f; };
+// facet VALUES come from the node id's "<kind>:<value>" form, not the
+// label -- build_graph labels finish nodes "finish: X" (kind-prefixed)
+// but shading nodes bare, so labels are display-only.
+const facetsOf=id=>{ const f={}; ADJ[id].forEach(a=>{ const n=NODE[a.o]; const t=n.type;
+  if(t==="finish"||t==="shading"){ (f[t]=f[t]||[]).push(n.id.slice(n.id.indexOf(":")+1));} }); return f; };
 const threadsOf=id=>{ const g={}; ADJ[id].forEach(a=>{ g[a.kind]=(g[a.kind]||0)+1; }); return g; };
+
+// --- compose:pure begin ---
+// The compose-mode expression model (spec: 2026-09-03-compose-mode-v1.md).
+// PURE functions -- no DOM, no bridge, no globals beyond each other -- so
+// this exact block is extracted and unit-tested under node
+// (tests/test_compose_eval.py). Expression = flat left-to-right fold of
+// terms; ops are ASCII + (union) & (intersect) - (difference), each
+// surrounded by whitespace in the text form.
+function globToRe(glob){
+  return new RegExp("^"+String(glob).split("").map(c=>
+    c==="*"?".*":c==="?"?".":/[.+^${}()|[\]\\]/.test(c)?"\\"+c:c).join("")+"$","i");
+}
+function parsePred(raw){
+  let m=raw.match(/^(?:facet:)?(finish|shading)\s*=\s*(.+)$/);
+  if(m) return {kind:"facet",facet:m[1],value:m[2].trim()};
+  m=raw.match(/^where:(finish|shading)\s*=\s*(.+)$/);
+  if(m) return {kind:"facet",facet:m[1],value:m[2].trim()};
+  m=raw.match(/^path:(.+)$/);
+  if(!m&&raw.charAt(0)==="/") m=[raw,raw];           // a bare /path is a path
+  if(m){ let v=m[1].trim(), scope="below";
+    if(v.slice(-2)==="/*"){ scope="children"; v=v.slice(0,-2); }
+    return v?{kind:"path",value:v,scope}:null; }
+  m=raw.match(/^mount:(.+)$/);
+  if(m) return {kind:"mount",of:m[1].trim()};
+  m=raw.match(/^name:(.+)$/);
+  if(m) return {kind:"name",glob:m[1].trim()};
+  if(/^[\w*?.-]+$/.test(raw)) return {kind:"name",glob:raw};   // bare glob
+  return null;
+}
+function parseExpr(text){
+  const terms=[], errors=[];
+  const s=String(text==null?"":text).trim();
+  if(!s) return {terms,errors};
+  const parts=s.split(/\s+([+&-])\s+/);   // [t0, op1, t1, op2, t2, ...]
+  for(let i=0;i<parts.length;i+=2){
+    const raw=(parts[i]||"").trim();
+    if(!raw){ errors.push("empty term"); continue; }
+    const pred=parsePred(raw);
+    if(pred) terms.push({op:i===0?"+":parts[i-1],pred});
+    else errors.push("can't read: "+raw);
+  }
+  return {terms,errors};
+}
+function exprToText(terms){
+  return terms.map((t,i)=>{
+    const p=t.pred; let s="";
+    if(p.kind==="facet") s=p.facet+"="+p.value;
+    else if(p.kind==="path") s="path:"+p.value+(p.scope==="children"?"/*":"");
+    else if(p.kind==="name") s="name:"+p.glob;
+    else if(p.kind==="mount") s="mount:"+p.of;
+    return (i===0?"":t.op+" ")+s;
+  }).join(" ");
+}
+// evalExpr(terms, graph) -> Set<loadable prim path>. graph is the plain
+// {nodes,edges} shape (DATA in the page; a fixture in tests).
+function evalExpr(terms, graph){
+  const nodes=(graph&&graph.nodes)||[], edges=(graph&&graph.edges)||[];
+  const byId={}; nodes.forEach(n=>{ byId[n.id]=n; });
+  const loadable=n=>!!n&&(n.type==="prop"||n.type==="furniture");
+  const touching=(id,kindOk)=>{ const out=[];
+    edges.forEach(e=>{ if(!kindOk(e.kind)) return;
+      if(e.source===id) out.push(e.target);
+      else if(e.target===id) out.push(e.source); });
+    return out; };
+  const evalPred=p=>{
+    const out=new Set();
+    if(p.kind==="facet"){
+      touching(p.facet+":"+p.value, k=>typeof k==="string"&&k.indexOf("weft:bind:")===0)
+        .forEach(o=>{ if(loadable(byId[o])) out.add(o); });
+    } else if(p.kind==="path"){
+      const v=p.value.replace(/\/+$/,"");
+      nodes.forEach(n=>{ if(!loadable(n)) return;
+        if(p.scope==="children"){
+          if(n.id.indexOf(v+"/")===0 && n.id.slice(v.length+1).indexOf("/")<0) out.add(n.id);
+        } else if(n.id===v || n.id.indexOf(v+"/")===0) out.add(n.id); });
+    } else if(p.kind==="name"){
+      const re=globToRe(p.glob);
+      nodes.forEach(n=>{ if(loadable(n)&&re.test(n.label)) out.add(n.id); });
+    } else if(p.kind==="mount"){
+      touching(p.of, k=>k==="Mount")
+        .forEach(o=>{ if(loadable(byId[o])) out.add(o); });
+    }
+    return out;
+  };
+  let acc=null;
+  terms.forEach(t=>{
+    const s=evalPred(t.pred);
+    if(acc===null){ acc=s; return; }        // seed: first term's op ignored
+    if(t.op==="+") s.forEach(x=>acc.add(x));
+    else if(t.op==="&") acc=new Set([...acc].filter(x=>s.has(x)));
+    else if(t.op==="-") s.forEach(x=>acc.delete(x));
+  });
+  return acc||new Set();
+}
+// --- compose:pure end ---
 
 // --- live bridge to the open USD stage (QWebChannel; no-op outside usdview) ---
 // `bridge` is populated asynchronously once the channel object round-trips
@@ -330,12 +463,171 @@ function uiPullFacet(id){
   recenter(id);
   flash("loaded "+members.length+" prims bound to <b>"+d.label+"</b> — they unload when the focus moves on (pin to keep)");
 }
+
+// --- compose mode (spec: 2026-09-03-compose-mode-v1.md) ----------------
+// One selection, two views: the expression IS a rule; its evaluated set
+// loads through the same seam as every other rule (bridge.pullSet), owned
+// by a synthetic "expr:<text>" id riding the ordinary ruleLoads/focus
+// machinery -- so load-set/pin/Back behave exactly like a facet pull.
+const TOTAL_LOADABLE=DATA.nodes.filter(n=>n.type==="prop"||n.type==="furniture").length;
+let composeTerms=[], composeResult=new Set(), _syncingText=false, _composeT=null;
+const exprOwner=()=>"expr:"+exprToText(composeTerms);
+function openCompose(){ document.getElementById("compose").style.display="block"; }
+function composeFromText(text){
+  const r=parseExpr(text);
+  composeTerms=r.terms;
+  renderChips(); refreshPreview(r.errors);
+  if(composeTerms.length&&(composeTerms.length>1||/[:=]/.test(text))) openCompose();
+}
+function syncTextFromTerms(){
+  _syncingText=true;
+  document.getElementById("seedq").value=exprToText(composeTerms);
+  _syncingText=false;
+  renderChips(); refreshPreview();
+}
+function renderChips(){
+  const el=document.getElementById("chips"); if(!el) return;
+  el.innerHTML=composeTerms.map((t,i)=>{
+    const p=t.pred;
+    const lab=p.kind==="facet"?p.facet+"="+p.value
+      :p.kind==="path"?"path:"+(p.value.length>20?"…"+p.value.slice(-19):p.value)+(p.scope==="children"?"/*":"")
+      :p.kind==="name"?"name:"+p.glob
+      :"mount:"+(p.of.length>18?"…"+p.of.slice(-17):p.of);
+    const op=i===0?"":`<select class="opsel" data-i="${i}">`+
+      ["+","&","-"].map(o=>`<option ${o===t.op?"selected":""}>${o}</option>`).join("")+`</select>`;
+    return op+`<span class="term k-${p.kind}" title="${p.kind==='path'?p.value:''}">${lab}<span class="x" data-i="${i}">×</span></span>`;
+  }).join("");
+  el.querySelectorAll("select.opsel").forEach(s=>s.onchange=function(){
+    composeTerms[+this.dataset.i].op=this.value; syncTextFromTerms(); });
+  el.querySelectorAll(".term .x").forEach(x=>x.onclick=function(ev){
+    ev.stopPropagation(); composeTerms.splice(+this.dataset.i,1);
+    if(composeTerms.length) composeTerms[0].op="+";
+    syncTextFromTerms(); });
+}
+function refreshPreview(errors){
+  composeResult=evalExpr(composeTerms, DATA);
+  const cost=document.getElementById("cost");
+  if(cost){
+    const n=composeResult.size, pct=TOTAL_LOADABLE?Math.round(100*n/TOTAL_LOADABLE):0;
+    cost.innerHTML=(composeTerms.length?`${n} prims · ${pct}% of scene`:"")+
+      (errors&&errors.length?` <span class="warn">· ${errors.join("; ")}</span>`:"");
+  }
+  const pb=document.getElementById("pinsetbtn");
+  if(pb) pb.textContent=pinned.has(exprOwner())?"✕ unpin set":"⚲ pin set";
+  const gh=document.getElementById("genhint");
+  if(gh) gh.style.display="none";
+  updatePreviewRings();
+}
+function updatePreviewRings(){
+  if(nodeSel&&nodeSel.select)
+    nodeSel.select("circle.previewring")
+      .style("display",d=>composeResult.has(d.id)?null:"none");
+}
+// shift-click a node = add it as a UNION term (owner decision: always
+// union on add; change the operator afterward in the chip)
+function addComposeTerm(d){
+  const pred=isFacetNode(d)
+    ?{kind:"facet",facet:d.type,value:d.id.slice(d.id.indexOf(":")+1)}
+    :{kind:"path",value:d.id,scope:"below"};
+  composeTerms.push({op:"+",pred});
+  syncTextFromTerms(); openCompose();
+}
+function uiLoadExpr(){
+  const res=[...composeResult];
+  if(!res.length){ flash("the expression matches nothing"); return; }
+  const owner=exprOwner();
+  moveFocusTo(owner);            // releases the previous focus's load
+  ruleLoads.set(owner,res);
+  notifyPullSet(res);
+  pushCrumb(owner);
+  refreshPreview();
+  flash("loaded "+res.length+" prims matching the expression — unloads when the focus moves on (pin set to keep)");
+}
+function uiPinExpr(){
+  const owner=exprOwner();
+  if(pinned.has(owner)){
+    pinned.delete(owner); seedSet.delete(owner);
+    if(focus!==owner&&ruleLoads.has(owner)){
+      notifyUnload(ruleLoads.get(owner).filter(p=>!pinned.has(p)&&p!==focus));
+      ruleLoads.delete(owner);
+    }
+    flash("unpinned the set");
+  } else {
+    if(!composeResult.size){ flash("the expression matches nothing"); return; }
+    if(!ruleLoads.has(owner)) uiLoadExpr();
+    pinned.add(owner); seedSet.add(owner);
+    flash("pinned — the set stays loaded across focus moves");
+  }
+  refreshPreview(); render();
+}
+function recenterOnSet(ids){
+  visible.clear(); expandedKind.clear(); history.length=0; seedSet.clear();
+  ids.forEach(x=>{ if(NODE[x]) seedSet.add(x); });
+  pinned.forEach(p=>{ if(NODE[p]) seedSet.add(p); });
+  Object.values(NODE).forEach(n=>{ n.fx=n.fy=null; n._settled=false; });
+  ids.forEach(x=>{ if(NODE[x]) reveal(x,null); });
+  pinned.forEach(p=>{ if(NODE[p]) reveal(p,null); });
+  selected=null;
+  render(); applyLens(); highlight(null);
+  if(hint) hint.style.display="none";
+}
+function uiExploreResult(){
+  const res=[...composeResult];
+  if(!res.length){ flash("the expression matches nothing"); return; }
+  recenterOnSet(res);
+  flash("exploring "+res.length+" matching prims — bboxes only, double-click to pull");
+}
+// Explore -> Compose: write the current focus's load + pins as a LITERAL
+// union expression (honest over magical); if it exactly equals one
+// facet's membership, offer the generalization as a one-click hint.
+function describeSelection(){
+  const paths=new Set();
+  const grab=id=>{
+    if(ruleLoads.has(id)) ruleLoads.get(id).forEach(p=>paths.add(p));
+    else if(isLeafNode(NODE[id])) paths.add(id);
+  };
+  if(focus) grab(focus);
+  pinned.forEach(grab);
+  return paths;
+}
+function findExactFacetFor(set){
+  for(const n of DATA.nodes){
+    if(n.type!=="finish"&&n.type!=="shading") continue;
+    const val=n.id.slice(n.id.indexOf(":")+1);
+    const m=evalExpr([{op:"+",pred:{kind:"facet",facet:n.type,value:val}}],DATA);
+    if(m.size===set.size&&[...m].every(x=>set.has(x))) return {facet:n.type,value:val};
+  }
+  return null;
+}
+function uiDescribeSelection(){
+  const set=describeSelection();
+  if(!set.size){ flash("nothing loaded/pinned to describe — pull or pin something first"); return; }
+  composeTerms=[...set].sort().map(p=>({op:"+",pred:{kind:"path",value:p,scope:"below"}}));
+  syncTextFromTerms(); openCompose();
+  const g=findExactFacetFor(set);
+  const gh=document.getElementById("genhint");
+  if(g&&gh){
+    gh.style.display="block";
+    gh.innerHTML=`<button id="genbtn">generalize? → ${g.facet}=${g.value}</button>`;
+    gh.querySelector("#genbtn").onclick=()=>{
+      composeTerms=[{op:"+",pred:{kind:"facet",facet:g.facet,value:g.value}}];
+      syncTextFromTerms();
+      flash("generalized to <b>"+g.facet+"="+g.value+"</b>");
+    };
+  }
+  flash("described as "+set.size+" literal path terms"+(g?" — or generalize below":""));
+}
 function pushCrumb(id){
   if(crumbs[crumbs.length-1]!==id) crumbs.push(id);
   updateCrumbs();
 }
 function refocus(id){   // Back/jump: re-run the target's rule, not just point at it
-  if(isFacetNode(NODE[id])){
+  if(typeof id==="string"&&id.indexOf("expr:")===0){
+    const r=parseExpr(id.slice(5));
+    const res=[...evalExpr(r.terms,DATA)];
+    moveFocusTo(id);
+    if(res.length){ ruleLoads.set(id,res); notifyPullSet(res); }
+  } else if(isFacetNode(NODE[id])){
     const members=facetMembers(id);
     moveFocusTo(id); ruleLoads.set(id,members); notifyPullSet(members);
   } else moveFocusTo(id);
@@ -358,7 +650,8 @@ function updateCrumbs(){
   const start=Math.max(0,crumbs.length-6);
   el.innerHTML=(start>0?'<span class="sep">…›</span>':'')+
     crumbs.slice(start).map((id,j)=>{ const i=start+j; const n=NODE[id];
-      const lab=n?(n.label.length>16?n.label.slice(0,15)+'…':n.label):id;
+      const raw=n?n.label:id;
+      const lab=raw.length>16?raw.slice(0,15)+'…':raw;
       return `<span class="cr ${i===crumbs.length-1?'cur':''}" data-i="${i}">${lab}</span>`;
     }).join('<span class="sep">›</span>');
   el.style.display=crumbs.length?"block":"none";
@@ -368,6 +661,9 @@ function updateCrumbs(){
 // as bboxes} ∪ {pinned} -- never the whole stage. "Immediate
 // relationships" is whatever the ACTIVE LENS says it is.
 function recenter(id){
+  if(!NODE[id]){   // an expression owner: the view IS its evaluated set
+    recenterOnSet(ruleLoads.get(id)||[...composeResult]); return;
+  }
   visible.clear(); expandedKind.clear(); history.length=0;
   seedSet.clear(); seedSet.add(id); pinned.forEach(p=>seedSet.add(p));
   Object.values(NODE).forEach(n=>{ n.fx=n.fy=null; n._settled=false; });
@@ -471,7 +767,7 @@ function refreshLayout(){   // after back/collapse/kind-toggle
 function prune(){   // drop anything no longer reachable from a seed — kills orphan spaghetti
   const keep=new Set([...seedSet,...pinned]), q=[...keep];
   while(q.length){ const c=q.shift();
-    ADJ[c].forEach(a=>{ if(active.has(a.kind)&&visible.has(a.o)&&!keep.has(a.o)){ keep.add(a.o); q.push(a.o); } }); }
+    (ADJ[c]||[]).forEach(a=>{ if(active.has(a.kind)&&visible.has(a.o)&&!keep.has(a.o)){ keep.add(a.o); q.push(a.o); } }); }
   [...visible].forEach(id=>{ if(!keep.has(id)) visible.delete(id); });
 }
 function stepBack(){
@@ -534,6 +830,8 @@ function render(){
   en.append("circle").attr("r",R)
     .attr("fill",d=>isGroupNode(d)?cvar("--bg2"):(TCOLOR[d.type]||"#aaa"))
     .attr("stroke",cvar("--bg")).attr("stroke-width",1.6);
+  en.append("circle").attr("class","previewring").attr("r",d=>R(d)+5)
+    .style("display","none");   // compose preview: look, never load
   en.append("text").attr("class","badge").attr("y",3)
     // a hollow group's fill is near the page bg, so its badge must use
     // ink, not bg, or the "+" is dark-on-dark invisible (round-9 bug)
@@ -545,7 +843,9 @@ function render(){
   en.append("text").attr("class","lab").attr("x",d=>R(d)+5).attr("y",3)
     .text(d=>d.label.length>22?d.label.slice(0,21)+"…":d.label);
   en.append("title").text(d=>d.label+"  ("+d.id+")");   // full name on hover
-  en.on("click",(ev,d)=>{ ev.stopPropagation(); uiPeek(d.id); })      // PEEK: look, never load
+  en.on("click",(ev,d)=>{ ev.stopPropagation();
+      if(ev.shiftKey){ addComposeTerm(d); return; }   // shift-click: add as a union term
+      uiPeek(d.id); })                                 // PEEK: look, never load
     .on("dblclick",(ev,d)=>{ ev.stopPropagation(); uiPull(d.id); })   // PULL: move the focus
     .on("pointerenter",(ev,d)=>{ hovered=d; updateLabels(); })
     .on("pointerleave",()=>{ hovered=null; updateLabels(); });
@@ -556,6 +856,7 @@ function render(){
     .attr("stroke-width",d=>pinned.has(d.id)?2.2:isGroupNode(d)?2:1.6);
   nodeSel.select("text.badge").text(d=> (d.type==="finish"||d.type==="shading")?String(childrenCount(d.id))
       : (hasUnexpanded(d.id)?"+":""));
+  updatePreviewRings();
   updateLabels();
 }
 function childrenCount(id){ return ADJ[id].filter(a=>active.has(a.kind)).length; }
@@ -662,8 +963,8 @@ function inspect(d){
     <div class="gesture">double-click: pull — load all ${m.length} members &amp; re-center</div>`;
   }
   const fk=Object.keys(f);
-  if(fk.length){ h+=`<div class="sec">facets — click to view the world this way</div>`;
-    fk.forEach(k=> f[k].forEach(v=> h+=`<span class="facet" data-lens="${k==='shading'?'weft:bind:shading':'weft:bind:finish'}">${k}: ${v}</span>`)); }
+  if(fk.length){ h+=`<div class="sec">facets — click to view · shift-click to add to expression</div>`;
+    fk.forEach(k=> f[k].forEach(v=> h+=`<span class="facet" data-lens="${k==='shading'?'weft:bind:shading':'weft:bind:finish'}" data-fk="${k}" data-fv="${v}" title="shift-click: add ${k}=${v} to the compose expression">${k}: ${v}</span>`)); }
   h+=`<div class="sec">threads — click to reveal (bboxes, no load)</div>`;
   const kinds=Object.keys(t).filter(k=>active.has(k));
   if(!kinds.length) h+=`<div style="color:var(--muted);font-size:12px">no followed threads here</div>`;
@@ -694,7 +995,12 @@ function inspect(d){
     else if(!row.classList.contains("done")) row.onclick=()=>{ expand(d.id,k); inspect(d); };
   });
   el.querySelectorAll(".kid:not(.more)").forEach(c=>c.onclick=(ev)=>{ ev.stopPropagation(); revealChild(d.id,c.dataset.o); });
-  el.querySelectorAll(".facet").forEach(fc=>fc.onclick=()=>{ setLens(fc.dataset.lens); expand(d.id,fc.dataset.lens); inspect(d); });
+  el.querySelectorAll(".facet").forEach(fc=>fc.onclick=(ev)=>{
+    if(ev.shiftKey){   // add-to-expression affordance
+      composeTerms.push({op:"+",pred:{kind:"facet",facet:fc.dataset.fk,value:fc.dataset.fv}});
+      syncTextFromTerms(); openCompose(); return;
+    }
+    setLens(fc.dataset.lens); expand(d.id,fc.dataset.lens); inspect(d); });
 }
 function hasKindUnexpanded(id,k){ return ADJ[id].some(a=>a.kind===k&&active.has(a.kind)&&!visible.has(a.o)); }
 
@@ -714,15 +1020,48 @@ DATA.kinds.forEach(k=>{ const row=kd.append("div").attr("class","chip");
 
 document.getElementById("reset").onclick=()=>{ resetToSeed(); flash("Home — the scene's hierarchy. Click to peek; double-click to pull."); };
 document.getElementById("back").onclick=()=>goBack();   // breadcrumb back: previous focus, same load/unload rules
+document.getElementById("composetoggle").onclick=()=>{
+  const el=document.getElementById("compose");
+  const open=el.style.display!=="none";
+  el.style.display=open?"none":"block";
+  if(!open) refreshPreview();
+};
+document.getElementById("loadsetbtn").onclick=()=>uiLoadExpr();
+document.getElementById("pinsetbtn").onclick=()=>uiPinExpr();
+document.getElementById("exploresetbtn").onclick=()=>uiExploreResult();
+document.getElementById("describebtn").onclick=()=>uiDescribeSelection();
 addEventListener("keydown",ev=>{ if((ev.metaKey||ev.ctrlKey)&&ev.key==="z"){ ev.preventDefault(); stepBack(); } });
+// One text line, one parser: the ask bar IS the compose expression line.
+// Typing live-parses into chips + preview (debounced ~120ms, loads
+// nothing). Enter keeps the two legacy single-term gestures (a facet ask
+// pulls it; a bare name-glob re-seeds the view); anything else -- a
+// multi-term or prefixed expression -- just opens compose with the
+// preview, and loading is the explicit "load set" button.
+document.getElementById("seedq").addEventListener("input",function(){
+  if(_syncingText) return;
+  clearTimeout(_composeT);
+  const v=this.value;
+  _composeT=setTimeout(()=>composeFromText(v),120);
+});
 document.getElementById("seedq").addEventListener("keydown",function(ev){ if(ev.key!=="Enter")return;
-  const r=parseAsk(this.value);
-  if(!r){ resetToSeed(); return; }
-  if(r.error){ flash(r.error); return; }
-  // a where:-ask names a facet: it is rule -> set -> load like any
-  // other facet pull -- LOAD the matching set, don't just show it
-  if(r.ids.length&&isFacetNode(NODE[r.ids[0]])){ uiPullFacet(r.ids[0]); return; }
-  resetToSeed(r.ids); flash(r.msg + " — click one, then pull its threads.");
+  const txt=this.value;
+  const r=parseExpr(txt);
+  if(!r.terms.length){ resetToSeed(); return; }
+  if(r.terms.length===1){
+    const p=r.terms[0].pred;
+    if(p.kind==="facet"){
+      const fid=p.facet+":"+p.value;
+      if(NODE[fid]){ uiPullFacet(fid); return; }
+      flash("no prim has "+p.facet+" = "+p.value+" in this scene"); return;
+    }
+    if(p.kind==="name"&&txt.indexOf("name:")!==0){   // legacy bare-glob ask
+      const a=parseAsk(txt);
+      if(a&&a.error){ flash(a.error); return; }
+      if(a){ resetToSeed(a.ids); flash(a.msg+" — click one, then pull its threads."); return; }
+    }
+  }
+  composeFromText(txt); openCompose();
+  flash(composeResult.size+" prims match — <b>load set</b> / <b>explore</b> from the compose panel");
 });
 
 const hint=document.getElementById("hint");
