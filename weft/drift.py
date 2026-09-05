@@ -32,7 +32,13 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from . import __version__
-from .threadgraph import _alab_root_from_stage, _facets_from_interfaces
+# These moved from threadgraph.py into relkinds.py (public names) when
+# build_graph was refactored to the relationship-kind registry; aliased here
+# to keep drift.py's internal call sites unchanged.
+from .relkinds import (
+    alab_root_from_stage as _alab_root_from_stage,
+    facets_from_interfaces as _facets_from_interfaces,
+)
 
 # Model kinds that carry `assetInfo` without being placements themselves --
 # ALab authors assetInfo:name on assembly roots too (e.g. /root of the
