@@ -27,7 +27,6 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from .relkinds import (
-    REGISTRY,
     LENS_ORDER,
     Context,
     GraphBuilder,
@@ -45,11 +44,18 @@ def build_graph(stage, alab_root: Optional[str] = None, registry=None) -> Dict:
     Each node: id, label, type (group/prop/furniture/finish/shading/
     collection), deg, and -- for prop/furniture nodes -- asset, group. Each
     edge: source, target, kind. `registry` overrides the default kind set (for
-    tests / extensibility); it defaults to relkinds.REGISTRY. Never raises on a
+    tests / extensibility); it defaults to kinds.discover(stage) -- the
+    built-in relkinds.REGISTRY plus any weft__kinds declared on the context
+    layer, so a declared kind shows up as a lens automatically (and a stage
+    with no declarations gets exactly the built-ins). Never raises on a
     stage that doesn't match ALab's convention or has no discoverable interface
     files -- it returns whatever it could build, down to an empty graph.
     """
-    kinds = REGISTRY if registry is None else registry
+    if registry is None:
+        from .kinds import discover
+        kinds = discover(stage)
+    else:
+        kinds = registry
 
     resolved_root = alab_root_from_stage(stage, alab_root)
     asset_finish, asset_shading = facets_from_interfaces(resolved_root)

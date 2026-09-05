@@ -368,6 +368,18 @@ def cmd_pull(args) -> int:
         except ValueError as e:
             print("pull: %s" % e, file=sys.stderr)
             return 1
+    if args.kinds:
+        # A weft__kinds sidecar: each read-mode kind contributes its
+        # Extractor here; loading registered its omission class with the
+        # registry, so a cut declared edge is classified in the boundary.
+        from .kinds import load_kinds, parse_kinds
+        try:
+            declared = load_kinds(parse_kinds(Path(args.kinds).read_text()))
+        except ValueError as e:
+            print("pull: %s" % e, file=sys.stderr)
+            return 1
+        extractors += [k.extractor for k in declared
+                       if getattr(k, "extractor", None)]
     try:
         ctx = _context_file(args.context)
     except (ValueError, KeyError) as e:
@@ -1000,6 +1012,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--depth", type=int, default=4)
     s.add_argument("--extractors", default=None, metavar="FILE",
                    help="a weft__extractors document")
+    s.add_argument("--kinds", default=None, metavar="FILE",
+                   help="a weft__kinds sidecar (declared relationship kinds)")
     s.add_argument("-o", "--out", default=None, help="write the manifest here")
     s.add_argument("--mask-out", default=None, help="write member paths, one per line")
     s.add_argument("--verify", default=None, metavar="MANIFEST",
