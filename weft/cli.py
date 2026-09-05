@@ -415,6 +415,119 @@ def cmd_pull(args) -> int:
     return 0 if not findings else 1
 
 
+def _compose_expression(args):
+    """Shared by compose/open: resolve the context, parse the expression,
+    load extractors. Returns (ctx, Expression, extractors) or an error
+    string."""
+    from .compose import parse_expression
+    from .registry import parse_extractors
+
+    extractors = []
+    if getattr(args, "extractors", None):
+        try:
+            extractors = parse_extractors(Path(args.extractors).read_text())
+        except ValueError as e:
+            return str(e)
+    try:
+        ctx = _context_file(args.context)
+        expr = parse_expression(args.expression, default_depth=args.depth)
+    except (ValueError, KeyError) as e:
+        return str(e)
+    return ctx, expr, extractors
+
+
+def cmd_compose(args) -> int:
+    """One weft expression -> one referenceable surgical layer."""
+    # Same import shape as cmd_pull: manifest -> pull -> deps.walk -> pxr,
+    # so this is where a bare (no usd-core) environment fails.
+    try:
+        from . import manifest as _manifest
+        from . import compose as _compose
+    except ImportError:
+        print("compose: usd-core is required (pip install usd-core)",
+              file=sys.stderr)
+        return 1
+
+    got = _compose_expression(args)
+    if isinstance(got, str):
+        print("compose: %s" % got, file=sys.stderr)
+        return 1
+    ctx, expr, extractors = got
+
+    try:
+        c = _compose.compose(ctx, args.expression, out=args.out,
+                             extractors=extractors,
+                             default_depth=args.depth)
+    except (ValueError, RuntimeError) as e:
+        print("compose: %s" % e, file=sys.stderr)
+        return 1
+    p = c.pull
+
+    for r in p.resolutions:
+        print("seed %s -> %d (%s)%s"
+              % (r.seed.raw, r.matched, r.mode, ("  " + r.note) if r.note else ""))
+    print("members %d  ->  surgical stage %d prims (members + spine ancestors)"
+          % (c.member_count, c.prim_count))
+    if c.out:
+        print("surgical layer: %s  (flatten of the masked open; opens to "
+              "exactly the masked stage)" % c.out)
+    if args.out_manifest:
+        _manifest.layer_hashes(p)
+        doc = _manifest.to_document(p)
+        findings = _manifest.verify(doc)
+        for f in findings:
+            print("  ! %s" % f, file=sys.stderr)
+        Path(args.out_manifest).write_text(doc)
+        print("manifest: %s  (verify with `weft pull --verify`)"
+              % args.out_manifest)
+        if findings:
+            return 1
+    return 0
+
+
+def cmd_open(args) -> int:
+    """Open the surgical stage an expression names -- the honest quick
+    path: usdview's native --mask applies the population mask at open
+    time (no flatten), which is exactly what the phase-2 C++ resolver
+    does. Without usdview on PATH, prints the command to run."""
+    try:
+        from . import compose as _compose
+        from . import manifest as _manifest
+        from . import pull as _pull
+    except ImportError:
+        print("open: usd-core is required (pip install usd-core)",
+              file=sys.stderr)
+        return 1
+
+    got = _compose_expression(args)
+    if isinstance(got, str):
+        print("open: %s" % got, file=sys.stderr)
+        return 1
+    ctx, expr, extractors = got
+
+    try:
+        p = _pull.pull(ctx, expr.seeds, follow=expr.follow, depth=expr.depth,
+                       extractors=extractors)
+    except ValueError as e:
+        print("open: %s" % e, file=sys.stderr)
+        return 1
+    paths = _manifest.mask_paths(p)
+    if not paths:
+        print("open: expression matched nothing", file=sys.stderr)
+        return 1
+    cmd = ["usdview", ctx, "--mask", _compose.mask_arg(paths)]
+    print("%d members  ->  %s" % (len(paths), " ".join(cmd)))
+    if args.print_only:
+        return 0
+    import shutil
+    import subprocess
+    exe = shutil.which("usdview")
+    if not exe:
+        print("open: usdview not on PATH; run the command above", file=sys.stderr)
+        return 1
+    return subprocess.call([exe] + cmd[1:])
+
+
 def cmd_who(args) -> int:
     try:
         from . import pull as _pull
@@ -529,6 +642,83 @@ def cmd_resolve(args) -> int:
     for asset, rev in sorted(pins.items()):
         print("  %-24s %s" % (asset, rev))
     return 0
+
+
+def _receipts_dir() -> Path:
+    """Where `drift capture` writes: `.weft/receipts/` under the enclosing
+    weft repository if one exists, else under the working directory --
+    receipts are sidecar files and need no object store, so no `weft init`
+    is required first."""
+    p = Path.cwd()
+    for d in [p] + list(p.parents):
+        if (d / Repo.DIRNAME).is_dir():
+            return d / Repo.DIRNAME / "receipts"
+    return p / Repo.DIRNAME / "receipts"
+
+
+def _open_stage(path: str):
+    """An open Usd.Stage, or None (with a message printed) when usd-core
+    is missing or the file will not open."""
+    try:
+        from pxr import Usd
+    except ImportError:
+        print("drift: usd-core is required (pip install usd-core)", file=sys.stderr)
+        return None
+    stage = Usd.Stage.Open(path) if os.path.exists(path) else None
+    if stage is None:
+        print("drift: cannot open stage: %s" % path, file=sys.stderr)
+    return stage
+
+
+def cmd_drift_capture(args) -> int:
+    """Record a facet rule's members + read fingerprints as a receipt."""
+    from . import drift as _drift
+    stage = _open_stage(args.stage)
+    if stage is None:
+        return 1
+    rule = {"kind": "facet", "facet": "finish", "value": args.finish}
+    receipt = _drift.capture(stage, rule, name=args.name)
+    out = _receipts_dir() / ("%s.weft" % args.name)
+    _drift.write_receipt(receipt, str(out))
+    print("%s  %d member%s  merkle sha256:%s"
+          % (out, len(receipt.members),
+             "" if len(receipt.members) == 1 else "s", receipt.merkle_root[:16]))
+    return 0
+
+
+def cmd_drift_verify(args) -> int:
+    """Check a receipt against a (possibly changed) stage. Exits non-zero
+    on meaning-changing drift, so it can gate CI."""
+    from . import drift as _drift
+    if not os.path.exists(args.receipt):
+        print("drift: no such receipt: %s" % args.receipt, file=sys.stderr)
+        return 1
+    stage = _open_stage(args.stage)
+    if stage is None:
+        return 1
+    receipt = _drift.read_receipt(args.receipt)
+    report = _drift.verify(receipt, stage)
+
+    print("%s  %s" % (receipt.name, report.summary()))
+    for f in report.renamed:
+        print("  renamed  %s -> %s  (inert, tier %s)"
+              % (f["old_path"], f["new_path"], f["tier"]))
+    for f in report.changed:
+        print("  CHANGED  %s  %s -> %s  (tier %s)"
+              % (f["member"]["path"], f["old"], f["new"], f["tier"]))
+    for f in report.departed:
+        print("  DEPARTED %s  (tier %s)" % (f["member"]["path"], f["tier"]))
+    for f in report.arrived:
+        print("  ARRIVED  %s  %s" % (f["signature"]["path"], f["read"]))
+    for f in report.ambiguous:
+        print("  ambiguous %s  candidates: %s  (tier %s limit, warning)"
+              % (f["member"]["path"], ", ".join(f["candidates"]), f["tier"]))
+    if report.clean:
+        print("clean  (merkle sha256:%s)" % report.merkle_root_after[:16])
+        return 0
+    print("DRIFT  merkle sha256:%s -> sha256:%s"
+          % (report.merkle_root_before[:16], report.merkle_root_after[:16]))
+    return 1
 
 
 def cmd_drift(args) -> int:
@@ -762,10 +952,24 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--out", default="weft.lock")
     s.set_defaults(fn=cmd_resolve)
 
-    s = sub.add_parser("drift", help="has anything changed since a baseline?")
-    s.add_argument("baseline")
-    s.add_argument("--channel", default="approved")
-    s.set_defaults(fn=cmd_drift)
+    s = sub.add_parser("drift", help="capture/verify receipts, or check a baseline")
+    dsub = s.add_subparsers(dest="drift_cmd", required=True)
+
+    d = dsub.add_parser("capture", help="record a facet rule's members as a receipt")
+    d.add_argument("stage")
+    d.add_argument("--finish", required=True, help="facet value, e.g. translucent")
+    d.add_argument("--name", required=True, help="receipt name (.weft/receipts/<name>.weft)")
+    d.set_defaults(fn=cmd_drift_capture)
+
+    d = dsub.add_parser("verify", help="check a receipt against a (changed?) stage")
+    d.add_argument("receipt")
+    d.add_argument("stage")
+    d.set_defaults(fn=cmd_drift_verify)
+
+    d = dsub.add_parser("since", help="has anything changed since a baseline?")
+    d.add_argument("baseline")
+    d.add_argument("--channel", default="approved")
+    d.set_defaults(fn=cmd_drift)
 
     s = sub.add_parser("diff", help="structural diff between two revisions")
     s.add_argument("asset")
@@ -802,6 +1006,33 @@ def build_parser() -> argparse.ArgumentParser:
                    help="verify an existing manifest instead of pulling")
     s.set_defaults(fn=cmd_pull)
 
+    s = sub.add_parser("compose",
+                       help="expression -> referenceable surgical layer")
+    s.add_argument("expression",
+                   help='seeds + directives, e.g. '
+                        '"where:finish=translucent follow:Mount depth:3" '
+                        "(the string a weft:// URI carries)")
+    s.add_argument("--context", required=True, metavar="FILE_OR_ASSET")
+    s.add_argument("--depth", type=int, default=4,
+                   help="default depth when the expression has no depth:")
+    s.add_argument("--extractors", default=None, metavar="FILE",
+                   help="a weft__extractors document")
+    s.add_argument("-o", "--out", default=None,
+                   help="write the surgical layer here (.usda)")
+    s.add_argument("--out-manifest", default=None, metavar="FILE",
+                   help="write the pull manifest certifying this layer")
+    s.set_defaults(fn=cmd_compose)
+
+    s = sub.add_parser("open",
+                       help="open the surgical stage in usdview (open-time mask)")
+    s.add_argument("expression")
+    s.add_argument("--context", required=True, metavar="FILE_OR_ASSET")
+    s.add_argument("--depth", type=int, default=4)
+    s.add_argument("--extractors", default=None, metavar="FILE")
+    s.add_argument("--print-only", action="store_true",
+                   help="print the usdview command instead of launching it")
+    s.set_defaults(fn=cmd_open)
+
     s = sub.add_parser("who", help="what depends on this prim (incoming edges)")
     s.add_argument("seeds", nargs="+")
     s.add_argument("--context", required=True, metavar="FILE_OR_ASSET")
@@ -813,5 +1044,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    # Back-compat: `weft drift <baseline>` predates the capture/verify
+    # subcommands (docs still show it) -- rewrite it to `drift since`.
+    if (len(argv) >= 2 and argv[0] == "drift"
+            and argv[1] not in ("capture", "verify", "since", "-h", "--help")):
+        argv.insert(1, "since")
     args = build_parser().parse_args(argv)
     return args.fn(args)
