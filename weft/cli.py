@@ -531,6 +531,83 @@ def cmd_resolve(args) -> int:
     return 0
 
 
+def _receipts_dir() -> Path:
+    """Where `drift capture` writes: `.weft/receipts/` under the enclosing
+    weft repository if one exists, else under the working directory --
+    receipts are sidecar files and need no object store, so no `weft init`
+    is required first."""
+    p = Path.cwd()
+    for d in [p] + list(p.parents):
+        if (d / Repo.DIRNAME).is_dir():
+            return d / Repo.DIRNAME / "receipts"
+    return p / Repo.DIRNAME / "receipts"
+
+
+def _open_stage(path: str):
+    """An open Usd.Stage, or None (with a message printed) when usd-core
+    is missing or the file will not open."""
+    try:
+        from pxr import Usd
+    except ImportError:
+        print("drift: usd-core is required (pip install usd-core)", file=sys.stderr)
+        return None
+    stage = Usd.Stage.Open(path) if os.path.exists(path) else None
+    if stage is None:
+        print("drift: cannot open stage: %s" % path, file=sys.stderr)
+    return stage
+
+
+def cmd_drift_capture(args) -> int:
+    """Record a facet rule's members + read fingerprints as a receipt."""
+    from . import drift as _drift
+    stage = _open_stage(args.stage)
+    if stage is None:
+        return 1
+    rule = {"kind": "facet", "facet": "finish", "value": args.finish}
+    receipt = _drift.capture(stage, rule, name=args.name)
+    out = _receipts_dir() / ("%s.weft" % args.name)
+    _drift.write_receipt(receipt, str(out))
+    print("%s  %d member%s  merkle sha256:%s"
+          % (out, len(receipt.members),
+             "" if len(receipt.members) == 1 else "s", receipt.merkle_root[:16]))
+    return 0
+
+
+def cmd_drift_verify(args) -> int:
+    """Check a receipt against a (possibly changed) stage. Exits non-zero
+    on meaning-changing drift, so it can gate CI."""
+    from . import drift as _drift
+    if not os.path.exists(args.receipt):
+        print("drift: no such receipt: %s" % args.receipt, file=sys.stderr)
+        return 1
+    stage = _open_stage(args.stage)
+    if stage is None:
+        return 1
+    receipt = _drift.read_receipt(args.receipt)
+    report = _drift.verify(receipt, stage)
+
+    print("%s  %s" % (receipt.name, report.summary()))
+    for f in report.renamed:
+        print("  renamed  %s -> %s  (inert, tier %s)"
+              % (f["old_path"], f["new_path"], f["tier"]))
+    for f in report.changed:
+        print("  CHANGED  %s  %s -> %s  (tier %s)"
+              % (f["member"]["path"], f["old"], f["new"], f["tier"]))
+    for f in report.departed:
+        print("  DEPARTED %s  (tier %s)" % (f["member"]["path"], f["tier"]))
+    for f in report.arrived:
+        print("  ARRIVED  %s  %s" % (f["signature"]["path"], f["read"]))
+    for f in report.ambiguous:
+        print("  ambiguous %s  candidates: %s  (tier %s limit, warning)"
+              % (f["member"]["path"], ", ".join(f["candidates"]), f["tier"]))
+    if report.clean:
+        print("clean  (merkle sha256:%s)" % report.merkle_root_after[:16])
+        return 0
+    print("DRIFT  merkle sha256:%s -> sha256:%s"
+          % (report.merkle_root_before[:16], report.merkle_root_after[:16]))
+    return 1
+
+
 def cmd_drift(args) -> int:
     """Has anything changed since this baseline? One hash comparison."""
     repo = Repo.find()
@@ -762,10 +839,24 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--out", default="weft.lock")
     s.set_defaults(fn=cmd_resolve)
 
-    s = sub.add_parser("drift", help="has anything changed since a baseline?")
-    s.add_argument("baseline")
-    s.add_argument("--channel", default="approved")
-    s.set_defaults(fn=cmd_drift)
+    s = sub.add_parser("drift", help="capture/verify receipts, or check a baseline")
+    dsub = s.add_subparsers(dest="drift_cmd", required=True)
+
+    d = dsub.add_parser("capture", help="record a facet rule's members as a receipt")
+    d.add_argument("stage")
+    d.add_argument("--finish", required=True, help="facet value, e.g. translucent")
+    d.add_argument("--name", required=True, help="receipt name (.weft/receipts/<name>.weft)")
+    d.set_defaults(fn=cmd_drift_capture)
+
+    d = dsub.add_parser("verify", help="check a receipt against a (changed?) stage")
+    d.add_argument("receipt")
+    d.add_argument("stage")
+    d.set_defaults(fn=cmd_drift_verify)
+
+    d = dsub.add_parser("since", help="has anything changed since a baseline?")
+    d.add_argument("baseline")
+    d.add_argument("--channel", default="approved")
+    d.set_defaults(fn=cmd_drift)
 
     s = sub.add_parser("diff", help="structural diff between two revisions")
     s.add_argument("asset")
@@ -813,5 +904,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    # Back-compat: `weft drift <baseline>` predates the capture/verify
+    # subcommands (docs still show it) -- rewrite it to `drift since`.
+    if (len(argv) >= 2 and argv[0] == "drift"
+            and argv[1] not in ("capture", "verify", "since", "-h", "--help")):
+        argv.insert(1, "since")
     args = build_parser().parse_args(argv)
     return args.fn(args)
