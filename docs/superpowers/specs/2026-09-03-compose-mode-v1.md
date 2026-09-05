@@ -151,12 +151,3 @@ round-trip; minimal-rule *inference* beyond the single exact-facet
    difference) in both text and chips.
 3. **Path scope** — support **both**: `path:X` = that prim and everything below;
    `path:X/*` = its direct children only.
-
-## 11. Follow-ups from live use
-
-- **`path:` substring / glob (contains mode)** — v1 `path:` is prefix-only, so
-  "path has *decor*" isn't expressible against the path; the owner reached for
-  it in live use and had to fall back to `name:*decor*` (which globs the leaf
-  label, not the full path). Add a contains/glob path predicate — e.g.
-  `path:*decor*` matching anywhere in the prim path — as a next-pass predicate.
-  (Owner-requested 2026-09-04.)
