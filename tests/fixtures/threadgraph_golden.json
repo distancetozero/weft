@@ -1,0 +1,6288 @@
+{
+  "edges": [
+    {
+      "kind": "usd:arc",
+      "source": "/root/floor_dressing01",
+      "target": "/root/floor_dressing01/decor_bottle_cap01_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/decor_bottle_cap01_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/decor_bottle_cap01_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/decor_bottle_cap01_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/floor_dressing01/decor_bottle_cap01_0002",
+      "target": "/root/floor_dressing01/furniture_bench_seat01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/floor_dressing01",
+      "target": "/root/floor_dressing01/furniture_bench_seat01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/furniture_bench_seat01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/furniture_bench_seat01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/furniture_bench_seat01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/floor_dressing01",
+      "target": "/root/floor_dressing01/tool_screw01_0008"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw01_0008",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw01_0008",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw01_0008",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/floor_dressing01/tool_screw01_0008",
+      "target": "/root/floor_dressing01/furniture_bench_seat01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/floor_dressing01",
+      "target": "/root/floor_dressing01/tool_screw01_0009"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw01_0009",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw01_0009",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw01_0009",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/floor_dressing01/tool_screw01_0009",
+      "target": "/root/floor_dressing01/furniture_bench_seat01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/floor_dressing01",
+      "target": "/root/floor_dressing01/tool_screw01_0010"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw01_0010",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw01_0010",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw01_0010",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/floor_dressing01/tool_screw01_0010",
+      "target": "/root/floor_dressing01/furniture_bench_seat01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/floor_dressing01",
+      "target": "/root/floor_dressing01/tool_screw02_0013"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw02_0013",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw02_0013",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_screw02_0013",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/floor_dressing01/tool_screw02_0013",
+      "target": "/root/floor_dressing01/furniture_bench_seat01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/floor_dressing01",
+      "target": "/root/floor_dressing01/tool_washer01_0012"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_washer01_0012",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_washer01_0012",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_washer01_0012",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/floor_dressing01/tool_washer01_0012",
+      "target": "/root/floor_dressing01/furniture_bench_seat01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/floor_dressing01",
+      "target": "/root/floor_dressing01/tool_washer01_0013"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_washer01_0013",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_washer01_0013",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/floor_dressing01/tool_washer01_0013",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/floor_dressing01/tool_washer01_0013",
+      "target": "/root/floor_dressing01/furniture_bench_seat01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle01_0004"
+    },
+    {
+      "kind": "weft:bind:finish",
+      "source": "/root/shelf01/chemistry_bottle01_0004",
+      "target": "finish:translucent"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0004",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0004",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0004",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0004",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0004",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0004",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0004",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle01_0005"
+    },
+    {
+      "kind": "weft:bind:finish",
+      "source": "/root/shelf01/chemistry_bottle01_0005",
+      "target": "finish:translucent"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0005",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0005",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0005",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0005",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0005",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0005",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0005",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle01_0007"
+    },
+    {
+      "kind": "weft:bind:finish",
+      "source": "/root/shelf01/chemistry_bottle01_0007",
+      "target": "finish:translucent"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0007",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0007",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0007",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0007",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0007",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0007",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0007",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle01_0011"
+    },
+    {
+      "kind": "weft:bind:finish",
+      "source": "/root/shelf01/chemistry_bottle01_0011",
+      "target": "finish:translucent"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0011",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0011",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0011",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0011",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0011",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0011",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0011",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle01_0012"
+    },
+    {
+      "kind": "weft:bind:finish",
+      "source": "/root/shelf01/chemistry_bottle01_0012",
+      "target": "finish:translucent"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0012",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0012",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle01_0012",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0012",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0012",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0012",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle01_0012",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle02_0006"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0006",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0006",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0006",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0006",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0006",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0006",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0006",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle02_0009"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0009",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0009",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0009",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0009",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0009",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0009",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0009",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle02_0010"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0010",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0010",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0010",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0010",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0010",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0010",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0010",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle02_0011"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0011",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0011",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle02_0011",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0011",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0011",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0011",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle02_0011",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle03_0009"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0009",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0009",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0009",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0009",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0009",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0009",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0009",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle03_0010"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0010",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0010",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0010",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0010",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0010",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0010",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0010",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle03_0011"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0011",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0011",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0011",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0011",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0011",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0011",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0011",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle03_0012"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0012",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0012",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0012",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0012",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0012",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0012",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0012",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle03_0013"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0013",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0013",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0013",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0013",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0013",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0013",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0013",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle03_0014"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0014",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0014",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0014",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0014",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0014",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0014",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0014",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle03_0015"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0015",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0015",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0015",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0015",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0015",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0015",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0015",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_bottle03_0016"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0016",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0016",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_bottle03_0016",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0016",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0016",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0016",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_bottle03_0016",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_microscope01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_microscope01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_microscope01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_microscope01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_microscope01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_microscope01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_microscope01_0001",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_microscope01_0001",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_test_tube02_0020"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_test_tube02_0020",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_test_tube02_0020",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_test_tube02_0020",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube02_0020",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube02_0020",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube02_0020",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube02_0020",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_test_tube03_0022"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_test_tube03_0022",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_test_tube03_0022",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_test_tube03_0022",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube03_0022",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube03_0022",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube03_0022",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube03_0022",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/chemistry_test_tube03_0023"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_test_tube03_0023",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_test_tube03_0023",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/chemistry_test_tube03_0023",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube03_0023",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube03_0023",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube03_0023",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/chemistry_test_tube03_0023",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_bonsai_jar01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_bonsai_jar01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_bonsai_jar01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_bonsai_jar01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_bonsai_jar01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_bonsai_jar01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_bonsai_jar01_0001",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_bonsai_jar01_0001",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_book_open02_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_book_open02_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_book_open02_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_book_open02_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_book_open02_0001",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_book_open02_0001",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_book_open02_0001",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_book_open02_0001",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_clip01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_clip01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_clip01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_clip01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_clip01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_clip01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_clip01_0001",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_clip01_0001",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_clip01_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_clip01_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_clip01_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_clip01_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_clip01_0002",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_clip01_0002",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_clip01_0002",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_clip01_0002",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_glass01_0002"
+    },
+    {
+      "kind": "weft:bind:finish",
+      "source": "/root/shelf01/decor_glass01_0002",
+      "target": "finish:translucent"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_glass01_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_glass01_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_glass01_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_glass01_0002",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_glass01_0002",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_glass01_0002",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_glass01_0002",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_mug_coffee03_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_mug_coffee03_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_mug_coffee03_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_mug_coffee03_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_mug_coffee03_0001",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_mug_coffee03_0001",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_mug_coffee03_0001",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_mug_coffee03_0001",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_paper_notea01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notea01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notea01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notea01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notea01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notea01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notea01_0001",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notea01_0001",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_paper_noteb01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_noteb01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_noteb01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_noteb01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_noteb01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_noteb01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_noteb01_0001",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_noteb01_0001",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_paper_notec02_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notec02_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notec02_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notec02_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notec02_0002",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notec02_0002",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notec02_0002",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notec02_0002",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_paper_notef06_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notef06_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notef06_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notef06_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notef06_0002",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notef06_0002",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notef06_0002",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notef06_0002",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_paper_notef08_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notef08_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notef08_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_notef08_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notef08_0002",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notef08_0002",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notef08_0002",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_notef08_0002",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_paper_noteh01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_noteh01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_noteh01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_paper_noteh01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_noteh01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_noteh01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_noteh01_0001",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_paper_noteh01_0001",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_string01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_string01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_string01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_string01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_string01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_string01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_string01_0001",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_string01_0001",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_thumb_tack01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_thumb_tack01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_thumb_tack01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_thumb_tack01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_thumb_tack01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_thumb_tack01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_thumb_tack01_0001",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_thumb_tack01_0001",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/decor_thumb_tack01_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_thumb_tack01_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_thumb_tack01_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/decor_thumb_tack01_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_thumb_tack01_0002",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_thumb_tack01_0002",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_thumb_tack01_0002",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/decor_thumb_tack01_0002",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_lbracket01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_lbracket01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_lbracket01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_lbracket01_2",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_lbracket01_2",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_lbracket01_2",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_parts_cabinet02_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_parts_cabinet02_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_parts_cabinet02_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_shelving01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_shelving01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/furniture_shelving01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_cable02_0010"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0010",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0010",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0010",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0010",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0010",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0010",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0010",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_cable02_0011"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0011",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0011",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0011",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0011",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0011",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0011",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_cable02_0011",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_capacitor02_0006"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_capacitor02_0006",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_capacitor02_0006",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_capacitor02_0006",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_capacitor02_0006",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_capacitor02_0006",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_capacitor02_0006",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_capacitor02_0006",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_diode01_0004"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0004",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0004",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0004",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0004",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0004",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0004",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0004",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_diode01_0007"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0007",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0007",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0007",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0007",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0007",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0007",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode01_0007",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_diode02_0008"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0008",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0008",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0008",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0008",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0008",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0008",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0008",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_diode02_0009"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0009",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0009",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0009",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0009",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0009",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0009",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode02_0009",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_diode03_0006"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode03_0006",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode03_0006",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode03_0006",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode03_0006",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode03_0006",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode03_0006",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode03_0006",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_diode05_0005"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode05_0005",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode05_0005",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_diode05_0005",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode05_0005",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode05_0005",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode05_0005",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_diode05_0005",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_fuse01_0008"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0008",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0008",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0008",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0008",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0008",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0008",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0008",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_fuse01_0009"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0009",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0009",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0009",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0009",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0009",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0009",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse01_0009",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_fuse02_0006"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0006",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0006",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0006",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0006",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0006",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0006",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0006",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_fuse02_0007"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0007",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0007",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0007",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0007",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0007",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0007",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_fuse02_0007",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_resistor02_0006"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_resistor02_0006",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_resistor02_0006",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_resistor02_0006",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor02_0006",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor02_0006",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor02_0006",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor02_0006",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_resistor06_0006"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_resistor06_0006",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_resistor06_0006",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_resistor06_0006",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor06_0006",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor06_0006",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor06_0006",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor06_0006",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/proc_dev_circuit_resistor08_0009"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_resistor08_0009",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_resistor08_0009",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/proc_dev_circuit_resistor08_0009",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor08_0009",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor08_0009",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor08_0009",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/proc_dev_circuit_resistor08_0009",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/stationary_pencil01_0007"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/stationary_pencil01_0007",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/stationary_pencil01_0007",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/stationary_pencil01_0007",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/stationary_pencil01_0007",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/stationary_pencil01_0007",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/stationary_pencil01_0007",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/stationary_pencil01_0007",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/tool_screw01_0049"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0049",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0049",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0049",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0049",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0049",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0049",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0049",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/tool_screw01_0050"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0050",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0050",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0050",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0050",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0050",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0050",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0050",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/tool_screw01_0052"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0052",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0052",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0052",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0052",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0052",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0052",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0052",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/tool_screw01_0053"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0053",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0053",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0053",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0053",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0053",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0053",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0053",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/tool_screw01_0072"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0072",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0072",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_screw01_0072",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0072",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0072",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0072",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_screw01_0072",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/tool_washer01_0021"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_washer01_0021",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_washer01_0021",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_washer01_0021",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_washer01_0021",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_washer01_0021",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_washer01_0021",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_washer01_0021",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/vegetation_bonsai01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/vegetation_bonsai01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/vegetation_bonsai01_0001",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/vegetation_bonsai01_0001",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/vegetation_bonsai01_0001",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf01",
+      "target": "/root/shelf01/tool_washer01_0019"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_washer01_0019",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_washer01_0019",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf01/tool_washer01_0019",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_washer01_0019",
+      "target": "/root/shelf01/furniture_lbracket01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_washer01_0019",
+      "target": "/root/shelf01/furniture_lbracket01_2"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_washer01_0019",
+      "target": "/root/shelf01/furniture_parts_cabinet02_0002"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf01/tool_washer01_0019",
+      "target": "/root/shelf01/furniture_shelving01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/wall_dressing01",
+      "target": "/root/wall_dressing01/electronics_cabling03_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_cabling03_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_cabling03_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_cabling03_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/wall_dressing01/electronics_cabling03_0001",
+      "target": "/root/wall_dressing01/furniture_lbracket02_14"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/wall_dressing01",
+      "target": "/root/wall_dressing01/electronics_powerpoint01_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0002",
+      "target": "/root/wall_dressing01/furniture_lbracket02_14"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/wall_dressing01",
+      "target": "/root/wall_dressing01/electronics_powerpoint01_0003"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0003",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0003",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0003",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0003",
+      "target": "/root/wall_dressing01/furniture_lbracket02_14"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/wall_dressing01",
+      "target": "/root/wall_dressing01/electronics_powerpoint01_0004"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0004",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0004",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0004",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0004",
+      "target": "/root/wall_dressing01/furniture_lbracket02_14"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/wall_dressing01",
+      "target": "/root/wall_dressing01/electronics_powerpoint01_0005"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0005",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0005",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0005",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0005",
+      "target": "/root/wall_dressing01/furniture_lbracket02_14"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/wall_dressing01",
+      "target": "/root/wall_dressing01/furniture_lbracket02_14"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/furniture_lbracket02_14",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/furniture_lbracket02_14",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/furniture_lbracket02_14",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/wall_dressing01",
+      "target": "/root/wall_dressing01/toy_curly_surgery_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/toy_curly_surgery_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/toy_curly_surgery_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/toy_curly_surgery_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/wall_dressing01/toy_curly_surgery_0001",
+      "target": "/root/wall_dressing01/furniture_lbracket02_14"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/wall_dressing01",
+      "target": "/root/wall_dressing01/electronics_powerpoint01_0006"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0006",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0006",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0006",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0006",
+      "target": "/root/wall_dressing01/furniture_lbracket02_14"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/wall_dressing01",
+      "target": "/root/wall_dressing01/electronics_powerpoint01_0007"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0007",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0007",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0007",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/wall_dressing01/electronics_powerpoint01_0007",
+      "target": "/root/wall_dressing01/furniture_lbracket02_14"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/chemistry_beaker02_0003"
+    },
+    {
+      "kind": "weft:bind:finish",
+      "source": "/root/shelf02/chemistry_beaker02_0003",
+      "target": "finish:translucent"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/chemistry_beaker02_0003",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/chemistry_beaker02_0003",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/chemistry_beaker02_0003",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/chemistry_beaker02_0003",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/chemistry_beaker02_0003",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/chemistry_beaker02_0003",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/chemistry_beaker02_0003",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/decor_helmet_head01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_helmet_head01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_helmet_head01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_helmet_head01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_helmet_head01_0001",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_helmet_head01_0001",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_helmet_head01_0001",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_helmet_head01_0001",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/decor_paper_notef01_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_notef01_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_notef01_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_notef01_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notef01_0002",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notef01_0002",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notef01_0002",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notef01_0002",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/decor_paper_noteg01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_noteg01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_noteg01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_noteg01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_noteg01_0001",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_noteg01_0001",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_noteg01_0001",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_noteg01_0001",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/decor_paper_notei01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_notei01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_notei01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_notei01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notei01_0001",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notei01_0001",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notei01_0001",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notei01_0001",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/decor_paper_notek01_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_notek01_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_notek01_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_paper_notek01_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notek01_0002",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notek01_0002",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notek01_0002",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_paper_notek01_0002",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/decor_thumb_tack01_0011"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_thumb_tack01_0011",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_thumb_tack01_0011",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_thumb_tack01_0011",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0011",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0011",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0011",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0011",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/decor_thumb_tack01_0012"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_thumb_tack01_0012",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_thumb_tack01_0012",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_thumb_tack01_0012",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0012",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0012",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0012",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0012",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/decor_thumb_tack01_0013"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_thumb_tack01_0013",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_thumb_tack01_0013",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/decor_thumb_tack01_0013",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0013",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0013",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0013",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/decor_thumb_tack01_0013",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/electronics_spoolrack_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_spoolrack_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_spoolrack_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_spoolrack_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_spoolrack_0001",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_spoolrack_0001",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_spoolrack_0001",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_spoolrack_0001",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/electronics_wire_spool01_0006"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool01_0006",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool01_0006",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool01_0006",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool01_0006",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool01_0006",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool01_0006",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool01_0006",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/electronics_wire_spool02_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool02_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool02_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool02_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool02_0002",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool02_0002",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool02_0002",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool02_0002",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/electronics_wire_spool04_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool04_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool04_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool04_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool04_0001",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool04_0001",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool04_0001",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool04_0001",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/electronics_wire_spool05_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool05_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool05_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool05_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool05_0001",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool05_0001",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool05_0001",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool05_0001",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/electronics_wire_spool05_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool05_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool05_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool05_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool05_0002",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool05_0002",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool05_0002",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool05_0002",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/electronics_wire_spool06_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool06_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool06_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool06_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool06_0001",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool06_0001",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool06_0001",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool06_0001",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/electronics_wire_spool06_0003"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool06_0003",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool06_0003",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/electronics_wire_spool06_0003",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool06_0003",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool06_0003",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool06_0003",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/electronics_wire_spool06_0003",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_blackboard01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_blackboard01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_blackboard01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_lbracket01_7",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_lbracket01_7",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_lbracket01_7",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_lbracket01_8",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_lbracket01_8",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_lbracket01_8",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_shelving01_0004",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_shelving01_0004",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/furniture_shelving01_0004",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_board_medium04_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_board_medium04_0001",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_board_medium04_0001",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_board_medium04_0001",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_board_medium04_0001",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_board_small02_0003"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_board_small02_0003",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_board_small02_0003",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_board_small02_0003",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_board_small02_0003",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_cable02_0007"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0007",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0007",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0007",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0007",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0007",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0007",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0007",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_cable02_0009"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0009",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0009",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0009",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0009",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0009",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0009",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_cable02_0009",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_capacitor01_0009"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor01_0009",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor01_0009",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor01_0009",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor01_0009",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor01_0009",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor01_0009",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor01_0009",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_capacitor02_0005"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor02_0005",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor02_0005",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor02_0005",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor02_0005",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor02_0005",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor02_0005",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_capacitor02_0005",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_diode01_0006"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0006",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0006",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0006",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0006",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0006",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0006",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0006",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_diode01_0010"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0010",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0010",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0010",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0010",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0010",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0010",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode01_0010",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_diode02_0005"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0005",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0005",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0005",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0005",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0005",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0005",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0005",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_diode02_0007"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0007",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0007",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0007",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0007",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0007",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0007",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode02_0007",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_diode03_0005"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode03_0005",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode03_0005",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode03_0005",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode03_0005",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode03_0005",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode03_0005",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode03_0005",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_diode05_0004"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode05_0004",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode05_0004",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_diode05_0004",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode05_0004",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode05_0004",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode05_0004",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_diode05_0004",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_fuse01_0005"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0005",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0005",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0005",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0005",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0005",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0005",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0005",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_fuse01_0007"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0007",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0007",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0007",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0007",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0007",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0007",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse01_0007",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_fuse02_0003"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0003",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0003",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0003",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0003",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0003",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0003",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0003",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_fuse02_0005"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0005",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0005",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0005",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0005",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0005",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0005",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_fuse02_0005",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_resistor02_0005"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_resistor02_0005",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_resistor02_0005",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_resistor02_0005",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor02_0005",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor02_0005",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor02_0005",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor02_0005",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_resistor06_0009"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_resistor06_0009",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_resistor06_0009",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_resistor06_0009",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor06_0009",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor06_0009",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor06_0009",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor06_0009",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_resistor08_0008"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_resistor08_0008",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_resistor08_0008",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_resistor08_0008",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor08_0008",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor08_0008",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor08_0008",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_resistor08_0008",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/proc_dev_circuit_tranformer02_0003"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_tranformer02_0003",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_tranformer02_0003",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/proc_dev_circuit_tranformer02_0003",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_tranformer02_0003",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_tranformer02_0003",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_tranformer02_0003",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/proc_dev_circuit_tranformer02_0003",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/tool_screw01_0051"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0051",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0051",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0051",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0051",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0051",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0051",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0051",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/tool_screw01_0068"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0068",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0068",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0068",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0068",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0068",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0068",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0068",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/tool_screw01_0069"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0069",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0069",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0069",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0069",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0069",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0069",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0069",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/tool_screw01_0070"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0070",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0070",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0070",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0070",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0070",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0070",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0070",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/tool_screw01_0071"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0071",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0071",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_screw01_0071",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0071",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0071",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0071",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_screw01_0071",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/tool_washer01_0020"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_washer01_0020",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_washer01_0020",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_washer01_0020",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_washer01_0020",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_washer01_0020",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_washer01_0020",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_washer01_0020",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/tool_washer01_0027"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_washer01_0027",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_washer01_0027",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/tool_washer01_0027",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_washer01_0027",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_washer01_0027",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_washer01_0027",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/tool_washer01_0027",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/toy_box02_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/toy_box02_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/toy_box02_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/toy_box02_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_box02_0001",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_box02_0001",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_box02_0001",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_box02_0001",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/toy_box03_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/toy_box03_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/toy_box03_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/toy_box03_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_box03_0002",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_box03_0002",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_box03_0002",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_box03_0002",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/shelf02",
+      "target": "/root/shelf02/toy_fun_coil_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/toy_fun_coil_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/toy_fun_coil_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/shelf02/toy_fun_coil_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_fun_coil_0001",
+      "target": "/root/shelf02/furniture_blackboard01_0001"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_fun_coil_0001",
+      "target": "/root/shelf02/furniture_lbracket01_7"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_fun_coil_0001",
+      "target": "/root/shelf02/furniture_lbracket01_8"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/shelf02/toy_fun_coil_0001",
+      "target": "/root/shelf02/furniture_shelving01_0004"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/camera01",
+      "target": "/root/camera01/decor_cstand_clamp01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/camera01/decor_cstand_clamp01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/camera01/decor_cstand_clamp01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/camera01/decor_cstand_clamp01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/camera01",
+      "target": "/root/camera01/decor_tripod_head01_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/camera01/decor_tripod_head01_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/camera01/decor_tripod_head01_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/camera01/decor_tripod_head01_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/camera01",
+      "target": "/root/camera01/electronics_camera02_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/camera01/electronics_camera02_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/camera01/electronics_camera02_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/camera01/electronics_camera02_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/workbench01",
+      "target": "/root/workbench01/furniture_workbench01_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/furniture_workbench01_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/furniture_workbench01_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/furniture_workbench01_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/workbench01",
+      "target": "/root/workbench01/decor_paper_notea03_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/decor_paper_notea03_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/decor_paper_notea03_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/decor_paper_notea03_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/workbench01/decor_paper_notea03_0001",
+      "target": "/root/workbench01/furniture_workbench01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/workbench01",
+      "target": "/root/workbench01/decor_paper_noteb03_0002"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/decor_paper_noteb03_0002",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/decor_paper_noteb03_0002",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/decor_paper_noteb03_0002",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/workbench01/decor_paper_noteb03_0002",
+      "target": "/root/workbench01/furniture_workbench01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/workbench01",
+      "target": "/root/workbench01/decor_plastic_label03_0001"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/decor_plastic_label03_0001",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/decor_plastic_label03_0001",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/decor_plastic_label03_0001",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/workbench01/decor_plastic_label03_0001",
+      "target": "/root/workbench01/furniture_workbench01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/workbench01",
+      "target": "/root/workbench01/stationary_paper01_0003"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/stationary_paper01_0003",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/stationary_paper01_0003",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/stationary_paper01_0003",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/workbench01/stationary_paper01_0003",
+      "target": "/root/workbench01/furniture_workbench01_0001"
+    },
+    {
+      "kind": "usd:arc",
+      "source": "/root/workbench01",
+      "target": "/root/workbench01/stationary_paper01_0004"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/stationary_paper01_0004",
+      "target": "shading:usd_full"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/stationary_paper01_0004",
+      "target": "shading:usd_preview"
+    },
+    {
+      "kind": "weft:bind:shading",
+      "source": "/root/workbench01/stationary_paper01_0004",
+      "target": "shading:usd_preview_proxy"
+    },
+    {
+      "kind": "Mount",
+      "source": "/root/workbench01/stationary_paper01_0004",
+      "target": "/root/workbench01/furniture_workbench01_0001"
+    }
+  ],
+  "kinds": [
+    "usd:arc",
+    "Mount",
+    "weft:bind:shading",
+    "weft:bind:finish"
+  ],
+  "nodes": [
+    {
+      "deg": 8,
+      "id": "/root/floor_dressing01",
+      "label": "floor_dressing01",
+      "type": "group"
+    },
+    {
+      "asset": "decor_bottle_cap01",
+      "deg": 5,
+      "group": "floor_dressing01",
+      "id": "/root/floor_dressing01/decor_bottle_cap01_0002",
+      "label": "decor_bottle_cap01_0002",
+      "type": "prop"
+    },
+    {
+      "deg": 139,
+      "id": "shading:usd_full",
+      "label": "usd_full",
+      "type": "shading"
+    },
+    {
+      "deg": 139,
+      "id": "shading:usd_preview",
+      "label": "usd_preview",
+      "type": "shading"
+    },
+    {
+      "deg": 139,
+      "id": "shading:usd_preview_proxy",
+      "label": "usd_preview_proxy",
+      "type": "shading"
+    },
+    {
+      "deg": 11,
+      "group": "floor_dressing01",
+      "id": "/root/floor_dressing01/furniture_bench_seat01_0001",
+      "label": "furniture_bench_seat01_0001",
+      "type": "furniture"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 5,
+      "group": "floor_dressing01",
+      "id": "/root/floor_dressing01/tool_screw01_0008",
+      "label": "tool_screw01_0008",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 5,
+      "group": "floor_dressing01",
+      "id": "/root/floor_dressing01/tool_screw01_0009",
+      "label": "tool_screw01_0009",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 5,
+      "group": "floor_dressing01",
+      "id": "/root/floor_dressing01/tool_screw01_0010",
+      "label": "tool_screw01_0010",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw02",
+      "deg": 5,
+      "group": "floor_dressing01",
+      "id": "/root/floor_dressing01/tool_screw02_0013",
+      "label": "tool_screw02_0013",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_washer01",
+      "deg": 5,
+      "group": "floor_dressing01",
+      "id": "/root/floor_dressing01/tool_washer01_0012",
+      "label": "tool_washer01_0012",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_washer01",
+      "deg": 5,
+      "group": "floor_dressing01",
+      "id": "/root/floor_dressing01/tool_washer01_0013",
+      "label": "tool_washer01_0013",
+      "type": "prop"
+    },
+    {
+      "deg": 65,
+      "id": "/root/shelf01",
+      "label": "shelf01",
+      "type": "group"
+    },
+    {
+      "asset": "chemistry_bottle01",
+      "deg": 9,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle01_0004",
+      "label": "chemistry_bottle01_0004",
+      "type": "prop"
+    },
+    {
+      "deg": 7,
+      "id": "finish:translucent",
+      "label": "finish: translucent",
+      "type": "finish"
+    },
+    {
+      "deg": 65,
+      "group": "shelf01",
+      "id": "/root/shelf01/furniture_lbracket01_0001",
+      "label": "furniture_lbracket01_0001",
+      "type": "furniture"
+    },
+    {
+      "deg": 65,
+      "group": "shelf01",
+      "id": "/root/shelf01/furniture_lbracket01_2",
+      "label": "furniture_lbracket01_2",
+      "type": "furniture"
+    },
+    {
+      "deg": 65,
+      "group": "shelf01",
+      "id": "/root/shelf01/furniture_parts_cabinet02_0002",
+      "label": "furniture_parts_cabinet02_0002",
+      "type": "furniture"
+    },
+    {
+      "deg": 65,
+      "group": "shelf01",
+      "id": "/root/shelf01/furniture_shelving01_0001",
+      "label": "furniture_shelving01_0001",
+      "type": "furniture"
+    },
+    {
+      "asset": "chemistry_bottle01",
+      "deg": 9,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle01_0005",
+      "label": "chemistry_bottle01_0005",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle01",
+      "deg": 9,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle01_0007",
+      "label": "chemistry_bottle01_0007",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle01",
+      "deg": 9,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle01_0011",
+      "label": "chemistry_bottle01_0011",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle01",
+      "deg": 9,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle01_0012",
+      "label": "chemistry_bottle01_0012",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle02_0006",
+      "label": "chemistry_bottle02_0006",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle02_0009",
+      "label": "chemistry_bottle02_0009",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle02_0010",
+      "label": "chemistry_bottle02_0010",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle02_0011",
+      "label": "chemistry_bottle02_0011",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle03_0009",
+      "label": "chemistry_bottle03_0009",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle03_0010",
+      "label": "chemistry_bottle03_0010",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle03_0011",
+      "label": "chemistry_bottle03_0011",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle03_0012",
+      "label": "chemistry_bottle03_0012",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle03_0013",
+      "label": "chemistry_bottle03_0013",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle03_0014",
+      "label": "chemistry_bottle03_0014",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle03_0015",
+      "label": "chemistry_bottle03_0015",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_bottle03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_bottle03_0016",
+      "label": "chemistry_bottle03_0016",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_microscope01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_microscope01_0001",
+      "label": "chemistry_microscope01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_test_tube02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_test_tube02_0020",
+      "label": "chemistry_test_tube02_0020",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_test_tube03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_test_tube03_0022",
+      "label": "chemistry_test_tube03_0022",
+      "type": "prop"
+    },
+    {
+      "asset": "chemistry_test_tube03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/chemistry_test_tube03_0023",
+      "label": "chemistry_test_tube03_0023",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_bonsai_jar01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_bonsai_jar01_0001",
+      "label": "decor_bonsai_jar01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_book_open02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_book_open02_0001",
+      "label": "decor_book_open02_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_clip01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_clip01_0001",
+      "label": "decor_clip01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_clip01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_clip01_0002",
+      "label": "decor_clip01_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_glass01",
+      "deg": 9,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_glass01_0002",
+      "label": "decor_glass01_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_mug_coffee03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_mug_coffee03_0001",
+      "label": "decor_mug_coffee03_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_paper_notea01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_paper_notea01_0001",
+      "label": "decor_paper_notea01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_paper_noteb01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_paper_noteb01_0001",
+      "label": "decor_paper_noteb01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_paper_notec02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_paper_notec02_0002",
+      "label": "decor_paper_notec02_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_paper_notef06",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_paper_notef06_0002",
+      "label": "decor_paper_notef06_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_paper_notef08",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_paper_notef08_0002",
+      "label": "decor_paper_notef08_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_paper_noteh01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_paper_noteh01_0001",
+      "label": "decor_paper_noteh01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_string01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_string01_0001",
+      "label": "decor_string01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_thumb_tack01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_thumb_tack01_0001",
+      "label": "decor_thumb_tack01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_thumb_tack01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/decor_thumb_tack01_0002",
+      "label": "decor_thumb_tack01_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_cable02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_cable02_0010",
+      "label": "proc_dev_circuit_cable02_0010",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_cable02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_cable02_0011",
+      "label": "proc_dev_circuit_cable02_0011",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_capacitor02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_capacitor02_0006",
+      "label": "proc_dev_circuit_capacitor02_0006",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_diode01_0004",
+      "label": "proc_dev_circuit_diode01_0004",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_diode01_0007",
+      "label": "proc_dev_circuit_diode01_0007",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_diode02_0008",
+      "label": "proc_dev_circuit_diode02_0008",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_diode02_0009",
+      "label": "proc_dev_circuit_diode02_0009",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode03",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_diode03_0006",
+      "label": "proc_dev_circuit_diode03_0006",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode05",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_diode05_0005",
+      "label": "proc_dev_circuit_diode05_0005",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_fuse01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_fuse01_0008",
+      "label": "proc_dev_circuit_fuse01_0008",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_fuse01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_fuse01_0009",
+      "label": "proc_dev_circuit_fuse01_0009",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_fuse02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_fuse02_0006",
+      "label": "proc_dev_circuit_fuse02_0006",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_fuse02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_fuse02_0007",
+      "label": "proc_dev_circuit_fuse02_0007",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_resistor02",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_resistor02_0006",
+      "label": "proc_dev_circuit_resistor02_0006",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_resistor06",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_resistor06_0006",
+      "label": "proc_dev_circuit_resistor06_0006",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_resistor08",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/proc_dev_circuit_resistor08_0009",
+      "label": "proc_dev_circuit_resistor08_0009",
+      "type": "prop"
+    },
+    {
+      "asset": "stationary_pencil01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/stationary_pencil01_0007",
+      "label": "stationary_pencil01_0007",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/tool_screw01_0049",
+      "label": "tool_screw01_0049",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/tool_screw01_0050",
+      "label": "tool_screw01_0050",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/tool_screw01_0052",
+      "label": "tool_screw01_0052",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/tool_screw01_0053",
+      "label": "tool_screw01_0053",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/tool_screw01_0072",
+      "label": "tool_screw01_0072",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_washer01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/tool_washer01_0021",
+      "label": "tool_washer01_0021",
+      "type": "prop"
+    },
+    {
+      "asset": "vegetation_bonsai01",
+      "deg": 5,
+      "group": "shelf01",
+      "id": "/root/shelf01/vegetation_bonsai01_0001",
+      "label": "vegetation_bonsai01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_washer01",
+      "deg": 8,
+      "group": "shelf01",
+      "id": "/root/shelf01/tool_washer01_0019",
+      "label": "tool_washer01_0019",
+      "type": "prop"
+    },
+    {
+      "deg": 9,
+      "id": "/root/wall_dressing01",
+      "label": "wall_dressing01",
+      "type": "group"
+    },
+    {
+      "asset": "electronics_cabling03",
+      "deg": 5,
+      "group": "wall_dressing01",
+      "id": "/root/wall_dressing01/electronics_cabling03_0001",
+      "label": "electronics_cabling03_0001",
+      "type": "prop"
+    },
+    {
+      "deg": 12,
+      "group": "wall_dressing01",
+      "id": "/root/wall_dressing01/furniture_lbracket02_14",
+      "label": "furniture_lbracket02_14",
+      "type": "furniture"
+    },
+    {
+      "asset": "electronics_powerpoint01",
+      "deg": 5,
+      "group": "wall_dressing01",
+      "id": "/root/wall_dressing01/electronics_powerpoint01_0002",
+      "label": "electronics_powerpoint01_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_powerpoint01",
+      "deg": 5,
+      "group": "wall_dressing01",
+      "id": "/root/wall_dressing01/electronics_powerpoint01_0003",
+      "label": "electronics_powerpoint01_0003",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_powerpoint01",
+      "deg": 5,
+      "group": "wall_dressing01",
+      "id": "/root/wall_dressing01/electronics_powerpoint01_0004",
+      "label": "electronics_powerpoint01_0004",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_powerpoint01",
+      "deg": 5,
+      "group": "wall_dressing01",
+      "id": "/root/wall_dressing01/electronics_powerpoint01_0005",
+      "label": "electronics_powerpoint01_0005",
+      "type": "prop"
+    },
+    {
+      "asset": "toy_curly_surgery",
+      "deg": 5,
+      "group": "wall_dressing01",
+      "id": "/root/wall_dressing01/toy_curly_surgery_0001",
+      "label": "toy_curly_surgery_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_powerpoint01",
+      "deg": 5,
+      "group": "wall_dressing01",
+      "id": "/root/wall_dressing01/electronics_powerpoint01_0006",
+      "label": "electronics_powerpoint01_0006",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_powerpoint01",
+      "deg": 5,
+      "group": "wall_dressing01",
+      "id": "/root/wall_dressing01/electronics_powerpoint01_0007",
+      "label": "electronics_powerpoint01_0007",
+      "type": "prop"
+    },
+    {
+      "deg": 51,
+      "id": "/root/shelf02",
+      "label": "shelf02",
+      "type": "group"
+    },
+    {
+      "asset": "chemistry_beaker02",
+      "deg": 9,
+      "group": "shelf02",
+      "id": "/root/shelf02/chemistry_beaker02_0003",
+      "label": "chemistry_beaker02_0003",
+      "type": "prop"
+    },
+    {
+      "deg": 51,
+      "group": "shelf02",
+      "id": "/root/shelf02/furniture_blackboard01_0001",
+      "label": "furniture_blackboard01_0001",
+      "type": "furniture"
+    },
+    {
+      "deg": 51,
+      "group": "shelf02",
+      "id": "/root/shelf02/furniture_lbracket01_7",
+      "label": "furniture_lbracket01_7",
+      "type": "furniture"
+    },
+    {
+      "deg": 51,
+      "group": "shelf02",
+      "id": "/root/shelf02/furniture_lbracket01_8",
+      "label": "furniture_lbracket01_8",
+      "type": "furniture"
+    },
+    {
+      "deg": 51,
+      "group": "shelf02",
+      "id": "/root/shelf02/furniture_shelving01_0004",
+      "label": "furniture_shelving01_0004",
+      "type": "furniture"
+    },
+    {
+      "asset": "decor_helmet_head01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/decor_helmet_head01_0001",
+      "label": "decor_helmet_head01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_paper_notef01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/decor_paper_notef01_0002",
+      "label": "decor_paper_notef01_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_paper_noteg01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/decor_paper_noteg01_0001",
+      "label": "decor_paper_noteg01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_paper_notei01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/decor_paper_notei01_0001",
+      "label": "decor_paper_notei01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_paper_notek01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/decor_paper_notek01_0002",
+      "label": "decor_paper_notek01_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_thumb_tack01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/decor_thumb_tack01_0011",
+      "label": "decor_thumb_tack01_0011",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_thumb_tack01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/decor_thumb_tack01_0012",
+      "label": "decor_thumb_tack01_0012",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_thumb_tack01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/decor_thumb_tack01_0013",
+      "label": "decor_thumb_tack01_0013",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_spoolrack",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/electronics_spoolrack_0001",
+      "label": "electronics_spoolrack_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_wire_spool01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/electronics_wire_spool01_0006",
+      "label": "electronics_wire_spool01_0006",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_wire_spool02",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/electronics_wire_spool02_0002",
+      "label": "electronics_wire_spool02_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_wire_spool04",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/electronics_wire_spool04_0001",
+      "label": "electronics_wire_spool04_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_wire_spool05",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/electronics_wire_spool05_0001",
+      "label": "electronics_wire_spool05_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_wire_spool05",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/electronics_wire_spool05_0002",
+      "label": "electronics_wire_spool05_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_wire_spool06",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/electronics_wire_spool06_0001",
+      "label": "electronics_wire_spool06_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_wire_spool06",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/electronics_wire_spool06_0003",
+      "label": "electronics_wire_spool06_0003",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_board_medium04",
+      "deg": 5,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_board_medium04_0001",
+      "label": "proc_dev_circuit_board_medium04_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_board_small02",
+      "deg": 5,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_board_small02_0003",
+      "label": "proc_dev_circuit_board_small02_0003",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_cable02",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_cable02_0007",
+      "label": "proc_dev_circuit_cable02_0007",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_cable02",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_cable02_0009",
+      "label": "proc_dev_circuit_cable02_0009",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_capacitor01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_capacitor01_0009",
+      "label": "proc_dev_circuit_capacitor01_0009",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_capacitor02",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_capacitor02_0005",
+      "label": "proc_dev_circuit_capacitor02_0005",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_diode01_0006",
+      "label": "proc_dev_circuit_diode01_0006",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_diode01_0010",
+      "label": "proc_dev_circuit_diode01_0010",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode02",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_diode02_0005",
+      "label": "proc_dev_circuit_diode02_0005",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode02",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_diode02_0007",
+      "label": "proc_dev_circuit_diode02_0007",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode03",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_diode03_0005",
+      "label": "proc_dev_circuit_diode03_0005",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_diode05",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_diode05_0004",
+      "label": "proc_dev_circuit_diode05_0004",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_fuse01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_fuse01_0005",
+      "label": "proc_dev_circuit_fuse01_0005",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_fuse01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_fuse01_0007",
+      "label": "proc_dev_circuit_fuse01_0007",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_fuse02",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_fuse02_0003",
+      "label": "proc_dev_circuit_fuse02_0003",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_fuse02",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_fuse02_0005",
+      "label": "proc_dev_circuit_fuse02_0005",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_resistor02",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_resistor02_0005",
+      "label": "proc_dev_circuit_resistor02_0005",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_resistor06",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_resistor06_0009",
+      "label": "proc_dev_circuit_resistor06_0009",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_resistor08",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_resistor08_0008",
+      "label": "proc_dev_circuit_resistor08_0008",
+      "type": "prop"
+    },
+    {
+      "asset": "proc_dev_circuit_tranformer02",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/proc_dev_circuit_tranformer02_0003",
+      "label": "proc_dev_circuit_tranformer02_0003",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/tool_screw01_0051",
+      "label": "tool_screw01_0051",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/tool_screw01_0068",
+      "label": "tool_screw01_0068",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/tool_screw01_0069",
+      "label": "tool_screw01_0069",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/tool_screw01_0070",
+      "label": "tool_screw01_0070",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_screw01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/tool_screw01_0071",
+      "label": "tool_screw01_0071",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_washer01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/tool_washer01_0020",
+      "label": "tool_washer01_0020",
+      "type": "prop"
+    },
+    {
+      "asset": "tool_washer01",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/tool_washer01_0027",
+      "label": "tool_washer01_0027",
+      "type": "prop"
+    },
+    {
+      "asset": "toy_box02",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/toy_box02_0001",
+      "label": "toy_box02_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "toy_box03",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/toy_box03_0002",
+      "label": "toy_box03_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "toy_fun_coil",
+      "deg": 8,
+      "group": "shelf02",
+      "id": "/root/shelf02/toy_fun_coil_0001",
+      "label": "toy_fun_coil_0001",
+      "type": "prop"
+    },
+    {
+      "deg": 3,
+      "id": "/root/camera01",
+      "label": "camera01",
+      "type": "group"
+    },
+    {
+      "asset": "decor_cstand_clamp01",
+      "deg": 4,
+      "group": "camera01",
+      "id": "/root/camera01/decor_cstand_clamp01_0001",
+      "label": "decor_cstand_clamp01_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_tripod_head01",
+      "deg": 4,
+      "group": "camera01",
+      "id": "/root/camera01/decor_tripod_head01_0002",
+      "label": "decor_tripod_head01_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "electronics_camera02",
+      "deg": 4,
+      "group": "camera01",
+      "id": "/root/camera01/electronics_camera02_0001",
+      "label": "electronics_camera02_0001",
+      "type": "prop"
+    },
+    {
+      "deg": 6,
+      "id": "/root/workbench01",
+      "label": "workbench01",
+      "type": "group"
+    },
+    {
+      "asset": "furniture_workbench01",
+      "deg": 9,
+      "group": "workbench01",
+      "id": "/root/workbench01/furniture_workbench01_0001",
+      "label": "furniture_workbench01_0001",
+      "type": "furniture"
+    },
+    {
+      "asset": "decor_paper_notea03",
+      "deg": 5,
+      "group": "workbench01",
+      "id": "/root/workbench01/decor_paper_notea03_0001",
+      "label": "decor_paper_notea03_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_paper_noteb03",
+      "deg": 5,
+      "group": "workbench01",
+      "id": "/root/workbench01/decor_paper_noteb03_0002",
+      "label": "decor_paper_noteb03_0002",
+      "type": "prop"
+    },
+    {
+      "asset": "decor_plastic_label03",
+      "deg": 5,
+      "group": "workbench01",
+      "id": "/root/workbench01/decor_plastic_label03_0001",
+      "label": "decor_plastic_label03_0001",
+      "type": "prop"
+    },
+    {
+      "asset": "stationary_paper01",
+      "deg": 5,
+      "group": "workbench01",
+      "id": "/root/workbench01/stationary_paper01_0003",
+      "label": "stationary_paper01_0003",
+      "type": "prop"
+    },
+    {
+      "asset": "stationary_paper01",
+      "deg": 5,
+      "group": "workbench01",
+      "id": "/root/workbench01/stationary_paper01_0004",
+      "label": "stationary_paper01_0004",
+      "type": "prop"
+    }
+  ]
+}

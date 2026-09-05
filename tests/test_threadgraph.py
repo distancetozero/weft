@@ -10,6 +10,7 @@ one, not just against itself."""
 
 from __future__ import annotations
 
+import json
 import os
 
 import pytest
@@ -17,6 +18,7 @@ import pytest
 pxr = pytest.importorskip("pxr")
 
 from weft.threadgraph import build_graph  # noqa: E402
+from weft.relkinds import REGISTRY, RelationshipKind  # noqa: E402
 
 # -- synthetic-stage suite ---------------------------------------------------
 #
@@ -225,3 +227,124 @@ def test_build_graph_identical_on_an_unloaded_stage():
     assert len(g_unloaded["nodes"]) == len(g_loaded["nodes"]) == 152
     assert len(g_unloaded["edges"]) == len(g_loaded["edges"]) == 1018
     assert {n["id"] for n in g_unloaded["nodes"]} == {n["id"] for n in g_loaded["nodes"]}
+
+
+# -- registry parity: the refactored driver reproduces the pre-refactor graph
+#    byte-for-byte. tests/fixtures/threadgraph_golden.json was captured from
+#    the hand-written build_graph (before the RelationshipKind registry) run
+#    against this same ALab workbench; equality proves the refactor changed
+#    nothing observable. (ALab has no UsdCollectionAPI collections, so the new
+#    usd:collection kind contributes nothing here -- the full registry output
+#    still equals the four-kind golden exactly.)
+
+_GOLDEN = os.path.join(os.path.dirname(__file__), "fixtures", "threadgraph_golden.json")
+
+
+@pytest.mark.skipif(not ALAB, reason="set WEFT_ALAB to the ALab directory to run acceptance")
+def test_registry_driver_output_equals_pre_refactor_golden():
+    from pxr import Usd
+    with open(_GOLDEN) as fh:
+        golden = json.load(fh)
+    g = build_graph(Usd.Stage.Open(os.path.join(ALAB, WORKBENCH)))
+    # Full dict equality: node list order, edge list order, node attributes,
+    # and the kinds list all identical to the pre-refactor output.
+    assert g == golden
+
+
+# -- the new derived kind: usd:collection ------------------------------------
+
+COLLECTION_SCENE = """#usda 1.0
+(
+    defaultPrim = "root"
+)
+
+def Xform "root"
+{
+    def Xform "grp"
+    {
+        def Xform "prop_a_0001" {}
+        def Xform "prop_b_0002" {}
+        def Xform "furniture_shelf01_0003" {}
+    }
+    def Scope "collections" (
+        prepend apiSchemas = ["CollectionAPI:mounted", "CollectionAPI:everything"]
+    )
+    {
+        uniform token collection:mounted:expansionRule = "explicitOnly"
+        rel collection:mounted:includes = [ </root/grp/prop_a_0001> ]
+
+        uniform token collection:everything:expansionRule = "expandPrims"
+        pathExpression collection:everything:membershipExpression = "/root/grp/prop_a_0001 /root/grp/prop_b_0002"
+    }
+}
+"""
+
+
+@pytest.fixture
+def collection_stage(tmp_path):
+    from pxr import Usd
+    p = tmp_path / "collections.usda"
+    p.write_text(COLLECTION_SCENE)
+    return Usd.Stage.Open(str(p))
+
+
+def test_usd_collection_explicit_and_expression(collection_stage):
+    g = build_graph(collection_stage)
+    by_id = {n["id"]: n for n in g["nodes"]}
+
+    # A collection node per collection, typed "collection".
+    mounted_id = "/root/collections.collection:mounted"
+    every_id = "/root/collections.collection:everything"
+    assert by_id[mounted_id]["type"] == "collection"
+    assert by_id[mounted_id]["label"] == "mounted"
+    assert by_id[every_id]["type"] == "collection"
+
+    coll_edges = [e for e in g["edges"] if e["kind"] == "usd:collection"]
+    # explicit include -> exactly its one member
+    assert {"source": mounted_id, "target": "/root/grp/prop_a_0001",
+            "kind": "usd:collection"} in coll_edges
+    # membershipExpression -> both named members
+    every_targets = {e["target"] for e in coll_edges if e["source"] == every_id}
+    assert every_targets == {"/root/grp/prop_a_0001", "/root/grp/prop_b_0002"}
+
+    # Collection members reuse the existing placement nodes (no duplicates).
+    assert by_id["/root/grp/prop_a_0001"]["type"] == "prop"
+    assert "usd:collection" in g["kinds"]
+
+
+def test_no_collections_emits_no_collection_kind(scene_stage):
+    """The synthetic Mount scene has no UsdCollectionAPI -- usd:collection must
+    contribute nothing and not appear in the kinds list (purely additive)."""
+    g = build_graph(scene_stage)
+    assert not any(e["kind"] == "usd:collection" for e in g["edges"])
+    assert not any(n["type"] == "collection" for n in g["nodes"])
+    assert "usd:collection" not in g["kinds"]
+
+
+# -- extensibility: a kind can be registered with no edit to the driver ------
+
+
+def test_registering_a_kind_requires_no_core_edit(scene_stage):
+    class ThrowawayKind(RelationshipKind):
+        type_id = "test:throwaway"
+        facet = False
+
+        def populate(self, stage, ctx):
+            ctx.builder.add("throwaway:node", "throwaway", "throwaway")
+            # attach to a known placement so the edge (and thus the kind) shows
+            ctx.builder.add_edge("/root/shelf01/chemistry_bottle01_0001",
+                                 "throwaway:node", self.type_id)
+
+    g = build_graph(scene_stage, registry=list(REGISTRY) + [ThrowawayKind()])
+    assert any(e["kind"] == "test:throwaway" for e in g["edges"])
+    assert any(n["id"] == "throwaway:node" for n in g["nodes"])
+    # unknown kinds sort after the known lens order
+    assert g["kinds"][-1] == "test:throwaway"
+
+
+def test_resolve_is_identity_over_member_paths():
+    from pxr import Sdf
+    kind = REGISTRY[0]
+    members = ["/root/a", Sdf.Path("/root/b")]
+    resolved = kind.resolve(members, None, None)
+    assert resolved == {Sdf.Path("/root/a"), Sdf.Path("/root/b")}
