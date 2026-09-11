@@ -19,11 +19,21 @@ OMISSION_CLASSES: Dict[str, str] = {
     "skel:": MEANING_CHANGING,
 }
 
+# Declared kinds' omission classes (exact kind id -> class), registered by
+# kinds.load_kinds when a weft__kinds declaration is loaded. Consulted after
+# the built-in prefixes: those are a soundness floor (a physics: edge stays
+# meaning-changing no matter what a declaration says), but a declared kind
+# can raise an otherwise-inert kind to meaning-changing.
+DECLARED_OMISSIONS: Dict[str, str] = {}
+
 
 def omission_class(kind: str) -> str:
     for key, cls in OMISSION_CLASSES.items():
         if kind == key or (key.endswith(":") and kind.startswith(key)):
             return cls
+    declared = DECLARED_OMISSIONS.get(kind)
+    if declared is not None:
+        return declared
     if kind.startswith("collection:") and "colliders" in kind:
         return MEANING_CHANGING
     return INERT
