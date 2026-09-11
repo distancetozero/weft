@@ -117,6 +117,7 @@ Or type a <b>weft ask</b> (top-right), e.g. <b>where:finish=translucent</b>.</di
 <div class="panel" id="ctl">
   <div class="grp">lens — organize by</div>
   <select id="lens"></select>
+  <button class="reset" id="loadlensbtn" style="margin-top:0;width:100%" title="materialize ALL the geometry participating in the current relationship (lens) at once — becomes the focus's load, unloads when you move on unless pinned">⇣ load this relationship</button>
   <div class="grp">follow — thread kinds</div>
   <div id="kinds"></div>
   <div class="div"></div>
@@ -153,8 +154,15 @@ const KCOLOR={"usd:arc":cvar("--arc"),"Mount":cvar("--mount"),
 const TCOLOR={prop:cvar("--prop"),furniture:cvar("--furniture"),group:cvar("--group"),
   finish:cvar("--finish"),shading:cvar("--shading")};
 const KLABEL={"usd:arc":"hierarchy","Mount":"mount","weft:bind:shading":"shading","weft:bind:finish":"finish","weft:offer:carrier":"carrier"};
-const LENSES=[["usd:arc","Hierarchy"],["Mount","Mount / contract"],["weft:bind:shading","Shading"],["weft:bind:finish","Finish"]]
-  .filter(([k])=>DATA.kinds.includes(k));
+// Lenses are DATA-DRIVEN: every relationship kind present in the graph is a
+// lens, so declared (weft__kinds) kinds and collections appear automatically,
+// not just the four built-ins. Known kinds keep their nice label + a preferred
+// order; anything else (a team's declared kind) falls back to its kind id.
+const LENS_LABEL={"usd:arc":"Hierarchy","Mount":"Mount / contract","weft:bind:shading":"Shading","weft:bind:finish":"Finish","usd:collection":"Collections"};
+const LENS_PREF=["usd:arc","Mount","weft:bind:shading","weft:bind:finish","usd:collection"];
+const LENSES=[...LENS_PREF.filter(k=>DATA.kinds.includes(k)),
+              ...DATA.kinds.filter(k=>!LENS_PREF.includes(k))]
+  .map(k=>[k, LENS_LABEL[k]||k]);
 
 // synthesize a root so "nothing selected" shows the hierarchy top (root -> groups)
 DATA.nodes.push({id:"/root",label:"root",type:"group"});
@@ -577,6 +585,47 @@ function recenterOnSet(ids){
   selected=null;
   render(); applyLens(); highlight(null);
   if(hint) hint.style.display="none";
+}
+// Switching to a sparse relationship lens SHOWS that relationship: reveal the
+// nodes participating in its edges (capped, bboxes only, no load), so a
+// declared/facet/mount/collection kind is immediately visible instead of
+// hidden until you navigate to a participant. Hierarchy (usd:arc) is excluded
+// -- revealing all of it is the whole scene; it keeps the home/focus behaviour.
+function revealLensMembers(l){
+  if(l==="usd:arc") return;
+  const parts=new Set();
+  DATA.edges.forEach(e=>{ if(e.kind===l){ if(NODE[e.source])parts.add(e.source); if(NODE[e.target])parts.add(e.target); } });
+  const ids=[...parts];
+  const label=(typeof LENS_LABEL!=="undefined" && LENS_LABEL[l])||l;
+  if(!ids.length){ flash("no <b>"+label+"</b> relationships in this scene"); return; }
+  const CAP=BATCH*3;
+  const shown=ids.slice(0,CAP);
+  recenterOnSet(shown);
+  flash(ids.length>CAP
+    ? "showing "+CAP+" of "+ids.length+" <b>"+label+"</b> nodes — pull a node for more"
+    : "<b>"+label+"</b> — "+ids.length+" nodes, bboxes only; double-click a node to pull");
+}
+// Load the whole RELATIONSHIP: materialize every loadable prim participating in
+// the active lens's edges, at once, through the same rule->set->load seam as a
+// facet pull / compose "load set". A lens IS a rule; this pulls it as a whole.
+function loadableLensMembers(l){
+  const parts=new Set();
+  DATA.edges.forEach(e=>{ if(e.kind===l){
+    if(isLeafNode(NODE[e.source])) parts.add(e.source);
+    if(isLeafNode(NODE[e.target])) parts.add(e.target); }});
+  return [...parts];
+}
+function uiLoadLens(){
+  const l=lens, label=(typeof LENS_LABEL!=="undefined" && LENS_LABEL[l])||l;
+  if(l==="usd:arc"){ flash("the <b>Hierarchy</b> lens is the whole scene — pull a branch instead"); return; }
+  const res=loadableLensMembers(l);
+  if(!res.length){ flash("no loadable geometry in the <b>"+label+"</b> relationship"); return; }
+  const owner="lens:"+l;
+  moveFocusTo(owner);
+  ruleLoads.set(owner,res);
+  notifyPullSet(res);
+  pushCrumb(owner);
+  flash("loaded "+res.length+" prims in the <b>"+label+"</b> relationship — unloads when the focus moves on (pin to keep)");
 }
 function uiExploreResult(){
   const res=[...composeResult];
@@ -1016,7 +1065,7 @@ function setLens(l){ lens=l; document.getElementById("lens").value=l; applyLens(
 // controls
 const lensSel=d3.select("#lens");
 LENSES.forEach(([k,lab])=>lensSel.append("option").attr("value",k).text(lab));
-lensSel.property("value","usd:arc").on("change",function(){ setLens(this.value); });
+lensSel.property("value","usd:arc").on("change",function(){ setLens(this.value); revealLensMembers(this.value); });
 
 const kc={}; DATA.edges.forEach(e=>kc[e.kind]=(kc[e.kind]||0)+1);
 const kd=d3.select("#kinds");
@@ -1033,6 +1082,7 @@ document.getElementById("composetoggle").onclick=()=>{
   el.style.display=open?"none":"block";
   if(!open) refreshPreview();
 };
+document.getElementById("loadlensbtn").onclick=()=>uiLoadLens();
 document.getElementById("loadsetbtn").onclick=()=>uiLoadExpr();
 document.getElementById("pinsetbtn").onclick=()=>uiPinExpr();
 document.getElementById("exploresetbtn").onclick=()=>uiExploreResult();
