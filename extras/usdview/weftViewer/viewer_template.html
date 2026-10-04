@@ -580,7 +580,17 @@ function recenterOnSet(ids){
   ids.forEach(x=>{ if(NODE[x]) seedSet.add(x); });
   pinned.forEach(p=>{ if(NODE[p]) seedSet.add(p); });
   Object.values(NODE).forEach(n=>{ n.fx=n.fy=null; n._settled=false; });
-  ids.forEach(x=>{ if(NODE[x]) reveal(x,null); });
+  // Spread the set on a ring to start, rather than dropping everything on the
+  // exact centre and letting it explode -- the ring gives the sim a clean,
+  // low-crossing start so the overview's edges don't tangle.
+  const valid=ids.filter(x=>NODE[x]);
+  const RR=Math.min(Wd,Ht)*0.34;
+  valid.forEach((x,i)=>{
+    if(reveal(x,null)){
+      const ang=2*Math.PI*i/Math.max(1,valid.length);
+      NODE[x].x=Wd/2+RR*Math.cos(ang); NODE[x].y=Ht/2+RR*Math.sin(ang);
+    }
+  });
   pinned.forEach(p=>{ if(NODE[p]) reveal(p,null); });
   selected=null;
   render(); applyLens(); highlight(null);
@@ -601,6 +611,10 @@ function revealLensMembers(l){
   const CAP=BATCH*3;
   const shown=ids.slice(0,CAP);
   recenterOnSet(shown);
+  // Record the lens overview as a crumb so Back returns HERE (the whole
+  // relationship view) after you drill into one of its nodes -- not all the
+  // way to the seed. The owner carries the lens, so recenter restores it.
+  const owner="lens:"+l; ruleLoads.set(owner,shown); pushCrumb(owner);
   flash(ids.length>CAP
     ? "showing "+CAP+" of "+ids.length+" <b>"+label+"</b> nodes — pull a node for more"
     : "<b>"+label+"</b> — "+ids.length+" nodes, bboxes only; double-click a node to pull");
@@ -706,7 +720,11 @@ function updateCrumbs(){
   const start=Math.max(0,crumbs.length-6);
   el.innerHTML=(start>0?'<span class="sep">…›</span>':'')+
     crumbs.slice(start).map((id,j)=>{ const i=start+j; const n=NODE[id];
-      const raw=n?n.label:id;
+      let raw=n?n.label:id;
+      if(!n && typeof id==="string" && id.indexOf("lens:")===0){
+        const l=id.slice(5);
+        raw=((typeof LENS_LABEL!=="undefined" && LENS_LABEL[l])||l)+" view";
+      }
       const lab=raw.length>16?raw.slice(0,15)+'…':raw;
       return `<span class="cr ${i===crumbs.length-1?'cur':''}" data-i="${i}">${lab}</span>`;
     }).join('<span class="sep">›</span>');
@@ -717,7 +735,13 @@ function updateCrumbs(){
 // as bboxes} ∪ {pinned} -- never the whole stage. "Immediate
 // relationships" is whatever the ACTIVE LENS says it is.
 function recenter(id){
-  if(!NODE[id]){   // an expression owner: the view IS its evaluated set
+  if(!NODE[id]){   // an expression / lens-view owner: the view IS its set
+    // A "lens:<kind>" owner also restores that lens, so Back to a lens
+    // overview shows the right relationship, not the current one.
+    if(typeof id==="string" && id.indexOf("lens:")===0){
+      const l=id.slice(5);
+      if(l!==lens && LENSES.some(([lk])=>lk===l)){ lens=l; document.getElementById("lens").value=l; }
+    }
     recenterOnSet(ruleLoads.get(id)||[...composeResult]); return;
   }
   visible.clear(); expandedKind.clear(); history.length=0;
@@ -726,13 +750,36 @@ function recenter(id){
   reveal(id,null); NODE[id].x=Wd/2; NODE[id].y=Ht/2;
   pinned.forEach(p=>reveal(p,NODE[id]));
   let shown=0, remaining=0;
+  // Gather the eligible neighbours first (a prim focus shows its ACTIVE-LENS
+  // neighbours; a facet focus shows its members), then FAN them evenly on a
+  // ring around the focus. Random placement let same-direction neighbours
+  // stack, so their arcs overlapped and read as a tangle -- an even fan gives
+  // the sim a clean, non-crossing start it keeps.
+  const nbrs=[];
   for(const a of ADJ[id]){
-    // a prim focus shows its ACTIVE-LENS neighbours; a facet focus
-    // shows its members (its own bind edges, whatever lens was on)
     const ok=primLike(id) ? (a.kind===lens&&active.has(a.kind)) : active.has(a.kind);
-    if(!ok) continue;
-    if(visible.has(a.o)) continue;
-    if(shown<BATCH){ reveal(a.o,NODE[id]); shown++; } else remaining++;
+    if(!ok || visible.has(a.o)) continue;
+    if(nbrs.length<BATCH) nbrs.push(a.o); else remaining++;
+  }
+  const cx=NODE[id].x, cy=NODE[id].y, RING=Math.max(100, 80+nbrs.length*6);
+  nbrs.forEach((o,i)=>{
+    if(reveal(o,NODE[id])){
+      const ang=(-Math.PI/2)+(2*Math.PI*i/Math.max(1,nbrs.length));
+      NODE[o].x=cx+RING*Math.cos(ang); NODE[o].y=cy+RING*Math.sin(ang);
+    }
+    shown++;
+  });
+  if(shown===0 && primLike(id)){
+    // No neighbours under the active lens (e.g. /root, or any node sparse in
+    // this relationship): don't strand the user on a lone dead-end node.
+    // Fall back to the hierarchy -- show this node's children, like Home --
+    // and switch the lens too, so the root->group edges actually draw
+    // (applyLens hides off-lens edges, which is what made this look "empty").
+    if(lens!=="usd:arc"){ lens="usd:arc"; const sel=document.getElementById("lens"); if(sel) sel.value="usd:arc"; }
+    for(const a of ADJ[id]){
+      if(a.kind!=="usd:arc" || visible.has(a.o)) continue;
+      if(shown<BATCH){ reveal(a.o,NODE[id]); shown++; } else remaining++;
+    }
   }
   if(remaining===0) expandedKind.add(id+"|"+lens);
   selected=NODE[id];
