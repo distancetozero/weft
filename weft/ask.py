@@ -160,19 +160,32 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
     # the prototype and is otherwise invisible to attribute/name matching.
     # `pull()`'s `_admit` already widens a resolved instance-proxy path back
     # to its instance root, so surfacing the proxy path here is safe.
-    prims = [p for p in stage.Traverse(Usd.TraverseInstanceProxies(
-        Usd.PrimIsActive & Usd.PrimIsDefined & ~Usd.PrimIsAbstract))]
+    # The full-stage traversal and the identity index are built LAZILY: a
+    # path: seed needs neither, so a targeted pull no longer walks every prim.
+    # (Profiling a 1-member ALab pull, this identity index over 4,541 prims was
+    # ~14% of resolve_seeds' time, read by nothing.)
     cache = UsdGeom.XformCache()
     out: List[ResolvedSeed] = []
+    planes = {s.plane for s in seeds}
+
+    _prims: Optional[List] = None
+
+    def prims_list():
+        nonlocal _prims
+        if _prims is None:
+            _prims = [p for p in stage.Traverse(Usd.TraverseInstanceProxies(
+                Usd.PrimIsActive & Usd.PrimIsDefined & ~Usd.PrimIsAbstract))]
+        return _prims
 
     ids: Dict[str, List[str]] = {}
-    for p in prims:
-        i = identity_of(p, identity_keys)
-        if i:
-            ids.setdefault(i, []).append(p.GetPath().pathString)
+    if "identity" in planes:
+        for p in prims_list():
+            i = identity_of(p, identity_keys)
+            if i:
+                ids.setdefault(i, []).append(p.GetPath().pathString)
 
     def spatial_candidates():
-        for p in prims:
+        for p in prims_list():
             a = p.GetAttribute("extentsHint")
             if a and a.HasAuthoredValue():
                 lo, hi = a.Get()[0], a.Get()[1]
@@ -183,7 +196,7 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
         r = ResolvedSeed(seed=s)
         if s.plane == "name":
             r.mode = "lexical"
-            r.paths = sorted(p.GetPath().pathString for p in prims
+            r.paths = sorted(p.GetPath().pathString for p in prims_list()
                              if fnmatch.fnmatchcase(p.GetName(), s.value))
         elif s.plane == "identity":
             r.mode = "identity"
@@ -202,7 +215,7 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
         elif s.plane == "attr":
             r.mode = "attribute"
             hits, absent = [], 0
-            for p in prims:
+            for p in prims_list():
                 found, v = _authored(p, s.key)
                 if not found:
                     absent += 1
@@ -214,7 +227,7 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
         elif s.plane == "spatial":
             r.mode = "spatial"
             hits, without = [], 0
-            for p in prims:
+            for p in prims_list():
                 a = p.GetAttribute("extentsHint")
                 if not (a and a.HasAuthoredValue()):
                     without += 1
@@ -242,7 +255,7 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
         elif s.plane == "contract":
             r.mode = "contract"
             hits = []
-            for p in prims:
+            for p in prims_list():
                 found, v = _authored(p, "weft:offer:contract")
                 rfound, rv = _authored(p, "weft:offer:role")
                 if s.key == "offers" and found and str(v).split("@")[0] == s.value.split("@")[0]:
@@ -264,7 +277,7 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
             m = _re.match(r"^(>=|<=|==|!=|>|<)(.+)$", s.value)
             op, num = m.group(1), float(m.group(2))
             # cheap, no-load projection of just this metric over the candidates
-            cand = [p.GetPath().pathString for p in prims]
+            cand = [p.GetPath().pathString for p in prims_list()]
             tbl = _data.project(stage, cand, columns=[s.key], xform_cache=cache)
             hits, without = [], 0
             for row in tbl.rows():
