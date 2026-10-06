@@ -354,6 +354,39 @@ class CollectionKind(RelationshipKind):
             return []
 
 
+class MaterialBindingKind(RelationshipKind):
+    """Derived, native: each prim's DIRECTLY bound material (UsdShade
+    `material:binding` rel) becomes a material facet node with an edge from
+    every bound prim. Universal across every DCC -- a binding is a binding, no
+    judgment -- so it runs on any stage with zero authoring. Direct bindings
+    only in v1 (collection-based and inherited bindings are a named follow-up:
+    inheritance would fan an edge onto every descendant, which is noise, not a
+    relationship). Bindings inside unloaded payloads aren't seen until that
+    subtree is pulled -- derive sees what composition sees."""
+
+    type_id = "usd:material:binding"
+    facet = True
+    display = {"label": "Material", "color": "#d08b8b"}
+
+    def populate(self, stage, ctx: Context) -> None:
+        if stage is None:
+            return
+        from pxr import UsdShade
+        for prim in stage.Traverse(ctx.predicate):
+            try:
+                rel = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
+                targets = rel.GetTargets() if rel else []
+            except Exception:
+                continue
+            for target in targets:
+                mprim = stage.GetPrimAtPath(target)
+                if not (mprim and mprim.IsValid() and mprim.IsA(UsdShade.Material)):
+                    continue
+                mpath = mprim.GetPath().pathString
+                mid = ctx.builder.add("material:%s" % mpath, mprim.GetName(), "material")
+                ctx.builder.add_edge(prim.GetPath().pathString, mid, self.type_id)
+
+
 # -- the registry ------------------------------------------------------------
 #
 # Order here is the *walk/emission* order (arc first so it creates the group
@@ -368,6 +401,7 @@ REGISTRY: "List[RelationshipKind]" = [
     ShadingKind(),
     MountKind(),
     CollectionKind(),
+    MaterialBindingKind(),
 ]
 
 # The lens-selector display order for the kinds list build_graph returns --
@@ -381,4 +415,5 @@ LENS_ORDER: "List[str]" = [
     "weft:bind:shading",
     "weft:bind:finish",
     "usd:collection",
+    "usd:material:binding",
 ]

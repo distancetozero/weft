@@ -125,9 +125,10 @@ def project(stage, paths: Optional[List[str]] = None,
     if "path" in cols:
         cols.remove("path")
     cols = ["path"] + cols
-    unknown = [c for c in cols if c not in METRIC_NAMES]
+    unknown = [c for c in cols if c not in METRIC_NAMES and not c.startswith("attr:")]
     if unknown:
-        raise ValueError("unknown metric(s): %s (known: %s)"
+        raise ValueError("unknown metric(s): %s (known: %s; or attr:<name> for "
+                         "any authored attribute/primvar)"
                          % (", ".join(unknown), ", ".join(METRIC_NAMES)))
 
     cache = xform_cache or UsdGeom.XformCache()
@@ -171,6 +172,26 @@ def _metric(name, prim, cache):
         return str(prim.GetTypeName())
     if name == "has_payload":
         return bool(prim.HasAuthoredPayloads())
+
+    # attr:<name> -- any authored attribute/primvar, surfaced as DATA (never a
+    # relationship). Scalar value kept as-is (tokens/paths/vecs stringified);
+    # an array-typed attribute reports its length (the datum that fits a cell).
+    # None where unauthored or behind an unloaded payload -- lazy-consistent.
+    if name.startswith("attr:"):
+        a = prim.GetAttribute(name[len("attr:"):])
+        if not (a and a.HasAuthoredValue()):
+            return None
+        v = a.Get()
+        if v is None:
+            return None
+        if a.GetTypeName().isArray:
+            try:
+                return len(v)
+            except TypeError:
+                return None
+        if isinstance(v, (int, float, bool)):
+            return v
+        return str(v)
 
     if name in ("bbox_volume", "centroid_x", "centroid_y", "centroid_z"):
         box = _world_bbox_from_hint(prim, cache)
