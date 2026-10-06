@@ -326,7 +326,15 @@ def _below_payload(stage, path, p: Pull) -> Optional[str]:
 
 
 def pull(context_file: str, seeds, follow=None, depth: int = 4,
-         identity_keys=DEFAULT_IDENTITY_KEYS, extractors=()) -> Pull:
+         identity_keys=DEFAULT_IDENTITY_KEYS, extractors=(), cache: bool = False) -> Pull:
+    if cache:
+        from pxr import Usd
+        from . import pullcache
+        usd_version = str(Usd.GetVersion())
+        hit = pullcache.lookup(context_file, list(seeds), follow, depth,
+                               extractors, usd_version)
+        if hit is not None:
+            return hit                 # no stage open, no resolve, no walk
     stage = _open(context_file)
     terms = parse_follow(follow)
     p = Pull(context=context_file, depth=depth,
@@ -511,6 +519,11 @@ def pull(context_file: str, seeds, follow=None, depth: int = 4,
         "strand-free over relationships, arcs, and registered extractors "
         "(%d registered); attribute-encoded references outside them are not visible"
         % len(extractors))
+
+    if cache:
+        p.accounting["cache"] = "miss"
+        pullcache.store(context_file, list(seeds), follow, depth, extractors,
+                        usd_version, p, stage)
 
     return p
 
