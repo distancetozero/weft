@@ -387,7 +387,7 @@ def cmd_pull(args) -> int:
         return 1
     try:
         p = _pull.pull(ctx, args.seeds, follow=args.follow, depth=args.depth,
-                       extractors=extractors)
+                       extractors=extractors, cache=args.cache)
     except ValueError as e:
         print("pull: %s" % e, file=sys.stderr)
         return 1
@@ -1079,6 +1079,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--mask-out", default=None, help="write member paths, one per line")
     s.add_argument("--verify", default=None, metavar="MANIFEST",
                    help="verify an existing manifest instead of pulling")
+    s.add_argument("--cache", action="store_true",
+                   help="reuse a cached result when this exact pull was run "
+                        "before and the context's layers are unchanged "
+                        "(cache dir: $WEFT_CACHE, default ~/.cache/weft/pull)")
     s.set_defaults(fn=cmd_pull)
 
     s = sub.add_parser("compose",
