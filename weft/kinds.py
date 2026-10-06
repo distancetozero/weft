@@ -147,6 +147,72 @@ class DeclaredReadKind(RelationshipKind):
                 continue
 
 
+class OpacityFinishDeriver(RelationshipKind):
+    """A `derive` built-in (tier 2): finish from each prim's bound material's
+    UsdPreviewSurface opacity, under a STATED rule. The threshold and surface
+    input are the judgment and live in the declaration -- mechanical at the
+    data, deliberate at the rule. Honest at the boundary: a prim whose material
+    carries no authored scalar opacity (unauthored, or a texture connection)
+    gets NO finish -- derive never fabricates a finish the data doesn't carry.
+
+    Declared, not auto-registered:
+        {"kind":"weft:bind:finish","structure":"facet",
+         "population":{"derive":{"builtin":"opacity-finish","threshold":0.999}}}
+    """
+
+    threshold = 0.999
+    surface_input = "opacity"
+
+    def configure(self, config: dict) -> None:
+        if "threshold" in config:
+            self.threshold = float(config["threshold"])
+        if "surface_input" in config:
+            self.surface_input = str(config["surface_input"])
+
+    def _material_opacity(self, stage, mat_prim) -> Optional[float]:
+        from pxr import Usd, UsdShade
+        for child in Usd.PrimRange(mat_prim):
+            shader = UsdShade.Shader(child)
+            if not shader:
+                continue
+            if shader.GetIdAttr().Get() == "UsdPreviewSurface":
+                inp = shader.GetInput(self.surface_input)
+                if inp:
+                    v = inp.Get()        # None when unauthored OR a connection
+                    if v is not None:
+                        return float(v)
+        return None
+
+    def populate(self, stage, ctx: Context) -> None:
+        if stage is None:
+            return
+        from pxr import UsdShade
+        for prim in stage.Traverse(ctx.predicate):
+            try:
+                rel = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
+                targets = rel.GetTargets() if rel else []
+            except Exception:
+                continue
+            op = None
+            for target in targets:
+                mprim = stage.GetPrimAtPath(target)
+                if mprim and mprim.IsValid() and mprim.IsA(UsdShade.Material):
+                    op = self._material_opacity(stage, mprim)
+                    if op is not None:
+                        break
+            if op is None:
+                continue                 # no scalar opacity -> no finish, not a guess
+            label = "translucent" if op < self.threshold else "opaque"
+            pid = prim.GetPath().pathString
+            ctx.builder.add(pid, prim.GetName(),
+                            "furniture" if prim.GetName().startswith("furniture_") else "prop")
+            fid = ctx.builder.add("%s:%s" % (self.type_id, label), label, self.type_id)
+            ctx.builder.add_edge(pid, fid, self.type_id)
+
+
+BUILTIN_DERIVERS["opacity-finish"] = OpacityFinishDeriver
+
+
 def _load_one(decl: dict) -> RelationshipKind:
     unknown = set(decl) - _FIELDS
     if unknown:
@@ -210,6 +276,8 @@ def _load_one(decl: dict) -> RelationshipKind:
     k.omission = omission
     k.extractor = None
     k.contract = decl.get("contract")
+    if hasattr(k, "configure"):     # pass the declared rule (threshold, etc.)
+        k.configure(config)
     return k
 
 
