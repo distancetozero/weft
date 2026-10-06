@@ -469,7 +469,7 @@ def cmd_compose(args) -> int:
     try:
         c = _compose.compose(ctx, args.expression, out=args.out,
                              extractors=extractors,
-                             default_depth=args.depth)
+                             default_depth=args.depth, cache=args.cache)
     except (ValueError, RuntimeError) as e:
         print("compose: %s" % e, file=sys.stderr)
         return 1
@@ -580,7 +580,7 @@ def cmd_open(args) -> int:
 
     try:
         p = _pull.pull(ctx, expr.seeds, follow=expr.follow, depth=expr.depth,
-                       extractors=extractors)
+                       extractors=extractors, cache=args.cache)
     except ValueError as e:
         print("open: %s" % e, file=sys.stderr)
         return 1
@@ -1100,6 +1100,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="write the surgical layer here (.usda)")
     s.add_argument("--out-manifest", default=None, metavar="FILE",
                    help="write the pull manifest certifying this layer")
+    s.add_argument("--cache", action="store_true",
+                   help="reuse a cached pull when this expression was composed "
+                        "before and the context is unchanged (see `weft pull --cache`)")
     s.set_defaults(fn=cmd_compose)
 
     s = sub.add_parser("data",
@@ -1125,6 +1128,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--extractors", default=None, metavar="FILE")
     s.add_argument("--print-only", action="store_true",
                    help="print the usdview command instead of launching it")
+    s.add_argument("--cache", action="store_true",
+                   help="reuse a cached pull for this expression when the "
+                        "context is unchanged (see `weft pull --cache`)")
     s.set_defaults(fn=cmd_open)
 
     s = sub.add_parser("who", help="what depends on this prim (incoming edges)")
