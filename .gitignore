@@ -8,3 +8,4 @@ build/
 dist/
 .deps-cache.json
 .claude/worktrees/
+.venv/
