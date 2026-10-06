@@ -82,6 +82,36 @@ should. (Note points% < prims% at every level — a slice's geometry is lighter
 than its prim share, and RAM tracks points, so the memory win is steadier than
 the prim fraction suggests.)
 
+## Result 4 — `weft data`: the stage as data, on production meshes
+
+The numeric data plane (`weft data`) run on ALab, not the synthetic bench — so
+`point_count`/`poly_count`/`byte_cost` carry real geometry, not the `-` an
+implicit-surface bench shows.
+
+- **Whole scene, cheap tier, zero geometry loaded:** 4,541 prims projected to a
+  table in a fraction of a second. 4,319 carry an authored `extentsHint` (so
+  `bbox_volume`/`centroid` populate); the meshes sit behind payloads (only 2
+  inline `Mesh` at the unloaded level), so the expensive columns are honestly
+  `None`, not loaded.
+- **Cheap selection, then load a slice:** `--select 'where:bbox_volume>1e6'`
+  filtered 4,541 → **63 prims with no load**, then `--load` materialised just
+  those and the expensive columns aggregated over each placement's subtree:
+
+  | asset (tail) | points | polys | ~bytes |
+  |---|---|---|---|
+  | decor_choko_experiment01/GEO | 370,761 | 368,219 | 5.9 MB |
+  | lab_structure01/structure_roof/GEO | 192,469 | 185,166 | 3.0 MB |
+  | decor_medical_screen01/GEO | 115,256 | 113,674 | 1.8 MB |
+  | lab_structure01/structure_base01/GEO | 108,955 | 108,008 | 1.7 MB |
+  | … | | | |
+  | **total (45 meshed of 63 selected)** | **1,701,650** | **1,676,849** | **~27 MB** |
+
+What this validates on real data: the cheap→expensive tier split (filter 4,541 →
+63 with no load, load only then); subtree aggregation over production structure
+(ALab's `GEO` high-res and `GEO_PROXY` LOD both surface as rows); and the
+honesty rule — 18 of the 63 selected (lights, pure containers) are `None`, never
+a fabricated `0`.
+
 ## Verdict against "more convenient, not less"
 
 - **Footprint convenience: proven.** One asset = 0.9% of prims, 0.25% of
@@ -100,17 +130,29 @@ the prim fraction suggests.)
 - Single machine, single run, no averaging — treat ratios as ±10–20%.
 - Geometry-only; no textures/shaders/procedurals/render. Real full-loads are
   heavier, so these numbers flatter the *baseline*, not weft.
-- `pull` overhead is a large fraction of a tiny slice (≈0.11 s of the 0.12 s jar
-  pull). It doesn't grow with slice size, so it hurts most on small pulls — the
-  case we most want fast. This is the first thing the v2 content-addressed cache
-  (and a leaner closure walk) would attack.
+- `pull` overhead was a large fraction of a tiny slice (≈0.11 s of the 0.12 s
+  jar pull). **Since addressed:** lazy seed resolution dropped a cold pull to
+  ~0.098 s (it no longer walks the whole stage for a `path:` seed), and the
+  cross-call cache (`pull --cache`) makes a repeated pull of an unchanged
+  context ~0.003 s — **~77× faster**, floored no longer by the stage open.
+  ~94% of a *cold* pull remains USD's `LoadNone` open, which only the cache
+  amortises.
 - The sweep uses ancestor paths (nested slices); batch-pulling N scattered
   assets is a separate shape not measured here.
 
 ## Reproduce
 
 ```sh
-PYTHONPATH=<weft repo> ~/weft-demo/env/bin/python extras/bench/bench_alab.py report
-PYTHONPATH=<weft repo> ~/weft-demo/env/bin/python extras/bench/bench_alab.py sweep
+ENTRY=~/weft-demo/alab/ALab-2.3.0/ALab/entry.usda
+PY="PYTHONPATH=<weft repo> ~/weft-demo/env/bin/python"
+
+# the convenience delta + the slice sweep
+$PY extras/bench/bench_alab.py report
+$PY extras/bench/bench_alab.py sweep
+
+# Result 4 — the stage as data
+$PY -m weft data "$ENTRY"                                   # whole scene, cheap, no load
+$PY -m weft data "$ENTRY" --select 'where:bbox_volume>1e6' \
+    --load --columns point_count,poly_count,byte_cost      # a slice, real mesh metrics
 ```
 (ALab under `~/weft-demo/alab/ALab-2.3.0/ALab/entry.usda`.)
