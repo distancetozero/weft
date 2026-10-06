@@ -74,3 +74,12 @@ def test_cache_off_has_no_cache_field(ctx):
     from weft.pull import pull
     p = pull(ctx, ["path:/root/a"], cache=False)
     assert "cache" not in p.accounting
+
+
+def test_compose_threads_cache(ctx):
+    from weft.compose import compose
+    c1 = compose(ctx, "path:/root/a", cache=True)
+    assert c1.pull.accounting.get("cache") == "miss"
+    c2 = compose(ctx, "path:/root/a", cache=True)        # same expression, unchanged ctx
+    assert c2.pull.accounting.get("cache") == "hit"
+    assert c2.member_count == c1.member_count            # same surgical result

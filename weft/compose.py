@@ -102,7 +102,7 @@ def mask_arg(paths: List[str]) -> str:
 
 
 def surgical_layer(context_file: str, seeds, follow=None, depth: int = 4,
-                   extractors=()) -> Tuple["Pull", "Sdf.Layer"]:
+                   extractors=(), cache: bool = False) -> Tuple["Pull", "Sdf.Layer"]:
     """Evaluate via pull() and flatten the masked open into a standalone
     surgical layer (method (a) above). Returns (pull, layer); the layer
     is anonymous until exported. Its customLayerData records provenance
@@ -114,7 +114,7 @@ def surgical_layer(context_file: str, seeds, follow=None, depth: int = 4,
     from .manifest import mask_paths
 
     p = pull(context_file, seeds, follow=follow, depth=depth,
-             extractors=extractors)
+             extractors=extractors, cache=cache)
     paths = mask_paths(p)
     if not paths:
         raise ValueError("expression matched nothing; no surgical layer")
@@ -147,7 +147,7 @@ def _prim_set(stage) -> set:
 
 
 def compose(context_file: str, expression: str, out: Optional[str] = None,
-            extractors=(), default_depth: int = 4) -> Composed:
+            extractors=(), default_depth: int = 4, cache: bool = False) -> Composed:
     """The expression-string entry point -- the shape the weft:// URI
     drives. Writes the surgical layer to `out` when given, and PROVES
     method (a) on every run: the produced layer, reopened, must compose
@@ -157,7 +157,7 @@ def compose(context_file: str, expression: str, out: Optional[str] = None,
 
     e = parse_expression(expression, default_depth=default_depth)
     p, layer = surgical_layer(context_file, e.seeds, follow=e.follow,
-                              depth=e.depth, extractors=extractors)
+                              depth=e.depth, extractors=extractors, cache=cache)
     paths = mask_paths(p)
     want = _prim_set(Usd.Stage.OpenMasked(context_file,
                                           Usd.StagePopulationMask(paths)))
