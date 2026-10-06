@@ -497,6 +497,67 @@ def cmd_compose(args) -> int:
     return 0
 
 
+def cmd_data(args) -> int:
+    """Project a stage to a prim-level numeric table -- the stage as data.
+    Cheap columns need no load (surgical); expensive ones (point/poly/byte)
+    populate for loaded prims. `--select where:<metric><op><n>` filters rows by
+    a cheap metric without loading."""
+    try:
+        from pxr import Usd
+        from . import ask as _ask
+        from . import data as _data
+    except ImportError:
+        print("data: usd-core is required (pip install usd-core)", file=sys.stderr)
+        return 1
+
+    stage = Usd.Stage.Open(args.context, Usd.Stage.LoadNone)
+    if stage is None:
+        print("data: cannot open %s" % args.context, file=sys.stderr)
+        return 1
+
+    paths = None
+    if args.select:
+        try:
+            res = _ask.resolve_seeds(stage, [args.select])
+        except ValueError as e:
+            print("data: %s" % e, file=sys.stderr)
+            return 1
+        paths = sorted({p for r in res for p in r.paths})
+        if not paths:
+            print("data: %s matched nothing" % args.select, file=sys.stderr)
+            return 1
+        if args.load:
+            for p in paths:
+                stage.Load(p)
+    elif args.load:
+        stage.Load()  # whole stage
+
+    cols = args.columns.split(",") if args.columns else None
+    try:
+        tbl = _data.project(stage, paths, columns=cols)
+    except ValueError as e:
+        print("data: %s" % e, file=sys.stderr)
+        return 1
+
+    if args.out:
+        ext = args.out.rsplit(".", 1)[-1].lower()
+        try:
+            if ext == "parquet":
+                tbl.to_parquet(args.out)
+            elif ext == "csv":
+                tbl.to_csv(args.out)
+            else:
+                tbl.to_json(args.out)
+        except ImportError:
+            print("data: %s output needs pyarrow (pip install pyarrow)" % ext,
+                  file=sys.stderr)
+            return 1
+        print("wrote %d rows x %d cols -> %s" % (len(tbl), len(tbl.names), args.out))
+    else:
+        print(tbl.pretty())
+    return 0
+
+
 def cmd_open(args) -> int:
     """Open the surgical stage an expression names -- the honest quick
     path: usdview's native --mask applies the population mask at open
@@ -1036,6 +1097,21 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--out-manifest", default=None, metavar="FILE",
                    help="write the pull manifest certifying this layer")
     s.set_defaults(fn=cmd_compose)
+
+    s = sub.add_parser("data",
+                       help="project a stage to a prim-level numeric table (stage as data)")
+    s.add_argument("context", help="a .usd/.usda stage")
+    s.add_argument("--select", metavar="EXPR",
+                   help="where:<metric><op><n> to filter rows by a cheap metric "
+                        '(e.g. "where:bbox_volume>50000"); stays surgical (no load)')
+    s.add_argument("--columns", metavar="A,B,C",
+                   help="comma list; default is the cheap tier. Add point_count,"
+                        "poly_count,byte_cost (need --load for payloaded prims)")
+    s.add_argument("--load", action="store_true",
+                   help="load the selected prims first, so expensive columns populate")
+    s.add_argument("--out", metavar="FILE",
+                   help="write FILE.{csv,json,parquet} instead of printing")
+    s.set_defaults(fn=cmd_data)
 
     s = sub.add_parser("open",
                        help="open the surgical stage in usdview (open-time mask)")

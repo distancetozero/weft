@@ -30,11 +30,31 @@ def parse_seed(text: str) -> Seed:
             return Seed("contract", key, t[len(p):], t)
     if t.startswith("where:"):
         body = t[len("where:"):]
-        for op in _RESERVED_OPS:
+        for op in ("~", "&"):           # combinators still reserved in v1
             if op in body:
-                raise ValueError("where: operator %r is reserved; v1 has '=' only" % op)
+                raise ValueError("where: operator %r is reserved" % op)
+        # numeric metric predicate: <metric><op><number>. Check the two-char
+        # operators before the one-char ones, and before the facet '='.
+        from .data import METRIC_NAMES, SELECTABLE_METRICS
+        for op in (">=", "<=", "==", "!=", ">", "<"):
+            if op in body:
+                key, _, num = body.partition(op)
+                key, num = key.strip(), num.strip()
+                if key not in METRIC_NAMES:
+                    raise ValueError(
+                        "where: comparison needs a numeric metric; %r is not one "
+                        "(try one of %s)" % (key, ", ".join(sorted(SELECTABLE_METRICS))))
+                if key not in SELECTABLE_METRICS:
+                    raise ValueError(
+                        "where: %r is not selectable (expensive or non-numeric); "
+                        "tabulate it with `weft data --load --columns %s`" % (key, key))
+                try:
+                    float(num)
+                except ValueError:
+                    raise ValueError("where: %r wants a number, got %r" % (key, num))
+                return Seed("metric", key, op + num, t)
         if "=" not in body:
-            raise ValueError("where: wants attr=value, got %r" % body)
+            raise ValueError("where: wants attr=value or metric<op>number, got %r" % body)
         key, _, value = body.partition("=")
         if not key or not value:
             raise ValueError("where: wants attr=value, got %r" % body)
@@ -237,6 +257,24 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
                                 hits.append(p.GetPath().pathString)
                                 break
             r.paths = sorted(set(hits))
+        elif s.plane == "metric":
+            r.mode = "metric"
+            import re as _re
+            from . import data as _data
+            m = _re.match(r"^(>=|<=|==|!=|>|<)(.+)$", s.value)
+            op, num = m.group(1), float(m.group(2))
+            # cheap, no-load projection of just this metric over the candidates
+            cand = [p.GetPath().pathString for p in prims]
+            tbl = _data.project(stage, cand, columns=[s.key], xform_cache=cache)
+            hits, without = [], 0
+            for row in tbl.rows():
+                v = row.get(s.key)
+                if v is None:
+                    without += 1
+                    continue
+                if _data.compare(v, op, num):
+                    hits.append(row["path"])
+            r.paths, r.complement = sorted(hits), without
         r.matched = len(r.paths)
         if not r.paths and not r.note:
             r.note = "seed %r matched nothing" % s.raw
