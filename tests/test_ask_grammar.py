@@ -20,11 +20,16 @@ def test_contract_planes():
     assert parse_seed("requires:Mount@1").value == "Mount@1"
 
 
-def test_where_equality_only():
+def test_where_equality_and_metric():
     s = parse_seed("where:finish=translucent")
     assert (s.plane, s.key, s.value) == ("attr", "finish", "translucent")
-    for bad in ("where:finish~glass", "where:count>3", "where:finish"):
-        with pytest.raises(ValueError, match="reserved|wants"):
+    # ~/& stay reserved; a comparison on a non-metric key is rejected; a bare
+    # key still wants attr=value. (Numeric metric comparisons on a real metric
+    # parse -- see tests/test_data.py::test_parse_metric_predicate.)
+    for bad, pat in (("where:finish~glass", "reserved"),
+                     ("where:count>3", "numeric metric|not one"),
+                     ("where:finish", "wants")):
+        with pytest.raises(ValueError, match=pat):
             parse_seed(bad)
 
 
