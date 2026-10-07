@@ -175,22 +175,30 @@ visible, not hidden.
   is absent from the finish facet (not fabricated).
 - Golden-parity: `build_graph` on the existing fixtures is unchanged except for
   the new material facet (the byte-for-byte golden gets a documented update).
-- **Acceptance on ALab (measured 2026-10-06, honest):** `CollectionKind` derives
-  ALab's collections natively, free. But **direct** material bindings are sparse
-  on ALab — 0 at `LoadNone` (bindings sit behind payloads), 2 at `LoadAll` —
-  because **ALab binds via collections, not direct `material:binding` rels**.
-  So `MaterialBindingKind` v1 (direct only) is correct and universal but finds
-  little on *this* scene; **collection-based bindings (the named follow-up) are
-  what ALab-style data needs**, and they build on the collections already
-  derived. The direct-binding mechanism is proven by the unit fixtures; the
-  ALab win here is collections, with material-via-collection next.
+- **Acceptance on ALab (measured 2026-10-07, mystery solved):** the first probe
+  found only 2 bound gprims and I wrongly guessed "collections." Measuring
+  properly: **ALab binds materials per USD *purpose* (`full`/`preview`) and by
+  inheritance, not all-purpose** — 7,500 gprims resolve a `preview` material,
+  6,141 a `full` one; all-purpose is the 2 anomalies. `MaterialBindingKind` is
+  therefore **purpose-aware**: `ComputeBoundMaterial(purpose)` for `full` and
+  `preview` (resolving inheritance + the all-purpose fallback), each purpose its
+  own lens. On ALab `build_graph` this lights up **~1,512 full / ~1,538 preview**
+  material relationships (423/440 distinct materials) over the non-instanced
+  gprims — vs 2 before. Honest remaining gaps: (a) **instanced** gprims (79% of
+  ALab) need instance-proxy traversal, a cross-cutting follow-up shared by every
+  derived kind (v1 matches `CollectionKind`: no proxies); (b) at `LoadNone` the
+  bindings sit behind payloads, so material relationships appear as geometry is
+  pulled/loaded — lazy-consistent, like the numeric expensive tier.
 
 ## Out of scope (named next steps)
 
 - **The Loom** — the "USD as data" workbench UI that surfaces these derived
   relationships live (see → derive → declare → query). Its own spec; this is its
   substrate.
-- **Collection-based material bindings** (vs direct) — a second binding path.
+- **Instance-proxy coverage for derived kinds** — the 79% of ALab behind
+  instancing; a cross-cutting change (all derived kinds), not material-specific.
+- **Collection-based material bindings** (vs purpose/direct) — a further binding
+  path, if a scene uses it (ALab does not).
 - **Learned similarity (B)** — the fuzzy, non-deterministic top layer; only
   worth building once this deterministic floor exists.
 - **Mining** (tier 3) — geometric/structural inference that needs curation.
