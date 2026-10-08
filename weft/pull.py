@@ -86,6 +86,26 @@ def _out_edges(prim, extractors=()) -> List[Tuple[str, str]]:
     return out
 
 
+def authored_relationship_kinds(stage, predicate=None) -> Dict[str, int]:
+    """Every NATIVE relationship kind authored on the stage, with a prim count
+    -- the answer to "what can I --follow?". Pure USD, no weft declaration: a
+    relationship authored by any DCC/pipeline is followable by its own name.
+    Lazy like the rest of weft: sees what the stage composes (pass a loaded
+    stage to reach rels behind payloads); traverses instance proxies so
+    instanced assets' rels are counted."""
+    from pxr import Usd
+    if predicate is None:
+        predicate = Usd.TraverseInstanceProxies(
+            Usd.PrimIsActive & Usd.PrimIsDefined & ~Usd.PrimIsAbstract)
+    counts: Dict[str, int] = {}
+    for prim in stage.Traverse(predicate):
+        for rel in prim.GetAuthoredRelationships():
+            if rel.GetTargets():
+                k = edge_kind_of(rel.GetName())
+                counts[k] = counts.get(k, 0) + 1
+    return counts
+
+
 def _reverse_index(stage, extractors=()) -> Dict[str, List[Tuple[str, str]]]:
     """target path -> [(source path, kind)] over the populated stage."""
     from pxr import Usd
