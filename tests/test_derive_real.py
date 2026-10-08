@@ -67,11 +67,13 @@ def _edges(g, kind):
 def test_material_binding_auto_derives(stage):
     from weft import threadgraph
     g = threadgraph.build_graph(stage)      # default registry -> kind is auto
-    assert "usd:material:binding" in g["kinds"]
-    e = _edges(g, "usd:material:binding")
+    # the fixture binds all-purpose, which resolves as the fallback for every
+    # purpose, so it surfaces under the `full` lens (and preview).
+    assert "usd:material:binding:full" in g["kinds"]
+    e = _edges(g, "usd:material:binding:full")
     assert ("/root/a", "material:/root/mtl/glass") in e
     assert ("/root/b", "material:/root/mtl/metal") in e
-    # the unbound Xform contributes nothing
+    # the unbound Xform (not even a gprim) contributes nothing
     assert not any(src == "/root/c" for src, _ in e)
 
 

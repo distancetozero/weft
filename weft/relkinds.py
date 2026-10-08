@@ -355,36 +355,48 @@ class CollectionKind(RelationshipKind):
 
 
 class MaterialBindingKind(RelationshipKind):
-    """Derived, native: each prim's DIRECTLY bound material (UsdShade
-    `material:binding` rel) becomes a material facet node with an edge from
-    every bound prim. Universal across every DCC -- a binding is a binding, no
-    judgment -- so it runs on any stage with zero authoring. Direct bindings
-    only in v1 (collection-based and inherited bindings are a named follow-up:
-    inheritance would fan an edge onto every descendant, which is noise, not a
-    relationship). Bindings inside unloaded payloads aren't seen until that
-    subtree is pulled -- derive sees what composition sees."""
+    """Derived, native: each gprim's bound material, resolved per USD material
+    PURPOSE. USD (and ALab in particular) binds materials *per purpose* -- `full`
+    (render) and `preview` -- and *by inheritance* (the binding sits on an
+    ancestor, descendants inherit), NOT on the all-purpose `material:binding`.
+    `ComputeBoundMaterial(purpose)` resolves exactly that (inheritance +
+    all-purpose fallback). Each purpose is its own lens
+    (`usd:material:binding:full` / `:preview`) so render vs preview materials
+    stay distinguishable. gprims only -- the things that actually render with a
+    material (inheritance would otherwise fan an edge onto every intermediate
+    scope). Bindings behind unloaded payloads aren't seen until pulled --
+    derive sees what composition sees.
+
+    (Measured: this takes ALab from 2 all-purpose bindings to ~7,500 preview +
+    ~6,141 full -- the materials were always there, on the purposes we weren't
+    asking for.)"""
 
     type_id = "usd:material:binding"
     facet = True
     display = {"label": "Material", "color": "#d08b8b"}
+    purposes = ("full", "preview")
 
     def populate(self, stage, ctx: Context) -> None:
         if stage is None:
             return
-        from pxr import UsdShade
+        from pxr import UsdShade, UsdGeom
+        ptok = {"full": UsdShade.Tokens.full, "preview": UsdShade.Tokens.preview}
         for prim in stage.Traverse(ctx.predicate):
-            try:
-                rel = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
-                targets = rel.GetTargets() if rel else []
-            except Exception:
+            if not UsdGeom.Gprim(prim):
                 continue
-            for target in targets:
-                mprim = stage.GetPrimAtPath(target)
-                if not (mprim and mprim.IsValid() and mprim.IsA(UsdShade.Material)):
+            api = UsdShade.MaterialBindingAPI(prim)
+            for pname in self.purposes:
+                try:
+                    mat, _ = api.ComputeBoundMaterial(ptok[pname])
+                except Exception:
                     continue
+                if not (mat and mat.GetPrim().IsValid()):
+                    continue
+                mprim = mat.GetPrim()
                 mpath = mprim.GetPath().pathString
                 mid = ctx.builder.add("material:%s" % mpath, mprim.GetName(), "material")
-                ctx.builder.add_edge(prim.GetPath().pathString, mid, self.type_id)
+                ctx.builder.add_edge(prim.GetPath().pathString, mid,
+                                     "%s:%s" % (self.type_id, pname))
 
 
 # -- the registry ------------------------------------------------------------
@@ -415,5 +427,6 @@ LENS_ORDER: "List[str]" = [
     "weft:bind:shading",
     "weft:bind:finish",
     "usd:collection",
-    "usd:material:binding",
+    "usd:material:binding:full",
+    "usd:material:binding:preview",
 ]
