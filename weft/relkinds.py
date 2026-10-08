@@ -379,9 +379,14 @@ class MaterialBindingKind(RelationshipKind):
     def populate(self, stage, ctx: Context) -> None:
         if stage is None:
             return
-        from pxr import UsdShade, UsdGeom
+        from pxr import Usd, UsdShade, UsdGeom
         ptok = {"full": UsdShade.Tokens.full, "preview": UsdShade.Tokens.preview}
-        for prim in stage.Traverse(ctx.predicate):
+        # Traverse INSTANCE PROXIES: most production geometry (79% of ALab) is
+        # instanced, so the bound gprims live behind instances. A proxy's
+        # material resolves to a path inside that instance; collapse it to the
+        # shared PROTOTYPE identity so every instance of an asset points at ONE
+        # material node (naive proxy paths would explode 2,016 -> 5,141 nodes).
+        for prim in stage.Traverse(Usd.TraverseInstanceProxies(ctx.predicate)):
             if not UsdGeom.Gprim(prim):
                 continue
             api = UsdShade.MaterialBindingAPI(prim)
@@ -393,10 +398,20 @@ class MaterialBindingKind(RelationshipKind):
                 if not (mat and mat.GetPrim().IsValid()):
                     continue
                 mprim = mat.GetPrim()
-                mpath = mprim.GetPath().pathString
-                mid = ctx.builder.add("material:%s" % mpath, mprim.GetName(), "material")
+                node = self._shared_node(mprim)
+                mid = ctx.builder.add("material:%s" % node, mprim.GetName(), "material")
                 ctx.builder.add_edge(prim.GetPath().pathString, mid,
                                      "%s:%s" % (self.type_id, pname))
+
+    @staticmethod
+    def _shared_node(mprim):
+        """A material's shared identity: its prototype path when it's an
+        instance proxy (so instances share one node), else its own path."""
+        if mprim.IsInstanceProxy():
+            proto = mprim.GetPrimInPrototype()
+            if proto and proto.IsValid():
+                return proto.GetPath().pathString
+        return mprim.GetPath().pathString
 
 
 # -- the registry ------------------------------------------------------------

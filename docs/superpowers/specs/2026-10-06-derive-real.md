@@ -182,21 +182,23 @@ visible, not hidden.
   6,141 a `full` one; all-purpose is the 2 anomalies. `MaterialBindingKind` is
   therefore **purpose-aware**: `ComputeBoundMaterial(purpose)` for `full` and
   `preview` (resolving inheritance + the all-purpose fallback), each purpose its
-  own lens. On ALab `build_graph` this lights up **~1,512 full / ~1,538 preview**
-  material relationships (423/440 distinct materials) over the non-instanced
-  gprims — vs 2 before. Honest remaining gaps: (a) **instanced** gprims (79% of
-  ALab) need instance-proxy traversal, a cross-cutting follow-up shared by every
-  derived kind (v1 matches `CollectionKind`: no proxies); (b) at `LoadNone` the
-  bindings sit behind payloads, so material relationships appear as geometry is
-  pulled/loaded — lazy-consistent, like the numeric expensive tier.
+  own lens. On ALab `build_graph` this lights up the full material graph — **6,141 full / 7,500 preview**
+  relationships (810/1,207 distinct materials) — by traversing **instance
+  proxies** (79% of ALab is instanced) and collapsing each proxy material to its
+  **prototype** identity so instances of an asset share one material node (naive
+  proxy paths would explode 2,016 → 5,141 nodes). vs 2 before. Remaining honest
+  note: at `LoadNone` the bindings sit behind payloads, so material
+  relationships appear as geometry is pulled/loaded — lazy-consistent, like the
+  numeric expensive tier.
 
 ## Out of scope (named next steps)
 
 - **The Loom** — the "USD as data" workbench UI that surfaces these derived
   relationships live (see → derive → declare → query). Its own spec; this is its
   substrate.
-- **Instance-proxy coverage for derived kinds** — the 79% of ALab behind
-  instancing; a cross-cutting change (all derived kinds), not material-specific.
+- **Instance-proxy coverage** — DONE for `MaterialBindingKind` (traverses
+  proxies, prototype-shared nodes). `CollectionKind`'s member resolution could
+  take the same treatment if a scene needs instanced collection members.
 - **Collection-based material bindings** (vs purpose/direct) — a further binding
   path, if a scene uses it (ALab does not).
 - **Learned similarity (B)** — the fuzzy, non-deterministic top layer; only
