@@ -62,6 +62,62 @@ def _edges(g, kind):
     return {(e["source"], e["target"]) for e in g["edges"] if e["kind"] == kind}
 
 
+ASSET = """#usda 1.0
+( defaultPrim = "Asset" )
+def Xform "Asset"
+{
+    def Scope "MAT"
+    {
+        def Material "m"
+        {
+        }
+    }
+    def Mesh "GEO" ( prepend apiSchemas = ["MaterialBindingAPI"] )
+    {
+        rel material:binding:full = </Asset/MAT/m>
+        point3f[] points = [(0, 0, 0), (1, 0, 0), (1, 1, 0)]
+        int[] faceVertexCounts = [3]
+        int[] faceVertexIndices = [0, 1, 2]
+    }
+}
+"""
+
+MAIN = """#usda 1.0
+( defaultPrim = "root" )
+def Xform "root"
+{
+    def "i1" (
+        instanceable = true
+        prepend references = @./asset.usda@
+    )
+    {
+    }
+    def "i2" (
+        instanceable = true
+        prepend references = @./asset.usda@
+    )
+    {
+    }
+}
+"""
+
+
+def test_material_binding_instance_proxies_share_prototype_node(tmp_path):
+    Usd = pytest.importorskip("pxr.Usd")
+    from weft import threadgraph
+    (tmp_path / "asset.usda").write_text(ASSET)
+    (tmp_path / "main.usda").write_text(MAIN)
+    st = Usd.Stage.Open(str(tmp_path / "main.usda"), Usd.Stage.LoadAll)
+    g = threadgraph.build_graph(st)
+    e = _edges(g, "usd:material:binding:full")
+    # both instances' gprims are bound (instance proxies traversed)...
+    srcs = {src for src, _ in e}
+    assert "/root/i1/GEO" in srcs and "/root/i2/GEO" in srcs
+    # ...and they point at the SAME (prototype-shared) material node
+    tgts = {tgt for _, tgt in e}
+    assert len(tgts) == 1, "instances must share one material node, got %r" % tgts
+
+
 # -- tier 1: MaterialBindingKind (auto, native) -----------------------------
 
 def test_material_binding_auto_derives(stage):
