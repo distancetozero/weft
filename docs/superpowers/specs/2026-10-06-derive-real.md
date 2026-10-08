@@ -67,6 +67,16 @@ This narrowness is the design, not a gap: auto-derive stays trustworthy and
 DCC-agnostic *because* it only touches one-meaning constructs; all else is free
 data or one declaration from being a facet.
 
+**What a declaration is NOT (settled 2026-10-08):** it is not where relationships
+are *created* or *authored* — that happens upstream in the DCC as native USD. A
+native `rel` is already followed/queried/certified by weft with no declaration
+(proven: a `rel electrical:feeds` pulls + certifies clean, zero `weft__kinds`;
+`weft rels` lists what's followable). A declaration only *annotates* — adds a
+lens + omission class — and, in `read` mode, surfaces a relationship a pipeline
+happened to encode as a path-valued *attribute* rather than a native `rel`. It
+is a thin semantic/display layer over relationships that are usable anyway, not
+a substitute for authoring.
+
 ## What to build
 
 ### Tier 1 — `MaterialBindingKind` (new, native, in the default REGISTRY)

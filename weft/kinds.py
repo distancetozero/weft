@@ -1,12 +1,22 @@
-"""The `weft__kinds` loader -- declare a relationship kind as data
+"""The `weft__kinds` loader -- annotate a relationship kind as data
 (docs/superpowers/specs/2026-09-04-weft-kinds-loader.md).
 
-One declaration produces one `relkinds.RelationshipKind`, collapsing the four
-scattered touchpoints of adding a relationship (authored attr, extractor,
-omission class, lens registration) into fields of a single unit. Authored as
-`customLayerData weft__kinds` on a weft sidecar layer -- the same mechanism
-`weft__extractors` already uses (registry.EXTRACTORS_RE), so this is
-evolutionary, not new plumbing.
+SCOPE (settled 2026-10-08): a declaration does NOT *create* relationships, and
+is not how relationships get authored -- that happens upstream, in the DCC, as
+native USD. A NATIVE relationship (`rel foo:bar = </target>`) is already
+followed, queried, and certified by weft with no declaration at all (pull reads
+every authored rel; `pull.authored_relationship_kinds` lists them). A
+declaration is an OPTIONAL annotation that adds two things on top: a lens
+(label/color in the thread viewer) and an omission class (whether cutting the
+edge changes meaning). Its one load-bearing job is the `read` mode below --
+surfacing a relationship a pipeline encoded as a custom ATTRIBUTE (a path-valued
+attr) rather than a native `rel`, which pull wouldn't otherwise follow. Treat
+declaration as a thin semantic/display layer, never as the authoring surface.
+
+One declaration produces one `relkinds.RelationshipKind`, collapsing the
+touchpoints (attribute extractor, omission class, lens) into fields of a single
+unit. Authored as `customLayerData weft__kinds` on a weft sidecar layer -- the
+same mechanism `weft__extractors` uses (registry.EXTRACTORS_RE).
 
 Population modes:
   read   -- the edge is an authored attribute; v1 ships this fully: the loaded

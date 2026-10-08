@@ -558,6 +558,34 @@ def cmd_data(args) -> int:
     return 0
 
 
+def cmd_rels(args) -> int:
+    """List the native relationship kinds authored on a stage -- "what can I
+    follow?". A relationship authored by any DCC/pipeline is followable by its
+    own name with no weft declaration; this just makes them discoverable."""
+    try:
+        from pxr import Usd
+        from . import pull as _pull
+    except ImportError:
+        print("rels: usd-core is required (pip install usd-core)", file=sys.stderr)
+        return 1
+    load = Usd.Stage.LoadAll if args.load else Usd.Stage.LoadNone
+    stage = Usd.Stage.Open(args.context, load)
+    if stage is None:
+        print("rels: cannot open %s" % args.context, file=sys.stderr)
+        return 1
+    kinds = _pull.authored_relationship_kinds(stage)
+    if not kinds:
+        print("no authored relationships found%s"
+              % ("" if args.load else " at the unloaded level (try --load)"),
+              file=sys.stderr)
+        return 0
+    print("native relationship kinds (follow any by name, no declaration needed):")
+    for k, n in sorted(kinds.items(), key=lambda kv: (-kv[1], kv[0])):
+        print("  %-34s %6d prim%s   e.g. weft pull '<seed>' --follow %s"
+              % (k, n, "" if n == 1 else "s", k))
+    return 0
+
+
 def cmd_open(args) -> int:
     """Open the surgical stage an expression names -- the honest quick
     path: usdview's native --mask applies the population mask at open
@@ -1104,6 +1132,13 @@ def build_parser() -> argparse.ArgumentParser:
                    help="reuse a cached pull when this expression was composed "
                         "before and the context is unchanged (see `weft pull --cache`)")
     s.set_defaults(fn=cmd_compose)
+
+    s = sub.add_parser("rels",
+                       help="list native relationship kinds on a stage (what you can --follow)")
+    s.add_argument("context", help="a .usd/.usda stage")
+    s.add_argument("--load", action="store_true",
+                   help="load payloads first, to reach relationships behind them")
+    s.set_defaults(fn=cmd_rels)
 
     s = sub.add_parser("data",
                        help="project a stage to a prim-level numeric table (stage as data)")
