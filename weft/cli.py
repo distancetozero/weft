@@ -939,7 +939,10 @@ def cmd_verify(args) -> int:
 # -- parser ---------------------------------------------------------------
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="weft", description="JIT-SD rung 1: solo, offline, no contracts.")
+    p = argparse.ArgumentParser(
+        prog="weft",
+        description="weft: see a USD stage as data -- derive relationships, "
+                    "query surgically, certify slices. Pull the thread, not the world.")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("init", help="create a repository here")
