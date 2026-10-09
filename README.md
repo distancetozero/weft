@@ -2,8 +2,14 @@
 
 Pull the thread, not the world.
 
-Packaged as `weft-usd` (not yet published — `pip install weft-usd` is the
-eventual install line).
+```sh
+pip install "weft-usd[usd]"            # once published; until then, from a clone:
+pip install -e ".[usd]"                # [usd] pulls usd-core; the core runs dep-free
+
+weft rels   myscene.usda               # what relationships are in here, natively?
+weft data   myscene.usda               # the whole stage as a table, nothing loaded
+weft pull  'material:…' --context myscene.usda --follow material:binding:full
+```
 
 Opening a USD stage means loading everything and drilling down. weft
 inverts that: stand at any point — a name, an identity, an attribute, a
@@ -45,6 +51,28 @@ Three rules keep pulls trustworthy:
 - **Compatibility is measured, not asserted** — a republish is checked
   against every consumer's own declared tolerance, not just the provider's
   promise.
+
+## USD as data
+
+Point weft at a stage you didn't build and *see it as data* — no authoring, no
+schema changes, no load:
+
+```
+weft rels  shot.usda            # the native relationship kinds, with counts
+weft data  shot.usda            # prims x columns: type, bbox, centroid, ...
+weft data  shot.usda --select 'where:bbox_volume>1e6' --load \
+                     --columns point_count,poly_count,byte_cost
+```
+
+Most of that data is **derived, not authored** — weft reads what USD already
+encodes: hierarchy, `UsdCollectionAPI`, and material bindings resolved per
+*purpose* (`full`/`preview`) and inheritance. On ALab that surfaces ~13,600
+material relationships and 114 collections for free. Relationships authored
+anywhere — a native `rel electrical:feeds`, a `UsdPhysics` joint, your team's
+own — are followed (`--follow`), sliced, and certified with **no declaration**;
+weft consumes what your DCC authored rather than asking you to author again. A
+`weft__kinds` block is an optional annotation (a lens, an omission class), not a
+place relationships get made.
 
 ## Runs on any USD file, today
 
@@ -129,12 +157,24 @@ All from real runs, not projections:
 - The whole scene is addressable in ~126 ms without loading it.
 - 25× storage dedup at 64 KiB chunks.
 
+And on ALab opened whole (47,401 composed prims, 14.5 M points), from
+[`docs/superpowers/specs/2026-10-05-alab-benchmarks.md`](docs/superpowers/specs/2026-10-05-alab-benchmarks.md):
+
+- Pulling one asset vs. loading everything: **0.9 % of the prims, 0.25 % of the
+  geometry — ~3× faster, ~2× lighter.** The win scales with slice size and
+  crosses to a loss near ~99 %, exactly where it should.
+- Query the whole scene as a table in **0.15 s, 125 MB, zero geometry loaded.**
+- A repeated pull of an unchanged context is cached: **0.11 s → 0.003 s (~77×).**
+
 ## Status
 
-A working prototype, tested against real production USD, with no outside
-users yet. The design docs came first; where measurement disagreed with
-design, the docs record the correction. The core runs with zero
-dependencies; `usd-core` unlocks the USD-facing tools.
+A working prototype, tested against real production USD (365 tests, CI on a
+no-deps "bare" env and a full `usd-core` env), with no outside users yet. The
+design docs came first; where measurement disagreed with design, the docs
+record the correction — see `docs/superpowers/specs/` for the full design trail,
+including an adversarial review that scoped weft to **consuming and certifying**
+USD rather than authoring it. The core runs with zero dependencies; `usd-core`
+unlocks the USD-facing tools. Apache-2.0; contributions welcome.
 
 ## Reading
 
