@@ -1,9 +1,25 @@
 [project]
 name = "weft-usd"
 version = "0.1.0"
-description = "weft: pull threads through OpenUSD, not worlds -- identity-first addressing, measured compatibility, declared boundaries"
+description = "weft: see a USD stage as data -- derive relationships, query surgically, certify slices. Pull the thread, not the world."
+readme = "README.md"
 requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Ashraf Ghoniem" }]
+keywords = ["usd", "openusd", "pixar", "3d", "vfx", "scene-description", "data", "aousd"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/distancetozero/weft"
+Repository = "https://github.com/distancetozero/weft"
+Issues = "https://github.com/distancetozero/weft/issues"
 
 [project.optional-dependencies]
 # Both extras are optional by design: rung 1 must run with nothing installed.
