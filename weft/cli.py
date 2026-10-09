@@ -558,6 +558,32 @@ def cmd_data(args) -> int:
     return 0
 
 
+def cmd_loom(args) -> int:
+    """The Loom: a read-only "USD as data" web surface -- profile, relationship
+    graph, table, query/slice. Not an authoring tool, not a renderer."""
+    try:
+        from . import loom as _loom
+        if args.export:
+            files = _loom.export(args.context, args.export, load=args.load)
+            print("wrote loom bundle (%d files) -> %s" % (len(files), args.export))
+            return 0
+        httpd = _loom.serve(args.context, port=args.port, load=args.load,
+                            open_browser=not args.no_open)
+    except ImportError:
+        print("loom: usd-core is required (pip install 'weft-usd[usd]')", file=sys.stderr)
+        return 1
+    except (ValueError, OSError) as e:
+        print("loom: %s" % e, file=sys.stderr)
+        return 1
+    print("weft loom -> http://127.0.0.1:%d/   (Ctrl-C to stop)"
+          % httpd.server_address[1])
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\nstopped")
+    return 0
+
+
 def cmd_rels(args) -> int:
     """List the native relationship kinds authored on a stage -- "what can I
     follow?". A relationship authored by any DCC/pipeline is followable by its
@@ -1135,6 +1161,17 @@ def build_parser() -> argparse.ArgumentParser:
                    help="reuse a cached pull when this expression was composed "
                         "before and the context is unchanged (see `weft pull --cache`)")
     s.set_defaults(fn=cmd_compose)
+
+    s = sub.add_parser("loom",
+                       help="see a stranger's USD as data (read-only web app)")
+    s.add_argument("context", help="a .usd/.usda stage")
+    s.add_argument("--port", type=int, default=8765)
+    s.add_argument("--load", action="store_true",
+                   help="load payloads, to reveal material/collection relationships")
+    s.add_argument("--export", metavar="DIR",
+                   help="write a static, read-only bundle instead of serving")
+    s.add_argument("--no-open", action="store_true", help="don't open a browser")
+    s.set_defaults(fn=cmd_loom)
 
     s = sub.add_parser("rels",
                        help="list native relationship kinds on a stage (what you can --follow)")

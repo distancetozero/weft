@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>weft loom</title>
+<style>
+  :root{color-scheme:dark; --bg:#17140f; --panel:#1e1a14; --line:#352e24;
+        --ink:#efe7d8; --muted:#a79b86; --accent:#f2d79a; --prop:#9db0c0;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:13px/1.5 ui-sans-serif,system-ui,-apple-system,sans-serif;height:100vh;
+       display:flex;flex-direction:column;overflow:hidden}
+  header{padding:10px 14px;border-bottom:1px solid var(--line);
+         display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font:600 14px ui-sans-serif,sans-serif;margin:0;letter-spacing:.3px}
+  header h1 b{color:var(--accent)}
+  .ctx{color:var(--muted);font:11px ui-monospace,monospace;max-width:40vw;
+       overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-left:auto}
+  .chip{background:var(--panel);border:1px solid var(--line);border-radius:20px;
+        padding:3px 10px;color:var(--muted);font-size:11px}
+  .chip b{color:var(--ink)}
+  main{flex:1;display:grid;grid-template-columns:1fr 380px;min-height:0}
+  #graphwrap{border-right:1px solid var(--line);min-height:0}
+  #graph{width:100%;height:100%;border:0;background:var(--bg)}
+  aside{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .sec{border-bottom:1px solid var(--line);padding:11px 13px;overflow:auto}
+  .sec h2{font:600 11px ui-sans-serif;text-transform:uppercase;letter-spacing:.8px;
+          color:var(--muted);margin:0 0 8px}
+  input,button{font:12px ui-sans-serif;border-radius:7px;border:1px solid var(--line);
+               background:var(--bg);color:var(--ink);padding:6px 9px}
+  input{width:100%}
+  button{cursor:pointer;background:var(--panel)}
+  button:hover{border-color:var(--accent)}
+  .row{display:flex;gap:6px;margin-top:6px}
+  .lenses span,.rels span{display:inline-block;margin:0 6px 4px 0;color:var(--muted)}
+  .lenses b,.rels b{color:var(--prop)}
+  table{border-collapse:collapse;width:100%;font:11px ui-monospace,monospace}
+  th,td{text-align:left;padding:2px 6px;border-bottom:1px solid var(--line);
+        white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+  th{color:var(--muted);position:sticky;top:0;background:var(--panel)}
+  .tbl{max-height:260px;overflow:auto}
+  .out{font:11px ui-monospace,monospace;color:var(--muted);white-space:pre-wrap;margin-top:8px}
+  .out b{color:var(--accent)}
+  .muted{color:var(--muted)}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<script>/* STATIC */ window.LOOM_STATIC = window.LOOM_STATIC || false;</script>
+<header>
+  <h1>weft <b>loom</b></h1>
+  <span class="ctx" id="ctx">—</span>
+  <div class="chips" id="chips"></div>
+</header>
+<main>
+  <div id="graphwrap"><iframe id="graph" src="viewer"></iframe></div>
+  <aside>
+    <div class="sec">
+      <h2>profile</h2>
+      <div id="hint" class="muted" style="margin-bottom:8px"></div>
+      <div class="lenses" id="lenses"></div>
+      <h2 style="margin-top:12px">native relationships <span class="muted">(what you can follow)</span></h2>
+      <div class="rels" id="rels"></div>
+    </div>
+    <div class="sec">
+      <h2>query &amp; slice</h2>
+      <input id="q" placeholder="e.g. material:…  follow:Mount  where:bbox_volume&gt;1e6">
+      <div class="row">
+        <button id="qbtn">query</button>
+        <button id="pbtn">load slice (pull + certify)</button>
+      </div>
+      <div class="out" id="qout"></div>
+    </div>
+    <div class="sec" style="flex:1">
+      <h2>table <span class="muted">— the stage as data</span></h2>
+      <div class="row" style="margin:0 0 8px">
+        <input id="cols" placeholder="columns, e.g. type,bbox_volume,attr:subdivisionScheme">
+        <button id="cbtn">set</button>
+      </div>
+      <div class="tbl" id="tbl"></div>
+    </div>
+  </aside>
+</main>
+<script>
+const S = window.LOOM_STATIC;
+const get = (p, j) => S ? fetch(j).then(r=>r.json())
+                        : fetch(p).then(r=>r.json());
+const post = (p, body) => S ? Promise.resolve({error:"static export is read-only"})
+                            : fetch(p,{method:"POST",headers:{"Content-Type":"application/json"},
+                                       body:JSON.stringify(body)}).then(r=>r.json());
+const el = id => document.getElementById(id);
+
+get("/profile","profile.json").then(pf=>{
+  el("ctx").textContent = pf.context || "";
+  el("ctx").title = pf.context || "";
+  el("hint").textContent = pf.hint || "";
+  el("chips").innerHTML =
+    `<span class="chip"><b>${pf.prims}</b> prims</span>` +
+    `<span class="chip"><b>${pf.payloaded_pct}%</b> behind payloads</span>` +
+    `<span class="chip"><b>${Object.keys(pf.lenses||{}).length}</b> lenses</span>` +
+    `<span class="chip"><b>${Object.keys(pf.native_relationship_kinds||{}).length}</b> native rel kinds</span>`;
+  el("lenses").innerHTML = Object.entries(pf.lenses||{})
+    .map(([k,n])=>`<span>${k} <b>${n}</b></span>`).join("") || '<span class="muted">none at this load level</span>';
+  el("rels").innerHTML = Object.entries(pf.native_relationship_kinds||{})
+    .sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<span>${k} <b>${n}</b></span>`).join("")
+    || '<span class="muted">none (try opening with --load)</span>';
+});
+
+function renderTable(d){
+  if(d.error){ el("tbl").innerHTML = '<div class="muted">'+d.error+'</div>'; return; }
+  const cols = d.columns, rows = d.rows.slice(0,200);
+  el("tbl").innerHTML =
+    "<table><thead><tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr></thead><tbody>"+
+    rows.map(r=>"<tr>"+cols.map(c=>`<td>${r[c]==null?"·":r[c]}</td>`).join("")+"</tr>").join("")+
+    "</tbody></table>"+(d.rows.length>200?`<div class="muted">… ${d.rows.length-200} more</div>`:"");
+}
+function loadTable(cols){
+  const p = "/data"+(cols?("?columns=path,"+encodeURIComponent(cols)):"");
+  get(p,"data.json").then(renderTable);
+}
+loadTable();
+el("cbtn").onclick = ()=>loadTable(el("cols").value.trim());
+
+el("qbtn").onclick = ()=>{
+  const expr = el("q").value.trim(); if(!expr) return;
+  el("qout").textContent = "querying…";
+  post("/query",{expression:expr}).then(r=>{
+    el("qout").innerHTML = r.error ? ('<span class="muted">'+r.error+'</span>')
+      : `<b>${r.members.length}</b> prims match\n`+r.members.slice(0,40).join("\n")+
+        (r.members.length>40?`\n… ${r.members.length-40} more`:"");
+  });
+};
+el("pbtn").onclick = ()=>{
+  const expr = el("q").value.trim(); if(!expr) return;
+  el("qout").textContent = "pulling…";
+  post("/pull",{expression:expr}).then(r=>{
+    el("qout").innerHTML = r.error ? ('<span class="muted">'+r.error+'</span>')
+      : `surgical slice: <b>${r.members}</b> members, <b>${r.prims}</b> composed prims\ncertified digest: ${(r.digest||"").slice(0,16)}…`;
+  });
+};
+</script>
+</body>
+</html>
