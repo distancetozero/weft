@@ -41,6 +41,25 @@ div{max-width:30rem;padding:2rem}b{color:#f2d79a}code{color:#9db0c0}</style>
 <div>%s</div>""" % inner)
 
 
+def _close_dangling(g: dict) -> dict:
+    """Make a slice graph self-contained: a masked slice can carry edges whose
+    other end is a prim OUTSIDE the slice (a shared material, the parent) --
+    those are exactly the relationships worth seeing, but the viewer assumes
+    every edge endpoint is a node and crashes (ADJ[undefined].push) on a
+    dangling one. Add a light node for each missing endpoint so the edge
+    resolves and the neighbor shows, labeled by its leaf name."""
+    ids = {n["id"] for n in g.get("nodes", [])}
+    extra = {}
+    for e in g.get("edges", []):
+        for ep in (e["source"], e["target"]):
+            if ep not in ids and ep not in extra:
+                leaf = ep.rsplit("/", 1)[-1] or ep
+                extra[ep] = {"id": ep, "label": leaf, "type": "group", "deg": 0}
+    if extra:
+        g["nodes"].extend(extra.values())
+    return g
+
+
 def _too_large_page(nodes: int, edges: int) -> str:
     return _message_page(
         "<p><b>%d relationships</b> across %d nodes — too large to graph whole.</p>"
@@ -113,7 +132,8 @@ class LoomState:
             return {"nodes": [], "edges": [], "kinds": [], "empty": True}
         masked = Usd.Stage.OpenMasked(self.context, Usd.StagePopulationMask(paths))
         masked.Load()
-        return threadgraph.build_graph(masked)
+        g = threadgraph.build_graph(masked)
+        return _close_dangling(g)
 
     def data(self, columns: Optional[List[str]] = None,
              select: Optional[str] = None, load: bool = False) -> dict:
