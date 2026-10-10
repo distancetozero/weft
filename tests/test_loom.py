@@ -176,6 +176,32 @@ def test_organize_dimensions_offered(ctx):
         httpd.shutdown()
 
 
+def test_expression_bar_present(ctx):
+    from weft.loom import serve
+    httpd = serve(ctx, port=0, load=True, open_browser=False)
+    port = httpd.server_address[1]
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        html = urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=10).read()
+        assert b'id="expr"' in html
+        assert b"no slice expression yet" in html   # the coverage caption
+    finally:
+        httpd.shutdown()
+
+
+def test_slice_bar_present(ctx):
+    from weft.loom import serve
+    httpd = serve(ctx, port=0, load=True, open_browser=False)
+    port = httpd.server_address[1]
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        html = urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=10).read()
+        assert b'id="slicebar"' in html
+        assert b"lock this slice" in html
+    finally:
+        httpd.shutdown()
+
+
 def test_card_drawer_present(ctx):
     from weft.loom import serve
     httpd = serve(ctx, port=0, load=True, open_browser=False)

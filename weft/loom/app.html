@@ -35,6 +35,16 @@
   button{cursor:pointer;background:var(--panel)}
   button:hover{border-color:var(--accent)}
   .hint{color:var(--muted);margin-left:auto;font-size:11px}
+  .exprbar{gap:8px}
+  .exprbar .elabel{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.8px}
+  .exprbar input{flex:1;font:12px ui-monospace,monospace;color:var(--accent)}
+  .exprbar .gap{color:var(--muted);font-size:11px;flex:none;max-width:30vw;
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  #slicebar{display:flex;align-items:center;gap:10px;padding:9px 13px;
+            border-top:1px solid var(--line);background:var(--panel)}
+  #slicebar #slicecount{color:var(--ink);font:12px ui-monospace,monospace}
+  #slicebar .out{margin:0;color:var(--accent)}
 
   #pivot{flex:1;overflow:auto;font:12px ui-monospace,monospace}
   .trow{display:flex;align-items:center;gap:8px;padding:2px 10px;cursor:pointer;
@@ -106,7 +116,20 @@
       </label>
       <span class="hint" id="rowhint"></span>
     </div>
+    <div class="bar exprbar">
+      <span class="elabel">slice</span>
+      <input id="expr" placeholder="name:jar*   where:bbox_volume>1e6   where:subdivisionScheme=none   — type to filter, or just click">
+      <button id="exprclear" hidden>clear</button>
+      <span class="gap" id="exprgap"></span>
+    </div>
     <div id="pivot"><div class="muted" style="padding:14px">loading the stage…</div></div>
+    <div id="slicebar" hidden>
+      <span id="slicecount"></span>
+      <button id="slock">lock this slice</button>
+      <button id="sgraph">view as graph</button>
+      <button id="sexport">export</button>
+      <span class="out" id="sliceout"></span>
+    </div>
   </section>
   <aside id="card" hidden></aside>
 </main>
@@ -135,6 +158,9 @@ let KIDS = {};                       // parent path -> [rows]
 let ROOTS = [];                      // top-level rows
 const OPEN = new Set();              // expanded group paths
 let SELECTED = null;
+let FILTER_SET = null;               // Set<path> when a slice filter is active
+let CURRENT_EXPR = "";               // the weft-ask expression for the current slice
+function activeRows(){ return FILTER_SET ? ROWS.filter(r=>FILTER_SET.has(r.path)) : ROWS; }
 
 const parentOf = p => p.slice(0, p.lastIndexOf("/")) || "/";
 
@@ -157,7 +183,20 @@ function cell(r, depth){
   </div>`;
 }
 
+function renderFlat(rows){
+  const out = sortRows(rows).map(r=>
+    `<div class="trow${SELECTED===r.path?" sel":""}" data-p="${esc(r.path)}">
+      <span class="tw">·</span><span class="tn">${esc(r.path)}</span>
+      <span class="tt">${esc(r.type)}</span>
+      <span class="tb">${r.bbox_volume==null?"":Number(r.bbox_volume).toPrecision(3)}</span></div>`);
+  const pv = byId("pivot");
+  pv.innerHTML = out.join("") || '<div class="muted" style="padding:14px">nothing matched</div>';
+  pv.querySelectorAll(".trow").forEach(el=>{ const p = el.dataset.p;
+    el.onclick = ()=>{ SELECTED = p; openCard(p); render(); }; });
+}
+
 function renderHierarchy(){
+  if(FILTER_SET) return renderFlat(activeRows());
   const out = [];
   const walk = (list, depth) => list.forEach(r=>{
     out.push(cell(r, depth));
@@ -197,7 +236,7 @@ function sortRows(rows){
 
 function renderGroups(keyFn){
   const groups = {};
-  ROWS.forEach(r=>{ const k = keyFn(r); (groups[k]=groups[k]||[]).push(r); });
+  activeRows().forEach(r=>{ const k = keyFn(r); (groups[k]=groups[k]||[]).push(r); });
   const names = Object.keys(groups).sort((a,b)=>{
     const ca = a.startsWith("("), cb = b.startsWith("(");   // "(no …)" catch-alls
     if(ca !== cb) return ca ? 1 : -1;                       // sink to the bottom
@@ -333,8 +372,50 @@ function showGraph(expr){
 function closeGraph(){ const m = byId("gmodal"); if(m) m.hidden = true; }
 window.closeGraph = closeGraph;
 
-byId("organize-by").onchange = render;
+// -- the live expression bar (the teacher) + coverage captions --------------
+const DIM_GAP = {
+  type:     "organizing by Type — no slice expression yet (prim type isn't a seed predicate)",
+  material: "organizing by Material — GUI-only, no slice expression yet (needs reverse-follow)",
+};
+function syncExpr(){
+  const dim = byId("organize-by").value;
+  if(!CURRENT_EXPR) byId("exprgap").textContent = DIM_GAP[dim] || "";
+}
+function applyExpr(expr){
+  expr = (expr||"").trim();
+  byId("exprgap").textContent = "";
+  if(!expr){ FILTER_SET = null; CURRENT_EXPR = ""; byId("sliceout").textContent = "";
+             setSlice(); syncExpr(); render(); return; }
+  byId("exprgap").textContent = "querying…";
+  post("/query",{expression:expr}).then(q=>{
+    if(q.error){ byId("exprgap").textContent = q.error; return; }   // teach the parse error
+    FILTER_SET = new Set(q.members); CURRENT_EXPR = expr;
+    byId("exprgap").textContent = ""; byId("sliceout").textContent = "";
+    setSlice(); render();
+  });
+}
+byId("expr").addEventListener("change", ()=> applyExpr(byId("expr").value));
+byId("exprclear").onclick = ()=>{ byId("expr").value = ""; applyExpr(""); };
+
+// -- the slice bar: lock / graph / export whatever is narrowed ---------------
+function setSlice(){
+  const on = !!CURRENT_EXPR;
+  byId("slicebar").hidden = !on;
+  byId("exprclear").hidden = !on;
+  if(on) byId("slicecount").textContent =
+    (FILTER_SET ? FILTER_SET.size : 0) + " prims · " + CURRENT_EXPR;
+}
+byId("slock").onclick = ()=>{ if(!CURRENT_EXPR) return;
+  byId("sliceout").textContent = "locking…";
+  post("/pull",{expression:CURRENT_EXPR}).then(r=> byId("sliceout").textContent =
+    r.error || ("certified digest " + (r.digest||"").slice(0,16) + "…  (" + r.members + " members)")); };
+byId("sgraph").onclick = ()=>{ if(CURRENT_EXPR) showGraph(CURRENT_EXPR); };
+byId("sexport").onclick = ()=> byId("sliceout").textContent =
+  "static bundle:  weft loom <stage> --export <dir>";
+
+byId("organize-by").onchange = ()=>{ syncExpr(); render(); };
 byId("sortby").onchange = render;
+syncExpr();
 loadRows();
 </script>
 </body>
