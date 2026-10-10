@@ -147,6 +147,11 @@ class LoomState:
             if load:
                 for p in paths:
                     self.stage.Load(p)
+        elif load:
+            # no selection + load: an expensive whole-stage dimension (e.g.
+            # organize-by material) the user explicitly asked to load for.
+            self.stage.Load()
+            self.loaded = True
         tbl = _data.project(self.stage, paths, columns=columns)
         return {"columns": tbl.names, "rows": tbl.rows()}
 

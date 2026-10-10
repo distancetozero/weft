@@ -161,3 +161,25 @@ def test_pivot_shell_serves(ctx):
         assert b'id="pivot"' in html            # the pivot table container
     finally:
         httpd.shutdown()
+
+
+def test_organize_dimensions_offered(ctx):
+    from weft.loom import serve
+    httpd = serve(ctx, port=0, load=True, open_browser=False)
+    port = httpd.server_address[1]
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        html = urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=10).read()
+        for v in (b'value="type"', b'value="payload"', b'value="material"'):
+            assert v in html
+    finally:
+        httpd.shutdown()
+
+
+def test_material_metric(ctx):
+    # the expensive `material` column: bound material (full) as a path, loaded
+    from weft import data as _data
+    from pxr import Usd
+    stage = Usd.Stage.Open(ctx, Usd.Stage.LoadAll)
+    tbl = _data.project(stage, ["/root/bench/a"], columns=["material"])
+    assert tbl.rows()[0]["material"] == "/root/bench/mtl/glass"

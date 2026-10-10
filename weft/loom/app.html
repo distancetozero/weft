@@ -83,10 +83,18 @@
       <label>Organize by
         <select id="organize-by">
           <option value="hierarchy">Hierarchy</option>
+          <option value="type">Type</option>
+          <option value="payload">Payload status</option>
+          <option value="purpose">Purpose</option>
+          <option value="bbox-bucket">Bbox size</option>
+          <option value="material">Material (loads)</option>
         </select>
       </label>
       <label>Sort
-        <select id="sortby"><option value="">—</option></select>
+        <select id="sortby">
+          <option value="">—</option>
+          <option value="bbox_volume">bbox ↓</option>
+        </select>
       </label>
       <span class="hint" id="rowhint"></span>
     </div>
@@ -156,16 +164,100 @@ function renderHierarchy(){
   });
 }
 
-function render(){ renderHierarchy(); }   // Task 4 branches on the dimension here
+// -- organize-by: pivot the table by any dimension ---------------------------
+const GROUP_OPEN = new Set();
+const bucket = v => v==null ? "(no bounds)"
+  : v<1 ? "< 1" : v<100 ? "1 – 100" : v<1e4 ? "100 – 10k"
+  : v<1e6 ? "10k – 1M" : "> 1M";
+const CHEAP = {
+  type:    r => r.type || "(untyped)",
+  payload: r => r.has_payload ? "behind payload" : "loaded",
+  purpose: r => r["attr:purpose"] || "(no purpose)",
+  "bbox-bucket": r => bucket(r.bbox_volume),
+};
+const DIM_COLS = { purpose:["attr:purpose"], material:["material"] };
+const EXPENSIVE = { material: r => r.material || "(no material bound)" };
 
-function loadRows(){
-  const q = "columns=path,type,has_payload,bbox_volume";
-  return (S ? fetch("data.json") : fetch("/data?"+q)).then(r=>r.json()).then(d=>{
+function sortRows(rows){
+  const k = byId("sortby").value;
+  if(!k) return rows;
+  return rows.slice().sort((a,b)=> (Number(b[k])||-Infinity) - (Number(a[k])||-Infinity));
+}
+
+function renderGroups(keyFn){
+  const groups = {};
+  ROWS.forEach(r=>{ const k = keyFn(r); (groups[k]=groups[k]||[]).push(r); });
+  const names = Object.keys(groups).sort((a,b)=>{
+    const ca = a.startsWith("("), cb = b.startsWith("(");   // "(no …)" catch-alls
+    if(ca !== cb) return ca ? 1 : -1;                       // sink to the bottom
+    return groups[b].length - groups[a].length;             // else biggest first
+  });
+  const out = [];
+  names.forEach(name=>{
+    const rows = groups[name];
+    const vol = rows.reduce((s,r)=> s + (Number(r.bbox_volume)||0), 0);
+    const open = GROUP_OPEN.has(name);
+    out.push(`<div class="ghead" data-g="${esc(name)}">
+      <span class="tw">${open?"▾":"▸"}</span>
+      <b>${esc(name)}</b>
+      <span class="gcount">${rows.length} prims${vol?" · "+vol.toPrecision(3):""}</span></div>`);
+    if(open) sortRows(rows).forEach(r=>{
+      out.push(`<div class="trow${SELECTED===r.path?" sel":""}" data-p="${esc(r.path)}">
+        <span class="tw" style="margin-left:15px">·</span>
+        <span class="tn">${esc(r.path)}</span>
+        <span class="tt">${esc(r.type)}</span>
+        <span class="tb">${r.bbox_volume==null?"":Number(r.bbox_volume).toPrecision(3)}</span></div>`);
+    });
+  });
+  const pv = byId("pivot");
+  pv.innerHTML = out.join("") || '<div class="muted" style="padding:14px">no groups</div>';
+  pv.querySelectorAll(".ghead").forEach(el=>{ const g = el.dataset.g;
+    el.onclick = ()=>{ GROUP_OPEN.has(g)?GROUP_OPEN.delete(g):GROUP_OPEN.add(g); render(); }; });
+  pv.querySelectorAll(".trow").forEach(el=>{ const p = el.dataset.p;
+    el.onclick = ()=>{ SELECTED = p; openCard(p); render(); }; });
+}
+
+function promptLoad(dim){
+  byId("pivot").innerHTML =
+    `<div class="muted" style="padding:16px;max-width:36rem">
+      Organizing by <b style="color:var(--accent)">${dim}</b> needs the bound
+      material of every prim — which sits behind payloads. That means loading
+      the scene (expensive). <button id="doload">load &amp; organize</button></div>`;
+  byId("doload").onclick = ()=>{
+    byId("pivot").innerHTML = '<div class="muted" style="padding:16px">loading payloads &amp; computing bindings…</div>';
+    ensureCols(DIM_COLS[dim], true).then(render);
+  };
+}
+
+function render(){
+  const dim = byId("organize-by").value;
+  if(dim === "hierarchy") return renderHierarchy();
+  if(EXPENSIVE[dim]){
+    if(!COLS.has(DIM_COLS[dim][0])) return promptLoad(dim);
+    return renderGroups(EXPENSIVE[dim]);
+  }
+  const need = DIM_COLS[dim];
+  if(need && !need.every(c=>COLS.has(c)))
+    return ensureCols(need, false).then(()=>renderGroups(CHEAP[dim]));
+  return renderGroups(CHEAP[dim]);
+}
+
+const BASE_COLS = ["path", "type", "has_payload", "bbox_volume"];
+let COLS = new Set(BASE_COLS);
+function fetchRows(cols, load){
+  const q = "columns=" + cols.join(",") + (load ? "&load=1" : "");
+  return (S ? fetch("data.json") : fetch("/data?"+q)).then(r=>r.json());
+}
+function ensureCols(extra, load){
+  (extra||[]).forEach(c=>COLS.add(c));
+  return fetchRows([...COLS], load).then(d=>{
     ROWS = d.rows || [];
     byId("rowhint").textContent = ROWS.length + " prims";
     indexRows();
-    render();
-  }).catch(e=>{ byId("pivot").innerHTML =
+  });
+}
+function loadRows(){
+  return ensureCols([], false).then(render).catch(e=>{ byId("pivot").innerHTML =
     '<div class="muted" style="padding:14px">could not load rows: '+esc(e)+'</div>'; });
 }
 
@@ -186,6 +278,7 @@ function closeCard(){
 window.closeCard = closeCard;
 
 byId("organize-by").onchange = render;
+byId("sortby").onchange = render;
 loadRows();
 </script>
 </body>
