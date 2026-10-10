@@ -1,7 +1,10 @@
 # The Loom as a Pivot over USD — Design
 
 **Date:** 2026-10-10
-**Status:** Design — awaiting review
+**Status:** Implemented on branch `loom-explore` (Tasks 1–8) — ALab smoke-test
+passed, full suite green (379 passed, 10 skipped). Known degradation: the static
+`--export` bundle's graph/card need the live server (the table, organize-by, and
+filtering work offline); coherent static graph/card is a follow-up.
 **Supersedes the layout of:** `2026-10-07-the-loom.md` (keeps its read-only stance,
 localhost bind, engine-wrapper thinness, static export, and the graph viewer —
 changes what greets you and how the pieces connect).
