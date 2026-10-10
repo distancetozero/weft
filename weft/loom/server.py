@@ -198,10 +198,18 @@ class LoomState:
                 seen.add((kind, target))
                 rels.append({"kind": kind, "target": target})
 
+        # Bound materials the inheritance-aware way: ComputeBoundMaterial per
+        # purpose resolves a binding authored on an ancestor or via a collection,
+        # which the prim's own authored rels and a subtree slice both miss. (It
+        # needs the prim loaded -- bindings sit behind payloads -- but a prim
+        # that isn't loaded here doesn't compose, so we never reach this for one.)
         try:
-            for e in self.slice_graph("path:%s" % path).get("edges", []):
-                if e["source"] == path:
-                    add(e["kind"], e["target"])
+            from pxr import UsdShade
+            api = UsdShade.MaterialBindingAPI(prim)
+            for purpose in ("full", "preview"):
+                mat, _rel = api.ComputeBoundMaterial(getattr(UsdShade.Tokens, purpose))
+                if mat and mat.GetPrim() and mat.GetPrim().IsValid():
+                    add("material:binding:" + purpose, mat.GetPath().pathString)
         except Exception:
             pass
         for r in prim.GetAuthoredRelationships():

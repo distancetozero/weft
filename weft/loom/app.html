@@ -68,6 +68,14 @@
   .row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
   .out{font:11px ui-monospace,monospace;color:var(--muted);white-space:pre-wrap;margin-top:8px}
   .muted{color:var(--muted)}
+
+  #gmodal{position:fixed;inset:5vh 5vw;background:var(--bg);border:1px solid var(--line);
+          border-radius:10px;box-shadow:0 20px 60px #000a;display:flex;flex-direction:column;
+          z-index:50;overflow:hidden}
+  #gmodal .gm-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;
+                  border-bottom:1px solid var(--line);color:var(--muted);font-size:12px}
+  #gmodal .gm-bar b{color:var(--accent);font:11px ui-monospace,monospace}
+  #gmodal iframe{flex:1;border:0;background:var(--bg)}
 </style>
 </head>
 <body>
@@ -107,6 +115,9 @@
 const S = window.LOOM_STATIC;
 const byId = id => document.getElementById(id);
 const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const post = (p, body) => S ? Promise.resolve({error:"static export is read-only"})
+  : fetch(p,{method:"POST",headers:{"Content-Type":"application/json"},
+             body:JSON.stringify(body)}).then(r=>r.json());
 
 // -- profile header ----------------------------------------------------------
 (S ? fetch("profile.json") : fetch("/profile")).then(r=>r.json()).then(pf=>{
@@ -266,9 +277,37 @@ function openCard(p){
   const c = byId("card");
   byId("main").classList.add("cardopen");
   c.hidden = false;
-  c.innerHTML = `<button class="cardclose" onclick="closeCard()">close</button>
-    <h2>${esc(p.split("/").pop())}</h2><div class="muted">${esc(p)}</div>
-    <div class="muted" style="margin-top:10px">prim card — details land in Task 5</div>`;
+  const head = '<button class="cardclose" onclick="closeCard()">close</button>';
+  c.innerHTML = head + '<div class="muted">loading…</div>';
+  if(S){ c.innerHTML = head + `<h2>${esc(p.split("/").pop())}</h2>
+    <div class="muted">${esc(p)}</div>
+    <div class="muted" style="margin-top:10px">prim cards need the live loom (static export is read-only)</div>`;
+    return; }
+  fetch("/card?path="+encodeURIComponent(p)).then(r=>r.json()).then(d=>{
+    if(d.error){ c.innerHTML = head+'<div class="muted">'+esc(d.error)+'</div>'; return; }
+    const rels = (d.relationships||[]).map(r=>
+      `<li><span class="rk">${esc(r.kind)}</span> → <a data-p="${esc(r.target)}">${esc(r.target)}</a></li>`).join("");
+    const attrs = Object.entries(d.attrs||{}).map(([k,v])=>
+      `<li>${esc(k)}: <b>${esc(v)}</b></li>`).join("");
+    c.innerHTML = head +
+      `<h2>${esc(p.split("/").pop())}</h2><div class="muted">${esc(p)}</div>
+       <div style="margin-top:8px">${esc(d.type)||"—"} · ${d.payload?"behind payload":"loaded"} · bbox ${d.bbox_volume==null?"—":Number(d.bbox_volume).toPrecision(3)}</div>
+       <h3>relationships</h3><ul>${rels||'<li class="muted">none authored</li>'}</ul>
+       <h3>data</h3><ul>${attrs||'<li class="muted">none</li>'}</ul>
+       <div class="row">
+         <button id="cg">view as graph</button>
+         <button id="cp">pull just this</button>
+         <button id="cc">copy path</button>
+       </div><div class="out" id="cardout"></div>`;
+    c.querySelectorAll("a[data-p]").forEach(a=> a.onclick = e=>{
+      e.preventDefault(); SELECTED = a.dataset.p; openCard(a.dataset.p); render(); });
+    byId("cg").onclick = ()=> showGraph("path:"+p);
+    byId("cp").onclick = ()=>{ byId("cardout").textContent = "pulling…";
+      post("/pull",{expression:"path:"+p}).then(r=> byId("cardout").textContent =
+        r.error || ("certified digest "+(r.digest||"").slice(0,16)+"…")); };
+    byId("cc").onclick = ()=>{ try{ navigator.clipboard.writeText(p);
+      byId("cardout").textContent = "copied"; }catch(e){} };
+  }).catch(e=> c.innerHTML = head+'<div class="muted">'+esc(e)+'</div>');
 }
 function closeCard(){
   byId("card").hidden = true;
@@ -276,6 +315,23 @@ function closeCard(){
   SELECTED = null; render();
 }
 window.closeCard = closeCard;
+
+// -- the graph, summoned (the only place it appears) -------------------------
+function showGraph(expr){
+  let m = byId("gmodal");
+  if(!m){
+    m = document.createElement("div"); m.id = "gmodal";
+    m.innerHTML = `<div class="gm-bar">graph — <b></b>
+      <button onclick="closeGraph()" style="margin-left:auto">close</button></div>
+      <iframe></iframe>`;
+    document.body.appendChild(m);
+  }
+  m.querySelector("b").textContent = expr;
+  m.querySelector("iframe").src = "/viewer?expr=" + encodeURIComponent(expr);
+  m.hidden = false;
+}
+function closeGraph(){ const m = byId("gmodal"); if(m) m.hidden = true; }
+window.closeGraph = closeGraph;
 
 byId("organize-by").onchange = render;
 byId("sortby").onchange = render;

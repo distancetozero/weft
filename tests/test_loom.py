@@ -176,6 +176,30 @@ def test_organize_dimensions_offered(ctx):
         httpd.shutdown()
 
 
+def test_card_drawer_present(ctx):
+    from weft.loom import serve
+    httpd = serve(ctx, port=0, load=True, open_browser=False)
+    port = httpd.server_address[1]
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        html = urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=10).read()
+        assert b'id="card"' in html
+        assert b"view as graph" in html
+    finally:
+        httpd.shutdown()
+
+
+def test_card_binding_is_inheritance_aware(ctx):
+    # the card resolves bound material via ComputeBoundMaterial, so a binding
+    # the prim doesn't author itself still shows (the fixture authors it here,
+    # but the path is the inheritance-aware one, not a subtree slice).
+    from weft.loom import LoomState
+    st = LoomState(ctx, load=True)
+    c = st.card("/root/bench/a")
+    kinds = {r["kind"] for r in c["relationships"]}
+    assert "material:binding:full" in kinds
+
+
 def test_material_metric(ctx):
     # the expensive `material` column: bound material (full) as a path, loaded
     from weft import data as _data
