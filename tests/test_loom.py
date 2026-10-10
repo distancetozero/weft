@@ -129,3 +129,22 @@ def test_card_bad_path(ctx):
     st = LoomState(ctx, load=True)
     c = st.card("/does/not/exist")
     assert "error" in c
+
+
+def test_gui_target_expressions_resolve(ctx):
+    from weft import compose as _compose, pull as _pull
+    # every shape the pivot UI emits (Task 6 mapping) must be valid weft-ask
+    exprs = [
+        "path:/root/bench/a",
+        "name:a",
+        "name:a*",
+        "where:bbox_volume>0",
+        "where:bbox_volume>=0",
+    ]
+    for e in exprs:
+        parsed = _compose.parse_expression(e)
+        p = _pull.pull(ctx, parsed.seeds, follow=parsed.follow,
+                       depth=parsed.depth, cache=False)
+        assert p is not None            # parses and resolves, no raise
+    parsed = _compose.parse_expression("where:purpose=render")
+    assert parsed.seeds                 # parses even when nothing matches
