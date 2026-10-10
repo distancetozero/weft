@@ -193,7 +193,7 @@ function renderFlat(rows){
   const pv = byId("pivot");
   pv.innerHTML = out.join("") || '<div class="muted" style="padding:14px">nothing matched</div>';
   pv.querySelectorAll(".trow").forEach(el=>{ const p = el.dataset.p;
-    el.onclick = ()=>{ SELECTED = p; openCard(p); render(); }; });
+    el.onclick = ()=>{ selectPrim(p); render(); }; });
 }
 
 function renderHierarchy(){
@@ -211,7 +211,7 @@ function renderHierarchy(){
     const tw = el.querySelector(".tw.hit");
     if(tw) tw.onclick = e=>{ e.stopPropagation();
       OPEN.has(p) ? OPEN.delete(p) : OPEN.add(p); renderHierarchy(); };
-    el.onclick = ()=>{ SELECTED = p; openCard(p); renderHierarchy(); };
+    el.onclick = ()=>{ selectPrim(p); renderHierarchy(); };
   });
 }
 
@@ -265,7 +265,7 @@ function renderGroups(keyFn){
   pv.querySelectorAll(".ghead").forEach(el=>{ const g = el.dataset.g;
     el.onclick = ()=>{ GROUP_OPEN.has(g)?GROUP_OPEN.delete(g):GROUP_OPEN.add(g); render(); }; });
   pv.querySelectorAll(".trow").forEach(el=>{ const p = el.dataset.p;
-    el.onclick = ()=>{ SELECTED = p; openCard(p); render(); }; });
+    el.onclick = ()=>{ selectPrim(p); render(); }; });
 }
 
 function promptLoad(dim){
@@ -340,7 +340,7 @@ function openCard(p){
          <button id="cc">copy path</button>
        </div><div class="out" id="cardout"></div>`;
     c.querySelectorAll("a[data-p]").forEach(a=> a.onclick = e=>{
-      e.preventDefault(); SELECTED = a.dataset.p; openCard(a.dataset.p); render(); });
+      e.preventDefault(); selectPrim(a.dataset.p); render(); });
     byId("cg").onclick = ()=> showGraph("path:"+p);
     byId("cp").onclick = ()=>{ byId("cardout").textContent = "pulling…";
       post("/pull",{expression:"path:"+p}).then(r=> byId("cardout").textContent =
@@ -392,26 +392,37 @@ function syncExpr(){
 function applyExpr(expr){
   expr = (expr||"").trim();
   byId("exprgap").textContent = "";
-  if(!expr){ FILTER_SET = null; CURRENT_EXPR = ""; byId("sliceout").textContent = "";
-             setSlice(); syncExpr(); render(); return; }
+  if(!expr){ FILTER_SET = null; byId("sliceout").textContent = "";
+             setSlice("", 0); syncExpr(); render(); return; }
   byId("exprgap").textContent = "querying…";
   post("/query",{expression:expr}).then(q=>{
     if(q.error){ byId("exprgap").textContent = q.error; return; }   // teach the parse error
-    FILTER_SET = new Set(q.members); CURRENT_EXPR = expr;
+    FILTER_SET = new Set(q.members);
     byId("exprgap").textContent = ""; byId("sliceout").textContent = "";
-    setSlice(); render();
+    setSlice(expr, q.members.length); render();
   });
 }
 byId("expr").addEventListener("change", ()=> applyExpr(byId("expr").value));
 byId("exprclear").onclick = ()=>{ byId("expr").value = ""; applyExpr(""); };
 
 // -- the slice bar: lock / graph / export whatever is narrowed ---------------
-function setSlice(){
+function setSlice(expr, count){
+  CURRENT_EXPR = (expr || "").trim();
   const on = !!CURRENT_EXPR;
   byId("slicebar").hidden = !on;
   byId("exprclear").hidden = !on;
   if(on) byId("slicecount").textContent =
-    (FILTER_SET ? FILTER_SET.size : 0) + " prims · " + CURRENT_EXPR;
+    count + (count === 1 ? " prim · " : " prims · ") + CURRENT_EXPR;
+}
+// clicking a prim writes its weft-ask into the box and points the slice bar at
+// it (lock/graph that one prim) -- the box mirrors where you are, without
+// re-filtering the table (that's what typing does).
+function selectPrim(p){
+  SELECTED = p;
+  byId("expr").value = "path:" + p;
+  byId("exprgap").textContent = "";
+  setSlice("path:" + p, 1);
+  openCard(p);
 }
 byId("slock").onclick = ()=>{ if(!CURRENT_EXPR) return;
   byId("sliceout").textContent = "locking…";
