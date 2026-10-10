@@ -8,6 +8,7 @@
   :root{color-scheme:dark; --bg:#17140f; --panel:#1e1a14; --line:#352e24;
         --ink:#efe7d8; --muted:#a79b86; --accent:#f2d79a; --prop:#9db0c0;}
   *{box-sizing:border-box}
+  [hidden]{display:none!important}   /* beat display:flex on #gmodal/#slicebar/#card */
   body{margin:0;background:var(--bg);color:var(--ink);
        font:13px/1.5 ui-sans-serif,system-ui,-apple-system,sans-serif;height:100vh;
        display:flex;flex-direction:column;overflow:hidden}
@@ -371,6 +372,13 @@ function showGraph(expr){
 }
 function closeGraph(){ const m = byId("gmodal"); if(m) m.hidden = true; }
 window.closeGraph = closeGraph;
+// Esc always escapes a blocking overlay -- close the graph, else the card.
+document.addEventListener("keydown", e=>{
+  if(e.key !== "Escape") return;
+  const m = byId("gmodal");
+  if(m && !m.hidden) closeGraph();
+  else if(!byId("card").hidden) closeCard();
+});
 
 // -- the live expression bar (the teacher) + coverage captions --------------
 const DIM_GAP = {
