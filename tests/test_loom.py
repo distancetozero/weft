@@ -108,3 +108,24 @@ def test_static_export(ctx, tmp_path):
     assert os.path.exists(os.path.join(out, "profile.json"))
     pf = json.load(open(os.path.join(out, "profile.json")))
     assert pf["prims"] >= 1
+
+
+def test_card(ctx):
+    from weft.loom import LoomState
+    st = LoomState(ctx, load=True)
+    c = st.card("/root/bench/a")
+    assert c["path"] == "/root/bench/a"
+    assert c["type"] == "Mesh"
+    kinds = {r["kind"] for r in c["relationships"]}
+    targets = {r["target"] for r in c["relationships"]}
+    assert any("material:binding" in k for k in kinds)
+    assert "/root/bench/mtl/glass" in targets
+    assert "electrical:feeds" in kinds            # native rel surfaces too
+    assert "/root/bench" in targets
+
+
+def test_card_bad_path(ctx):
+    from weft.loom import LoomState
+    st = LoomState(ctx, load=True)
+    c = st.card("/does/not/exist")
+    assert "error" in c

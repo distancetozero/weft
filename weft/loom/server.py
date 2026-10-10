@@ -150,6 +150,59 @@ class LoomState:
         tbl = _data.project(self.stage, paths, columns=columns)
         return {"columns": tbl.names, "rows": tbl.rows()}
 
+    def card(self, path: str) -> dict:
+        """Everything the prim card shows for one prim: identity + cheap data +
+        its relationships. Read-only, one prim. Returns {"error": ...} on a bad
+        path rather than raising.
+
+        Relationships: registry kinds have no per-prim edge API (they contribute
+        via a whole-stage walk + populate), so derived edges come from the slice
+        graph of `path:<path>` (edges whose source is this prim); native
+        authored relationships are read straight off the prim."""
+        from .. import data as _data
+        prim = self.stage.GetPrimAtPath(path) if path else None
+        if not prim or not prim.IsValid():
+            return {"error": "no prim at %s" % (path or "<empty>")}
+        tbl = _data.project(
+            self.stage, [path],
+            columns=["type", "has_payload", "bbox_volume",
+                     "centroid_x", "centroid_y", "centroid_z"])
+        rows = tbl.rows()
+        row = rows[0] if rows else {}
+        attrs = {}
+        for a in prim.GetAuthoredAttributes():
+            try:
+                attrs[a.GetName()] = str(a.Get())
+            except Exception:
+                pass
+        rels, seen = [], set()
+
+        def add(kind, target):
+            if (kind, target) not in seen:
+                seen.add((kind, target))
+                rels.append({"kind": kind, "target": target})
+
+        try:
+            for e in self.slice_graph("path:%s" % path).get("edges", []):
+                if e["source"] == path:
+                    add(e["kind"], e["target"])
+        except Exception:
+            pass
+        for r in prim.GetAuthoredRelationships():
+            for t in r.GetTargets():
+                add(r.GetName(), str(t))
+        cx, cy, cz = (row.get("centroid_x"), row.get("centroid_y"),
+                      row.get("centroid_z"))
+        return {
+            "path": path,
+            "type": prim.GetTypeName() or row.get("type") or "",
+            "payload": bool(row.get("has_payload")),
+            "bbox_volume": row.get("bbox_volume"),
+            "centroid": None if cx is None else [cx, cy, cz],
+            "attrs": attrs,
+            "relationships": rels,
+        }
+
     def query(self, expression: str) -> dict:
         from .. import compose as _compose
         from .. import pull as _pull
@@ -250,6 +303,9 @@ def _make_handler(state: LoomState):
                     self._json(state.profile())
                 elif path == "/graph":
                     self._json(state.graph_capped())
+                elif path == "/card":
+                    c = state.card(q.get("path", ""))
+                    self._json(c, 400 if "error" in c else 200)
                 elif path == "/data":
                     cols = q["columns"].split(",") if q.get("columns") else None
                     self._json(state.data(cols, q.get("select"),
