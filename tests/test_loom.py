@@ -148,3 +148,16 @@ def test_gui_target_expressions_resolve(ctx):
         assert p is not None            # parses and resolves, no raise
     parsed = _compose.parse_expression("where:purpose=render")
     assert parsed.seeds                 # parses even when nothing matches
+
+
+def test_pivot_shell_serves(ctx):
+    from weft.loom import serve
+    httpd = serve(ctx, port=0, load=True, open_browser=False)
+    port = httpd.server_address[1]
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        html = urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=10).read()
+        assert b"organize-by" in html          # the pivot selector exists
+        assert b'id="pivot"' in html            # the pivot table container
+    finally:
+        httpd.shutdown()

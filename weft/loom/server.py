@@ -169,10 +169,21 @@ class LoomState:
                      "centroid_x", "centroid_y", "centroid_z"])
         rows = tbl.rows()
         row = rows[0] if rows else {}
+        # Scalar/short attrs only: a mesh's `points`/`faceVertexIndices` are
+        # arrays of millions of floats -- stringifying them would dump megabytes
+        # into the card. Show the kind of metadata a reader scans (purpose,
+        # subdivisionScheme, a primvar value), summarise arrays as a count.
         attrs = {}
         for a in prim.GetAuthoredAttributes():
             try:
-                attrs[a.GetName()] = str(a.Get())
+                v = a.Get()
+                if v is None:
+                    continue
+                if hasattr(v, "__len__") and not isinstance(v, str):
+                    attrs[a.GetName()] = "[%d values]" % len(v)
+                else:
+                    s = str(v)
+                    attrs[a.GetName()] = s if len(s) <= 120 else s[:117] + "…"
             except Exception:
                 pass
         rels, seen = [], set()
