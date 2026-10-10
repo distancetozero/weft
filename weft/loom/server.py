@@ -28,16 +28,24 @@ def _predicate(Usd):
         Usd.PrimIsActive & Usd.PrimIsDefined & ~Usd.PrimIsAbstract)
 
 
-def _too_large_page(nodes: int, edges: int) -> str:
+def _esc(s: str) -> str:
+    return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _message_page(inner: str) -> str:
     return ("""<!doctype html><meta charset="utf-8">
 <style>html{color-scheme:dark}body{margin:0;height:100vh;display:flex;
 align-items:center;justify-content:center;background:#17140f;color:#a79b86;
 font:14px/1.6 ui-sans-serif,system-ui,sans-serif;text-align:center}
-div{max-width:30rem;padding:2rem}b{color:#f2d79a}</style>
-<div><p><b>%d relationships</b> across %d nodes — too large to graph whole.</p>
-<p>That's the point of weft: don't load the world. <b>Query a slice</b> in the
-panel on the right (a material, a path, a <code>follow:</code>), then it's small
-enough to see.</p></div>""" % (edges, nodes))
+div{max-width:30rem;padding:2rem}b{color:#f2d79a}code{color:#9db0c0}</style>
+<div>%s</div>""" % inner)
+
+
+def _too_large_page(nodes: int, edges: int) -> str:
+    return _message_page(
+        "<p><b>%d relationships</b> across %d nodes — too large to graph whole.</p>"
+        "<p>That's the point of weft: don't load the world. <b>Click a prim in the "
+        "table</b> (or query a slice) to explore from there.</p>" % (edges, nodes))
 
 
 class LoomState:
@@ -90,6 +98,23 @@ class LoomState:
                     "edges": len(g["edges"]), "kinds": g["kinds"]}
         return g
 
+    def slice_graph(self, expression: str) -> dict:
+        """The graph of just the SLICE an expression names: pull it, OpenMasked
+        to that population, build_graph on the masked stage. Small and
+        renderable even when the whole-scene graph is not -- this is how you
+        explore a big scene: focus, then see. Cached pull under the hood."""
+        from pxr import Usd
+        from .. import compose as _compose, pull as _pull, threadgraph
+        e = _compose.parse_expression(expression)
+        p = _pull.pull(self.context, e.seeds, follow=e.follow, depth=e.depth,
+                       cache=True)
+        paths = [m.path for m in p.members]
+        if not paths:
+            return {"nodes": [], "edges": [], "kinds": [], "empty": True}
+        masked = Usd.Stage.OpenMasked(self.context, Usd.StagePopulationMask(paths))
+        masked.Load()
+        return threadgraph.build_graph(masked)
+
     def data(self, columns: Optional[List[str]] = None,
              select: Optional[str] = None, load: bool = False) -> dict:
         from .. import data as _data
@@ -127,8 +152,13 @@ class LoomState:
 
     # -- page assembly --------------------------------------------------------
 
-    def viewer_html(self) -> str:
-        g = self.graph()
+    def viewer_html(self, expr: Optional[str] = None) -> str:
+        if expr:
+            g = self.slice_graph(expr)
+            if g.get("empty"):
+                return _message_page("nothing matched <b>%s</b>" % _esc(expr))
+        else:
+            g = self.graph()
         if len(g["edges"]) > GRAPH_EDGE_CAP:
             return _too_large_page(len(g["nodes"]), len(g["edges"]))
         tpl = open(_VIEWER).read()
@@ -194,7 +224,8 @@ def _make_handler(state: LoomState):
                 if path == "/":
                     self._send(200, state.app_html(), "text/html; charset=utf-8")
                 elif path == "/viewer":
-                    self._send(200, state.viewer_html(), "text/html; charset=utf-8")
+                    self._send(200, state.viewer_html(q.get("expr")),
+                               "text/html; charset=utf-8")
                 elif path == "/profile":
                     self._json(state.profile())
                 elif path == "/graph":

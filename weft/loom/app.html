@@ -74,7 +74,7 @@
       <div class="out" id="qout"></div>
     </div>
     <div class="sec" style="flex:1">
-      <h2>table <span class="muted">— the stage as data</span></h2>
+      <h2>table <span class="muted">— click a row to explore it</span></h2>
       <div class="row" style="margin:0 0 8px">
         <input id="cols" placeholder="columns, e.g. type,bbox_volume,attr:subdivisionScheme">
         <button id="cbtn">set</button>
@@ -108,13 +108,22 @@ get("/profile","profile.json").then(pf=>{
     || '<span class="muted">none (try opening with --load)</span>';
 });
 
+function explore(expr){
+  el("q").value = expr;
+  if(!S) el("graph").src = "/viewer?expr=" + encodeURIComponent(expr);
+}
 function renderTable(d){
   if(d.error){ el("tbl").innerHTML = '<div class="muted">'+d.error+'</div>'; return; }
   const cols = d.columns, rows = d.rows.slice(0,200);
   el("tbl").innerHTML =
     "<table><thead><tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr></thead><tbody>"+
-    rows.map(r=>"<tr>"+cols.map(c=>`<td>${r[c]==null?"·":r[c]}</td>`).join("")+"</tr>").join("")+
+    rows.map(r=>`<tr data-p="${(r.path||'').replace(/"/g,'&quot;')}">`+
+      cols.map(c=>`<td>${r[c]==null?"·":r[c]}</td>`).join("")+"</tr>").join("")+
     "</tbody></table>"+(d.rows.length>200?`<div class="muted">… ${d.rows.length-200} more</div>`:"");
+  el("tbl").querySelectorAll("tr[data-p]").forEach(tr=>{
+    tr.style.cursor = "pointer";
+    tr.onclick = ()=>{ if(tr.dataset.p) explore("path:"+tr.dataset.p); };
+  });
 }
 function loadTable(cols){
   const p = "/data"+(cols?("?columns=path,"+encodeURIComponent(cols)):"");
@@ -125,6 +134,7 @@ el("cbtn").onclick = ()=>loadTable(el("cols").value.trim());
 
 el("qbtn").onclick = ()=>{
   const expr = el("q").value.trim(); if(!expr) return;
+  explore(expr);                               // show the slice in the graph pane
   el("qout").textContent = "querying…";
   post("/query",{expression:expr}).then(r=>{
     el("qout").innerHTML = r.error ? ('<span class="muted">'+r.error+'</span>')

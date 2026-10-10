@@ -11,17 +11,17 @@ SCENE = """#usda 1.0
 ( defaultPrim = "root" )
 def Xform "root"
 {
-    def Scope "mtl"
-    {
-        def Material "glass"
-        {
-        }
-    }
     def Xform "bench"
     {
+        def Scope "mtl"
+        {
+            def Material "glass"
+            {
+            }
+        }
         def Mesh "a" ( prepend apiSchemas = ["MaterialBindingAPI"] )
         {
-            rel material:binding:full = </root/mtl/glass>
+            rel material:binding:full = </root/bench/mtl/glass>
             custom rel electrical:feeds = </root/bench>
             point3f[] points = [(0, 0, 0), (1, 0, 0), (1, 1, 0)]
             int[] faceVertexCounts = [3]
@@ -86,6 +86,18 @@ def test_http_contract_and_localhost_bind(ctx):
             "http://127.0.0.1:%d/" % port, timeout=10).read()
     finally:
         httpd.shutdown()
+
+
+def test_slice_graph_focuses(ctx):
+    from weft.loom import LoomState
+    st = LoomState(ctx, load=True)
+    g = st.slice_graph("name:bench")           # explore the asset -> its slice
+    assert not g.get("empty")
+    touches_a = any(e["source"] == "/root/bench/a" or e["target"] == "/root/bench/a"
+                    for e in g["edges"])
+    assert touches_a                            # the slice includes the mesh's material edge
+    empty = st.slice_graph("name:does_not_exist")
+    assert empty.get("empty")
 
 
 def test_static_export(ctx, tmp_path):
