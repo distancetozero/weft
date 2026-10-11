@@ -19,8 +19,13 @@ from typing import Dict, List, Optional
 GRAPH_EDGE_CAP = 6000
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_VIEWER = os.path.join(os.path.dirname(_HERE), "..", "extras", "usdview",
-                       "weftViewer", "viewer_template.html")
+# The graph viewer ships inside the package (weft/loom/) so a pip-installed Loom
+# has its graph pane. Fall back to the extras/ source tree for a dev checkout
+# where the package copy hasn't been synced.
+_VIEWER = os.path.join(_HERE, "viewer_template.html")
+if not os.path.exists(_VIEWER):
+    _VIEWER = os.path.join(os.path.dirname(_HERE), "..", "extras", "usdview",
+                           "weftViewer", "viewer_template.html")
 
 
 def _predicate(Usd):

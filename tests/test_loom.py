@@ -289,3 +289,12 @@ def test_kept_ui_present(ctx):
         assert b"certified" not in html and b"digest" not in html   # vocabulary scrub
     finally:
         httpd.shutdown()
+
+
+def test_viewer_ships_inside_package():
+    # the graph viewer must live inside weft/loom/ (covered by package-data
+    # "weft.loom" = ["*.html"]) so a pip-installed Loom has its graph pane.
+    import os
+    import weft.loom.server as _srv
+    pkg_viewer = os.path.join(os.path.dirname(_srv.__file__), "viewer_template.html")
+    assert os.path.exists(pkg_viewer), "viewer_template.html missing from weft/loom/"
