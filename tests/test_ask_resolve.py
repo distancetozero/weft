@@ -351,3 +351,53 @@ def test_type_selector_glob(tmp_path):
 def test_type_selector_no_match_is_noted(tmp_path):
     (r,) = resolve_seeds(_type_stage(tmp_path), ["type:Camera"])
     assert r.paths == [] and "no prim of type" in r.note
+
+
+WHO_SCENE = """#usda 1.0
+(
+    defaultPrim = "root"
+)
+
+def Xform "root"
+{
+    def Scope "mtl"
+    {
+        def Material "glass"
+        {
+        }
+    }
+
+    def Mesh "a" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </root/mtl/glass>
+    }
+
+    def Mesh "lonely"
+    {
+    }
+}
+"""
+
+
+def _who_stage(tmp_path):
+    from pxr import Usd
+    p = tmp_path / "w.usda"
+    p.write_text(WHO_SCENE)
+    return Usd.Stage.Open(str(p), Usd.Stage.LoadAll)
+
+
+def test_who_selector_finds_pointers(tmp_path):
+    (r,) = resolve_seeds(_who_stage(tmp_path), ["who:path:/root/mtl/glass"])
+    assert r.paths == ["/root/a"] and r.mode == "who"
+
+
+def test_incoming_alias_and_inner_seed(tmp_path):
+    (r,) = resolve_seeds(_who_stage(tmp_path), ["incoming:glass"])
+    assert r.paths == ["/root/a"]
+
+
+def test_who_selector_no_pointers_is_noted(tmp_path):
+    (r,) = resolve_seeds(_who_stage(tmp_path), ["who:lonely"])
+    assert r.paths == [] and "nothing points at" in r.note

@@ -81,6 +81,9 @@ def parse_seed(text: str) -> Seed:
         return Seed("spatial", "near", body, t)
     if t.startswith("material:"):
         return Seed("material", "", t[len("material:"):], t)
+    for p in ("who:", "incoming:"):
+        if t.startswith(p):
+            return Seed("who", "", t[len(p):], t)
     if t.startswith("type:"):
         return Seed("type", "", t[len("type:"):], t)
     if t.startswith("path:"):
@@ -239,6 +242,19 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
             if not r.paths:
                 r.note = ("no prim bound to a material matching %r "
                           "(bindings may be behind unloaded payloads -- load first)" % val)
+        elif s.plane == "who":
+            # reverse selector: prims with an outgoing edge (the same edges
+            # `weft who` reports) to any prim the inner seed resolves to.
+            r.mode = "who"
+            # pull imports ask at module level, so import lazily here.
+            from .pull import _reverse_index
+            (inner,) = resolve_seeds(stage, [s.value], identity_keys)
+            targets = set(inner.paths)
+            rev = _reverse_index(stage)
+            r.paths = sorted({src for t in targets for src, _k in rev.get(t, ())})
+            if not r.paths:
+                r.note = "nothing points at %r (%d inner match%s)" % (
+                    s.value, len(targets), "" if len(targets) == 1 else "es")
         elif s.plane == "type":
             # prims whose schema type name fnmatches the value (Mesh, *Light)
             r.mode = "type"
