@@ -148,7 +148,7 @@ const post = (p, body) => S ? Promise.resolve({error:"static export is read-only
   byId("ctx").textContent = pf.context || "";
   byId("ctx").title = pf.context || "";
   byId("chips").innerHTML =
-    `<span class="chip"><b>${pf.prims}</b> prims</span>` +
+    `<span class="chip" id="primchip"><b>${pf.prims}</b> prims</span>` +
     `<span class="chip"><b>${pf.payloaded_pct}%</b> behind payloads</span>` +
     `<span class="chip"><b>${Object.keys(pf.native_relationship_kinds||{}).length}</b> rel kinds</span>`;
 }).catch(()=>{});
@@ -280,7 +280,18 @@ function promptLoad(dim){
   };
 }
 
+function updateCounts(){
+  const total = ROWS.length;
+  const shown = FILTER_SET ? activeRows().length : total;
+  byId("rowhint").textContent = FILTER_SET
+    ? shown + " of " + total + " prims" : total + " prims";
+  const chip = byId("primchip");
+  if(chip) chip.innerHTML = FILTER_SET
+    ? "<b>" + shown + "</b> of " + total + " prims" : "<b>" + total + "</b> prims";
+}
+
 function render(){
+  updateCounts();
   const dim = byId("organize-by").value;
   if(dim === "hierarchy") return renderHierarchy();
   if(EXPENSIVE[dim]){
