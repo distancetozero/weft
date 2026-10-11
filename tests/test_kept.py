@@ -120,7 +120,7 @@ def test_cli_keep_check_forget(tmp_path, monkeypatch, capsys):
     ctx = _write(tmp_path, _scene())
     ctx2 = _write(tmp_path, _scene(a_mat="steel"), "s2.usda")
     monkeypatch.chdir(tmp_path)
-    assert cli.main(["keep", EXPR, "--as", "hero", ctx]) == 0
+    assert cli.main(["keep", EXPR, "--as", "hero", "-c", ctx]) == 0
     assert os.path.exists(tmp_path / ".weft" / "kept" / "hero.weft")
     assert "kept 'hero'" in capsys.readouterr().out
     assert cli.main(["check", "hero", ctx]) == 0
@@ -138,7 +138,7 @@ def test_cli_keep_bad_expression_is_honest(tmp_path, monkeypatch, capsys):
     from weft import cli
     ctx = _write(tmp_path, _scene())
     monkeypatch.chdir(tmp_path)
-    assert cli.main(["keep", "where:~~", "--as", "x", ctx]) != 0
+    assert cli.main(["keep", "where:~~", "--as", "x", "-c", ctx]) != 0
     assert not os.path.exists(tmp_path / ".weft" / "kept" / "x.weft")
 
 
@@ -147,7 +147,7 @@ def test_cli_rename_alone_does_not_fail(tmp_path, monkeypatch, capsys):
     ctx = _write(tmp_path, _scene())
     ctx2 = _write(tmp_path, _scene(a_name="a_renamed"), "s2.usda")
     monkeypatch.chdir(tmp_path)
-    cli.main(["keep", EXPR, "--as", "hero", ctx])
+    cli.main(["keep", EXPR, "--as", "hero", "-c", ctx])
     capsys.readouterr()
     assert cli.main(["check", "hero", ctx2]) == 0
     assert "holds" in capsys.readouterr().out

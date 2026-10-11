@@ -8,7 +8,7 @@ pip install "weft-usd[usd]"            # [usd] pulls usd-core; the core runs dep
 weft loom   myscene.usda               # the workbench — see the whole stage as data, in your browser
 weft data   myscene.usda               # the stage as a table, nothing loaded
 weft rels   myscene.usda               # the relationships already in the file
-weft keep  'where:bbox_volume>1e6' --as big  myscene.usda   # keep a set; weft tells you when it moves
+weft keep  'where:bbox_volume>1e6' --as big -c myscene.usda   # keep a set; weft tells you when it moves
 ```
 
 weft is a **read-only way to see a USD stage as data** — open a scene you didn't

@@ -717,7 +717,7 @@ def cmd_keep(args) -> int:
     """Keep a set: capture an expression's members so check can tell you when it moves."""
     from . import kept as _kept
     if not args.stage:
-        print("keep: which stage? weft keep \"<expression>\" --as <name> <stage>",
+        print("keep: which stage? weft keep \"<expression>\" --as <name> -c <stage>",
               file=sys.stderr)
         return 1
     stage, why = _open_kept_stage(args.stage)
@@ -1193,7 +1193,10 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("keep", help="keep a set; check tells you when it moves")
     s.add_argument("expression", help='a box expression, e.g. "where:finish=glass"')
     s.add_argument("--as", dest="name", required=True, help="name for the kept set")
-    s.add_argument("stage", nargs="?")
+    # stage as an option, not a trailing positional: a positional after the
+    # --as value can't be matched by argparse before Python 3.13, so
+    # `keep EXPR --as NAME STAGE` silently loses STAGE. -c keeps one positional.
+    s.add_argument("-c", "--context", dest="stage", help="the .usd/.usda stage")
     s.set_defaults(fn=cmd_keep)
 
     s = sub.add_parser("forget", help="stop keeping a set")
