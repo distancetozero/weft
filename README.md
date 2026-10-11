@@ -3,12 +3,12 @@
 Pull the thread, not the world.
 
 ```sh
-pip install "weft-usd[usd]"            # once published; until then, from a clone:
-pip install -e ".[usd]"                # [usd] pulls usd-core; the core runs dep-free
+pip install "weft-usd[usd]"            # [usd] pulls usd-core; the core runs dep-free
 
+weft loom   myscene.usda               # the browser workbench — see the whole stage as data
+weft data   myscene.usda               # the stage as a table, nothing loaded
 weft rels   myscene.usda               # what relationships are in here, natively?
-weft data   myscene.usda               # the whole stage as a table, nothing loaded
-weft pull  'material:…' --context myscene.usda --follow material:binding:full
+weft keep  'where:bbox_volume>1e6' --as big  myscene.usda   # keep a set; weft tells you when it moves
 ```
 
 Opening a USD stage means loading everything and drilling down. weft
@@ -28,6 +28,36 @@ question. Run as written against [Animal Logic's
 ALab](https://dpel.aswf.io/alab/) — real production geometry, not a
 fixture — in [`examples/alab/README.md`](examples/alab/README.md#pulling-at-prim-level).
 
+## The Loom
+
+```sh
+weft loom shot.usda
+```
+
+A read-only workbench in your browser (localhost, no server to stand up) that
+treats the stage as **a pivot table over USD** — the fastest way to understand
+a scene you didn't build:
+
+- **Land on the hierarchy, then re-index it.** *Organize by* any dimension —
+  type, payload, purpose, bbox size, bound **material**, any attribute. Hierarchy
+  is just the default index, not the only structure.
+- **Click a prim for its card** — identity, data, and its relationships (bound
+  materials resolved the inheritance-aware way), with *view as graph* for the
+  slice's relationship graph.
+- **Filter to a slice as you go.** The expression bar is a live mirror: type
+  `where:bbox_volume>1e6` or click a row, and it writes the weft-ask for you —
+  so the slice language teaches itself. Any filter is a surgical, certifiable
+  slice.
+- **Keep a set, and weft tells you when it moves.** Keep "everything bound to
+  glass" and come back later: the set reads **holds** (nothing moved) or
+  **moved**, and shows exactly what *arrived, changed, or departed* — ignoring
+  renames. The old "certify / digest" plumbing lives underneath; what you see is
+  a calm freshness state, in the same table you explored in.
+
+Scales to production: on ALab (47,401 composed prims) it opens on the unloaded
+4,541-prim skeleton in well under a second and only loads what a dimension
+actually needs.
+
 ## Addresses
 
 ```
@@ -46,8 +76,11 @@ Three rules keep pulls trustworthy:
   boundary is counted by kind, and omissions are classed *inert* (a grey
   material) or *meaning-changing* (a physics joint that would silently
   re-anchor to the world).
-- **Every answer carries a receipt** — seeds, follow rules, cost, and a
-  digest; a pull is verifiable by recompute-and-compare.
+- **Keep a set, and know when it moves** — a pull records its seeds, follow
+  rules, and cost; a *kept set* re-checks against the current stage and reports
+  what **arrived, changed, or departed** (renames don't count, because it tracks
+  identity, not bytes). The hashes that make it verifiable are plumbing
+  underneath — what you read is *holds* or *moved*.
 - **Compatibility is measured, not asserted** — a republish is checked
   against every consumer's own declared tolerance, not just the provider's
   promise.
@@ -168,8 +201,10 @@ And on ALab opened whole (47,401 composed prims, 14.5 M points), from
 
 ## Status
 
-A working prototype, tested against real production USD (365 tests, CI on a
-no-deps "bare" env and a full `usd-core` env), with no outside users yet. The
+A working prototype, published on PyPI as
+[`weft-usd`](https://pypi.org/project/weft-usd/) and tested against real
+production USD (398 tests, CI on a no-deps "bare" env and a full `usd-core`
+env), with no outside users yet. The
 design docs came first; where measurement disagreed with design, the docs
 record the correction — see `docs/superpowers/specs/` for the full design trail,
 including an adversarial review that scoped weft to **consuming and certifying**
