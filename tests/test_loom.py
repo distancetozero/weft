@@ -197,7 +197,7 @@ def test_slice_bar_present(ctx):
     try:
         html = urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=10).read()
         assert b'id="slicebar"' in html
-        assert b"lock this slice" in html
+        assert b"keep this set" in html          # the slice bar keeps, not locks
     finally:
         httpd.shutdown()
 
@@ -272,5 +272,20 @@ def test_http_kept_routes(ctx, tmp_path, monkeypatch):
         d = json.loads(urllib.request.urlopen(base + "/check?name=as", timeout=10).read())
         assert d["holds"] is True
         assert post("/forget", {"name": "as"}).get("forgot") == "as"
+    finally:
+        httpd.shutdown()
+
+
+def test_kept_ui_present(ctx):
+    from weft.loom import serve
+    httpd = serve(ctx, port=0, load=True, open_browser=False)
+    port = httpd.server_address[1]
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        html = urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=10).read()
+        assert b"keep this set" in html
+        assert b'id="keptstrip"' in html
+        assert b"re-check" in html
+        assert b"certified" not in html and b"digest" not in html   # vocabulary scrub
     finally:
         httpd.shutdown()
