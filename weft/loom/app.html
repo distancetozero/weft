@@ -496,8 +496,11 @@ function loadKept(){
     }).join("");
     strip.querySelectorAll(".kchip").forEach(el=> el.onclick = ()=>{
       byId("expr").value = el.dataset.expr;
-      if(el.dataset.moved==="1"){ setSlice(el.dataset.expr, 0); showKeptDiff(el.dataset.name); }
-      else applyExpr(el.dataset.expr);          // holds -> just load the slice, no marks
+      if(el.dataset.moved==="1"){                 // moved -> show the diff, real count in the bar
+        post("/query",{expression:el.dataset.expr}).then(q=>
+          setSlice(el.dataset.expr, (q.members||[]).length));
+        showKeptDiff(el.dataset.name);
+      } else applyExpr(el.dataset.expr);          // holds -> just load the slice, no marks
     });
   }).catch(()=>{});
 }
