@@ -47,10 +47,17 @@ build-backend = "setuptools.build_meta"
 # refuses to guess between them -- `pip install -e .` fails outright without
 # this. Caught by simulating the CI job from a clean clone.
 [tool.setuptools]
-packages = ["weft", "weft.generators", "weft.loom", "deps", "absent"]
+packages = ["weft", "weft.generators", "weft.loom", "weft.usdview_plugin", "deps", "absent"]
+
+# The usdview plugin lives at extras/usdview in the source tree; ship it as
+# weft/usdview_plugin/ in the wheel so plugInfo.json and the weftViewer package
+# share one directory (what PXR_PLUGINPATH_NAME / PYTHONPATH need).
+[tool.setuptools.package-dir]
+"weft.usdview_plugin" = "extras/usdview"
 
 [tool.setuptools.package-data]
 "weft.loom" = ["*.html"]
+"weft.usdview_plugin" = ["plugInfo.json", "weftViewer/*.py", "weftViewer/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
