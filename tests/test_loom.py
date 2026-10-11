@@ -291,6 +291,32 @@ def test_kept_ui_present(ctx):
         httpd.shutdown()
 
 
+def test_drop_collections_filters():
+    from weft.loom.server import _drop_collections
+    g = {"nodes": [{"id": "a", "type": "group"},
+                   {"id": "c", "type": "collection"}],
+         "edges": [{"source": "a", "target": "b", "kind": "usd:material:binding:full"},
+                   {"source": "a", "target": "c", "kind": "usd:collection"}],
+         "kinds": ["usd:material:binding:full", "usd:collection"]}
+    d = _drop_collections(g)
+    assert all("collection" not in e["kind"] for e in d["edges"])
+    assert all(n["type"] != "collection" for n in d["nodes"])
+    assert "usd:collection" not in d["kinds"]
+
+
+def test_graph_toggle_and_autoload_markers(ctx):
+    from weft.loom import serve
+    httpd = serve(ctx, port=0, load=True, open_browser=False)
+    port = httpd.server_address[1]
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        html = urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=10).read()
+        assert b"hide collections" in html              # graph toggle
+        assert b"needs the scene loaded" in html         # material: auto-load prompt
+    finally:
+        httpd.shutdown()
+
+
 def test_viewer_ships_inside_package():
     # the graph viewer must live inside weft/loom/ (covered by package-data
     # "weft.loom" = ["*.html"]) so a pip-installed Loom has its graph pane.
