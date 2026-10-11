@@ -1227,3 +1227,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         argv.insert(1, "since")
     args = build_parser().parse_args(argv)
     return args.fn(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

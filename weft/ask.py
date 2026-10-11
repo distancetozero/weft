@@ -208,10 +208,18 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
                     r.note = "type identity: %d placements" % len(r.paths)
         elif s.plane == "path":
             r.mode = "path"
-            prim = stage.GetPrimAtPath(s.value)
-            r.paths = [s.value]  # Always include the path
-            if not prim:
-                r.note = "path %s not in composed world (may lie below an unloaded payload)" % s.value
+            if any(c in s.value for c in "*?["):
+                # a path glob: match full prim paths (e.g. /root/set/lab_* for a
+                # whole family of subtrees). Exact paths stay targeted (no walk).
+                r.paths = sorted(p.GetPath().pathString for p in prims_list()
+                                 if fnmatch.fnmatchcase(p.GetPath().pathString, s.value))
+                if not r.paths:
+                    r.note = "path glob %s matched nothing in the composed world" % s.value
+            else:
+                prim = stage.GetPrimAtPath(s.value)
+                r.paths = [s.value]  # Always include the path
+                if not prim:
+                    r.note = "path %s not in composed world (may lie below an unloaded payload)" % s.value
         elif s.plane == "attr":
             r.mode = "attribute"
             hits, absent = [], 0

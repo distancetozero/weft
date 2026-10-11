@@ -104,6 +104,18 @@ def test_path_below_payload_kept_with_note(stage):
     assert "not in composed world" in r.note
 
 
+def test_path_glob_matches_full_paths(stage):
+    (r,) = resolve_seeds(stage, ["path:/root/shelf01/bottle_*"])
+    assert r.paths == ["/root/shelf01/bottle_0001", "/root/shelf01/bottle_0002"]
+    assert r.mode == "path"
+
+
+def test_path_glob_no_match_is_noted(stage):
+    (r,) = resolve_seeds(stage, ["path:/root/shelf01/nope_*"])
+    assert r.paths == []
+    assert "matched nothing" in r.note
+
+
 def test_seed_matching_nothing_is_declared(stage):
     (r,) = resolve_seeds(stage, ["id:no-such"])
     assert r.paths == [] and "matched nothing" in r.note

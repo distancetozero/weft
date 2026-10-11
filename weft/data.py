@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional
 CHEAP_METRICS: List[str] = [
     "type", "has_payload", "bbox_volume", "centroid_x", "centroid_y", "centroid_z",
 ]
-EXPENSIVE_METRICS: List[str] = ["point_count", "poly_count", "byte_cost"]
+EXPENSIVE_METRICS: List[str] = ["point_count", "poly_count", "byte_cost", "material"]
 METRIC_NAMES: List[str] = ["path"] + CHEAP_METRICS + EXPENSIVE_METRICS
 
 # numeric cheap metrics -> selectable by a comparison predicate. type/has_payload
@@ -228,6 +228,17 @@ def _metric(name, prim, cache):
         if name == "poly_count":
             return polys
         return int(pts * 12 + polys * 4)      # byte_cost (rough)
+
+    # bound material (full purpose) as a string path -- a relationship surfaced
+    # as a groupable datum. Expensive: ALab's bindings sit behind payloads, so
+    # this is None until the prim is loaded. None where nothing is bound.
+    if name == "material":
+        from pxr import UsdShade
+        mat, _rel = UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+            UsdShade.Tokens.full)
+        if mat and mat.GetPrim() and mat.GetPrim().IsValid():
+            return mat.GetPath().pathString
+        return None
 
     raise ValueError("unknown metric %r" % name)
 

@@ -8,6 +8,7 @@
   :root{color-scheme:dark; --bg:#17140f; --panel:#1e1a14; --line:#352e24;
         --ink:#efe7d8; --muted:#a79b86; --accent:#f2d79a; --prop:#9db0c0;}
   *{box-sizing:border-box}
+  [hidden]{display:none!important}   /* beat display:flex on #gmodal/#slicebar/#card */
   body{margin:0;background:var(--bg);color:var(--ink);
        font:13px/1.5 ui-sans-serif,system-ui,-apple-system,sans-serif;height:100vh;
        display:flex;flex-direction:column;overflow:hidden}
@@ -21,30 +22,71 @@
   .chip{background:var(--panel);border:1px solid var(--line);border-radius:20px;
         padding:3px 10px;color:var(--muted);font-size:11px}
   .chip b{color:var(--ink)}
-  main{flex:1;display:grid;grid-template-columns:1fr 380px;min-height:0}
-  #graphwrap{border-right:1px solid var(--line);min-height:0}
-  #graph{width:100%;height:100%;border:0;background:var(--bg)}
-  aside{display:flex;flex-direction:column;min-height:0;overflow:hidden}
-  .sec{border-bottom:1px solid var(--line);padding:11px 13px;overflow:auto}
-  .sec h2{font:600 11px ui-sans-serif;text-transform:uppercase;letter-spacing:.8px;
-          color:var(--muted);margin:0 0 8px}
-  input,button{font:12px ui-sans-serif;border-radius:7px;border:1px solid var(--line);
-               background:var(--bg);color:var(--ink);padding:6px 9px}
-  input{width:100%}
+
+  main{flex:1;display:grid;grid-template-columns:1fr 0;min-height:0;transition:grid-template-columns .12s}
+  main.cardopen{grid-template-columns:1fr 360px}
+  #work{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+
+  .bar{padding:8px 13px;border-bottom:1px solid var(--line);display:flex;
+       gap:16px;align-items:center;flex-wrap:wrap}
+  .bar label{color:var(--muted);font-size:11px;text-transform:uppercase;
+             letter-spacing:.6px;display:flex;gap:6px;align-items:center}
+  select,input,button{font:12px ui-sans-serif;border-radius:7px;
+       border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:5px 8px}
   button{cursor:pointer;background:var(--panel)}
   button:hover{border-color:var(--accent)}
-  .row{display:flex;gap:6px;margin-top:6px}
-  .lenses span,.rels span{display:inline-block;margin:0 6px 4px 0;color:var(--muted)}
-  .lenses b,.rels b{color:var(--prop)}
-  table{border-collapse:collapse;width:100%;font:11px ui-monospace,monospace}
-  th,td{text-align:left;padding:2px 6px;border-bottom:1px solid var(--line);
-        white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
-  th{color:var(--muted);position:sticky;top:0;background:var(--panel)}
-  .tbl{max-height:260px;overflow:auto}
+  .hint{color:var(--muted);margin-left:auto;font-size:11px}
+  .exprbar{gap:8px}
+  .exprbar .elabel{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.8px}
+  .exprbar input{flex:1;font:12px ui-monospace,monospace;color:var(--accent)}
+  .exprbar .gap{color:var(--muted);font-size:11px;flex:none;max-width:30vw;
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  #slicebar{display:flex;align-items:center;gap:10px;padding:9px 13px;
+            border-top:1px solid var(--line);background:var(--panel)}
+  #slicebar #slicecount{color:var(--ink);font:12px ui-monospace,monospace}
+  #slicebar .out{margin:0;color:var(--accent)}
+
+  #pivot{flex:1;overflow:auto;font:12px ui-monospace,monospace}
+  .trow{display:flex;align-items:center;gap:8px;padding:2px 10px;cursor:pointer;
+        border-bottom:1px solid #241f18;white-space:nowrap}
+  .trow:hover{background:var(--panel)}
+  .trow.sel{background:#2a2317}
+  .tw{width:12px;color:var(--muted);flex:none;text-align:center}
+  .tw.hit{cursor:pointer}
+  .tn{flex:1;overflow:hidden;text-overflow:ellipsis}
+  .tt{color:var(--prop);width:120px;flex:none;overflow:hidden;text-overflow:ellipsis}
+  .tb{color:var(--muted);width:90px;flex:none;text-align:right;
+      font-variant-numeric:tabular-nums}
+  .ghead{display:flex;align-items:center;gap:8px;padding:4px 10px;cursor:pointer;
+         background:var(--panel);border-bottom:1px solid var(--line);
+         position:sticky;top:0}
+  .ghead b{color:var(--accent)}
+  .gcount{color:var(--muted);margin-left:auto}
+
+  aside#card{background:var(--panel);border-left:1px solid var(--line);
+             overflow:auto;padding:14px}
+  aside#card h2{margin:0;font:600 15px ui-sans-serif}
+  aside#card h3{margin:14px 0 4px;font:600 10px ui-sans-serif;
+                text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+  aside#card .muted{color:var(--muted);font:11px ui-monospace,monospace;
+                    word-break:break-all}
+  aside#card ul{margin:0;padding:0;list-style:none;font:11px ui-monospace,monospace}
+  aside#card li{padding:2px 0;border-bottom:1px solid var(--line);word-break:break-all}
+  aside#card .rk{color:var(--prop)}
+  aside#card a{color:var(--accent);cursor:pointer}
+  aside#card .cardclose{float:right;padding:2px 8px}
+  .row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
   .out{font:11px ui-monospace,monospace;color:var(--muted);white-space:pre-wrap;margin-top:8px}
-  .out b{color:var(--accent)}
   .muted{color:var(--muted)}
-  a{color:var(--accent)}
+
+  #gmodal{position:fixed;inset:5vh 5vw;background:var(--bg);border:1px solid var(--line);
+          border-radius:10px;box-shadow:0 20px 60px #000a;display:flex;flex-direction:column;
+          z-index:50;overflow:hidden}
+  #gmodal .gm-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;
+                  border-bottom:1px solid var(--line);color:var(--muted);font-size:12px}
+  #gmodal .gm-bar b{color:var(--accent);font:11px ui-monospace,monospace}
+  #gmodal iframe{flex:1;border:0;background:var(--bg)}
 </style>
 </head>
 <body>
@@ -54,92 +96,357 @@
   <span class="ctx" id="ctx">—</span>
   <div class="chips" id="chips"></div>
 </header>
-<main>
-  <div id="graphwrap"><iframe id="graph" src="viewer"></iframe></div>
-  <aside>
-    <div class="sec">
-      <h2>profile</h2>
-      <div id="hint" class="muted" style="margin-bottom:8px"></div>
-      <div class="lenses" id="lenses"></div>
-      <h2 style="margin-top:12px">native relationships <span class="muted">(what you can follow)</span></h2>
-      <div class="rels" id="rels"></div>
+<main id="main">
+  <section id="work">
+    <div class="bar">
+      <label>Organize by
+        <select id="organize-by">
+          <option value="hierarchy">Hierarchy</option>
+          <option value="type">Type</option>
+          <option value="payload">Payload status</option>
+          <option value="purpose">Purpose</option>
+          <option value="bbox-bucket">Bbox size</option>
+          <option value="material">Material (loads)</option>
+        </select>
+      </label>
+      <label>Sort
+        <select id="sortby">
+          <option value="">—</option>
+          <option value="bbox_volume">bbox ↓</option>
+        </select>
+      </label>
+      <span class="hint" id="rowhint"></span>
     </div>
-    <div class="sec">
-      <h2>query &amp; slice</h2>
-      <input id="q" placeholder="e.g. material:…  follow:Mount  where:bbox_volume&gt;1e6">
-      <div class="row">
-        <button id="qbtn">query</button>
-        <button id="pbtn">load slice (pull + certify)</button>
-      </div>
-      <div class="out" id="qout"></div>
+    <div class="bar exprbar">
+      <span class="elabel">slice</span>
+      <input id="expr" placeholder="name:jar*   where:bbox_volume>1e6   where:subdivisionScheme=none   — type to filter, or just click">
+      <button id="exprclear" hidden>clear</button>
+      <span class="gap" id="exprgap"></span>
     </div>
-    <div class="sec" style="flex:1">
-      <h2>table <span class="muted">— the stage as data</span></h2>
-      <div class="row" style="margin:0 0 8px">
-        <input id="cols" placeholder="columns, e.g. type,bbox_volume,attr:subdivisionScheme">
-        <button id="cbtn">set</button>
-      </div>
-      <div class="tbl" id="tbl"></div>
+    <div id="pivot"><div class="muted" style="padding:14px">loading the stage…</div></div>
+    <div id="slicebar" hidden>
+      <span id="slicecount"></span>
+      <button id="slock">lock this slice</button>
+      <button id="sgraph">view as graph</button>
+      <button id="sexport">export</button>
+      <span class="out" id="sliceout"></span>
     </div>
-  </aside>
+  </section>
+  <aside id="card" hidden></aside>
 </main>
+
 <script>
 const S = window.LOOM_STATIC;
-const get = (p, j) => S ? fetch(j).then(r=>r.json())
-                        : fetch(p).then(r=>r.json());
+const byId = id => document.getElementById(id);
+const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 const post = (p, body) => S ? Promise.resolve({error:"static export is read-only"})
-                            : fetch(p,{method:"POST",headers:{"Content-Type":"application/json"},
-                                       body:JSON.stringify(body)}).then(r=>r.json());
-const el = id => document.getElementById(id);
+  : fetch(p,{method:"POST",headers:{"Content-Type":"application/json"},
+             body:JSON.stringify(body)}).then(r=>r.json());
 
-get("/profile","profile.json").then(pf=>{
-  el("ctx").textContent = pf.context || "";
-  el("ctx").title = pf.context || "";
-  el("hint").textContent = pf.hint || "";
-  el("chips").innerHTML =
-    `<span class="chip"><b>${pf.prims}</b> prims</span>` +
+// -- profile header ----------------------------------------------------------
+(S ? fetch("profile.json") : fetch("/profile")).then(r=>r.json()).then(pf=>{
+  byId("ctx").textContent = pf.context || "";
+  byId("ctx").title = pf.context || "";
+  byId("chips").innerHTML =
+    `<span class="chip" id="primchip"><b>${pf.prims}</b> prims</span>` +
     `<span class="chip"><b>${pf.payloaded_pct}%</b> behind payloads</span>` +
-    `<span class="chip"><b>${Object.keys(pf.lenses||{}).length}</b> lenses</span>` +
-    `<span class="chip"><b>${Object.keys(pf.native_relationship_kinds||{}).length}</b> native rel kinds</span>`;
-  el("lenses").innerHTML = Object.entries(pf.lenses||{})
-    .map(([k,n])=>`<span>${k} <b>${n}</b></span>`).join("") || '<span class="muted">none at this load level</span>';
-  el("rels").innerHTML = Object.entries(pf.native_relationship_kinds||{})
-    .sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<span>${k} <b>${n}</b></span>`).join("")
-    || '<span class="muted">none (try opening with --load)</span>';
+    `<span class="chip"><b>${Object.keys(pf.native_relationship_kinds||{}).length}</b> rel kinds</span>`;
+}).catch(()=>{});
+
+// -- rows + hierarchy pivot --------------------------------------------------
+let ROWS = [];
+let KIDS = {};                       // parent path -> [rows]
+let ROOTS = [];                      // top-level rows
+const OPEN = new Set();              // expanded group paths
+let SELECTED = null;
+let FILTER_SET = null;               // Set<path> when a slice filter is active
+let CURRENT_EXPR = "";               // the weft-ask expression for the current slice
+function activeRows(){ return FILTER_SET ? ROWS.filter(r=>FILTER_SET.has(r.path)) : ROWS; }
+
+const parentOf = p => p.slice(0, p.lastIndexOf("/")) || "/";
+
+function indexRows(){
+  KIDS = {};
+  const have = new Set(ROWS.map(r=>r.path));
+  ROWS.forEach(r=>{ const par = parentOf(r.path); (KIDS[par]=KIDS[par]||[]).push(r); });
+  ROOTS = ROWS.filter(r=> !have.has(parentOf(r.path)));
+  ROOTS.forEach(r=> OPEN.add(r.path));     // default-expand the top level
+}
+
+function cell(r, depth){
+  const hasKids = !!KIDS[r.path];
+  const tw = hasKids ? (OPEN.has(r.path) ? "▾" : "▸") : "·";
+  return `<div class="trow${SELECTED===r.path?" sel":""}" data-p="${esc(r.path)}" data-depth="${depth}">
+    <span class="tw${hasKids?" hit":""}" style="margin-left:${depth*15}px">${tw}</span>
+    <span class="tn">${esc(r.path.split("/").pop())}</span>
+    <span class="tt">${esc(r.type)}</span>
+    <span class="tb">${r.bbox_volume==null?"":Number(r.bbox_volume).toPrecision(3)}</span>
+  </div>`;
+}
+
+function renderFlat(rows){
+  const out = sortRows(rows).map(r=>
+    `<div class="trow${SELECTED===r.path?" sel":""}" data-p="${esc(r.path)}">
+      <span class="tw">·</span><span class="tn">${esc(r.path)}</span>
+      <span class="tt">${esc(r.type)}</span>
+      <span class="tb">${r.bbox_volume==null?"":Number(r.bbox_volume).toPrecision(3)}</span></div>`);
+  const pv = byId("pivot");
+  pv.innerHTML = out.join("") || '<div class="muted" style="padding:14px">nothing matched</div>';
+  pv.querySelectorAll(".trow").forEach(el=>{ const p = el.dataset.p;
+    el.onclick = ()=>{ selectPrim(p); render(); }; });
+}
+
+function renderHierarchy(){
+  if(FILTER_SET) return renderFlat(activeRows());
+  const out = [];
+  const walk = (list, depth) => list.forEach(r=>{
+    out.push(cell(r, depth));
+    if(OPEN.has(r.path) && KIDS[r.path]) walk(KIDS[r.path], depth+1);
+  });
+  walk(ROOTS, 0);
+  const pv = byId("pivot");
+  pv.innerHTML = out.join("") || '<div class="muted" style="padding:14px">no prims</div>';
+  pv.querySelectorAll(".trow").forEach(el=>{
+    const p = el.dataset.p;
+    const tw = el.querySelector(".tw.hit");
+    if(tw) tw.onclick = e=>{ e.stopPropagation();
+      OPEN.has(p) ? OPEN.delete(p) : OPEN.add(p); renderHierarchy(); };
+    el.onclick = ()=>{ selectPrim(p); renderHierarchy(); };
+  });
+}
+
+// -- organize-by: pivot the table by any dimension ---------------------------
+const GROUP_OPEN = new Set();
+const bucket = v => v==null ? "(no bounds)"
+  : v<1 ? "< 1" : v<100 ? "1 – 100" : v<1e4 ? "100 – 10k"
+  : v<1e6 ? "10k – 1M" : "> 1M";
+const CHEAP = {
+  type:    r => r.type || "(untyped)",
+  payload: r => r.has_payload ? "behind payload" : "loaded",
+  purpose: r => r["attr:purpose"] || "(no purpose)",
+  "bbox-bucket": r => bucket(r.bbox_volume),
+};
+const DIM_COLS = { purpose:["attr:purpose"], material:["material"] };
+const EXPENSIVE = { material: r => r.material || "(no material bound)" };
+
+function sortRows(rows){
+  const k = byId("sortby").value;
+  if(!k) return rows;
+  return rows.slice().sort((a,b)=> (Number(b[k])||-Infinity) - (Number(a[k])||-Infinity));
+}
+
+function renderGroups(keyFn){
+  const groups = {};
+  activeRows().forEach(r=>{ const k = keyFn(r); (groups[k]=groups[k]||[]).push(r); });
+  const names = Object.keys(groups).sort((a,b)=>{
+    const ca = a.startsWith("("), cb = b.startsWith("(");   // "(no …)" catch-alls
+    if(ca !== cb) return ca ? 1 : -1;                       // sink to the bottom
+    return groups[b].length - groups[a].length;             // else biggest first
+  });
+  const out = [];
+  names.forEach(name=>{
+    const rows = groups[name];
+    const vol = rows.reduce((s,r)=> s + (Number(r.bbox_volume)||0), 0);
+    const open = GROUP_OPEN.has(name);
+    out.push(`<div class="ghead" data-g="${esc(name)}">
+      <span class="tw">${open?"▾":"▸"}</span>
+      <b>${esc(name)}</b>
+      <span class="gcount">${rows.length} prims${vol?" · "+vol.toPrecision(3):""}</span></div>`);
+    if(open) sortRows(rows).forEach(r=>{
+      out.push(`<div class="trow${SELECTED===r.path?" sel":""}" data-p="${esc(r.path)}">
+        <span class="tw" style="margin-left:15px">·</span>
+        <span class="tn">${esc(r.path)}</span>
+        <span class="tt">${esc(r.type)}</span>
+        <span class="tb">${r.bbox_volume==null?"":Number(r.bbox_volume).toPrecision(3)}</span></div>`);
+    });
+  });
+  const pv = byId("pivot");
+  pv.innerHTML = out.join("") || '<div class="muted" style="padding:14px">no groups</div>';
+  pv.querySelectorAll(".ghead").forEach(el=>{ const g = el.dataset.g;
+    el.onclick = ()=>{ GROUP_OPEN.has(g)?GROUP_OPEN.delete(g):GROUP_OPEN.add(g); render(); }; });
+  pv.querySelectorAll(".trow").forEach(el=>{ const p = el.dataset.p;
+    el.onclick = ()=>{ selectPrim(p); render(); }; });
+}
+
+function promptLoad(dim){
+  byId("pivot").innerHTML =
+    `<div class="muted" style="padding:16px;max-width:36rem">
+      Organizing by <b style="color:var(--accent)">${dim}</b> needs the bound
+      material of every prim — which sits behind payloads. That means loading
+      the scene (expensive). <button id="doload">load &amp; organize</button></div>`;
+  byId("doload").onclick = ()=>{
+    byId("pivot").innerHTML = '<div class="muted" style="padding:16px">loading payloads &amp; computing bindings…</div>';
+    ensureCols(DIM_COLS[dim], true).then(render);
+  };
+}
+
+function updateCounts(){
+  const total = ROWS.length;
+  const shown = FILTER_SET ? activeRows().length : total;
+  byId("rowhint").textContent = FILTER_SET
+    ? shown + " of " + total + " prims" : total + " prims";
+  const chip = byId("primchip");
+  if(chip) chip.innerHTML = FILTER_SET
+    ? "<b>" + shown + "</b> of " + total + " prims" : "<b>" + total + "</b> prims";
+}
+
+function render(){
+  updateCounts();
+  const dim = byId("organize-by").value;
+  if(dim === "hierarchy") return renderHierarchy();
+  if(EXPENSIVE[dim]){
+    if(!COLS.has(DIM_COLS[dim][0])) return promptLoad(dim);
+    return renderGroups(EXPENSIVE[dim]);
+  }
+  const need = DIM_COLS[dim];
+  if(need && !need.every(c=>COLS.has(c)))
+    return ensureCols(need, false).then(()=>renderGroups(CHEAP[dim]));
+  return renderGroups(CHEAP[dim]);
+}
+
+const BASE_COLS = ["path", "type", "has_payload", "bbox_volume"];
+let COLS = new Set(BASE_COLS);
+function fetchRows(cols, load){
+  const q = "columns=" + cols.join(",") + (load ? "&load=1" : "");
+  return (S ? fetch("data.json") : fetch("/data?"+q)).then(r=>r.json());
+}
+function ensureCols(extra, load){
+  (extra||[]).forEach(c=>COLS.add(c));
+  return fetchRows([...COLS], load).then(d=>{
+    ROWS = d.rows || [];
+    byId("rowhint").textContent = ROWS.length + " prims";
+    indexRows();
+  });
+}
+function loadRows(){
+  return ensureCols([], false).then(render).catch(e=>{ byId("pivot").innerHTML =
+    '<div class="muted" style="padding:14px">could not load rows: '+esc(e)+'</div>'; });
+}
+
+// -- prim card (filled in Task 5; stub here) ---------------------------------
+function openCard(p){
+  const c = byId("card");
+  byId("main").classList.add("cardopen");
+  c.hidden = false;
+  const head = '<button class="cardclose" onclick="closeCard()">close</button>';
+  c.innerHTML = head + '<div class="muted">loading…</div>';
+  if(S){ c.innerHTML = head + `<h2>${esc(p.split("/").pop())}</h2>
+    <div class="muted">${esc(p)}</div>
+    <div class="muted" style="margin-top:10px">prim cards need the live loom (static export is read-only)</div>`;
+    return; }
+  fetch("/card?path="+encodeURIComponent(p)).then(r=>r.json()).then(d=>{
+    if(d.error){ c.innerHTML = head+'<div class="muted">'+esc(d.error)+'</div>'; return; }
+    const rels = (d.relationships||[]).map(r=>
+      `<li><span class="rk">${esc(r.kind)}</span> → <a data-p="${esc(r.target)}">${esc(r.target)}</a></li>`).join("");
+    const attrs = Object.entries(d.attrs||{}).map(([k,v])=>
+      `<li>${esc(k)}: <b>${esc(v)}</b></li>`).join("");
+    c.innerHTML = head +
+      `<h2>${esc(p.split("/").pop())}</h2><div class="muted">${esc(p)}</div>
+       <div style="margin-top:8px">${esc(d.type)||"—"} · ${d.payload?"behind payload":"loaded"} · bbox ${d.bbox_volume==null?"—":Number(d.bbox_volume).toPrecision(3)}</div>
+       <h3>relationships</h3><ul>${rels||'<li class="muted">none authored</li>'}</ul>
+       <h3>data</h3><ul>${attrs||'<li class="muted">none</li>'}</ul>
+       <div class="row">
+         <button id="cg">view as graph</button>
+         <button id="cp">pull just this</button>
+         <button id="cc">copy path</button>
+       </div><div class="out" id="cardout"></div>`;
+    c.querySelectorAll("a[data-p]").forEach(a=> a.onclick = e=>{
+      e.preventDefault(); selectPrim(a.dataset.p); render(); });
+    byId("cg").onclick = ()=> showGraph("path:"+p);
+    byId("cp").onclick = ()=>{ byId("cardout").textContent = "pulling…";
+      post("/pull",{expression:"path:"+p}).then(r=> byId("cardout").textContent =
+        r.error || ("certified digest "+(r.digest||"").slice(0,16)+"…")); };
+    byId("cc").onclick = ()=>{ try{ navigator.clipboard.writeText(p);
+      byId("cardout").textContent = "copied"; }catch(e){} };
+  }).catch(e=> c.innerHTML = head+'<div class="muted">'+esc(e)+'</div>');
+}
+function closeCard(){
+  byId("card").hidden = true;
+  byId("main").classList.remove("cardopen");
+  SELECTED = null; render();
+}
+window.closeCard = closeCard;
+
+// -- the graph, summoned (the only place it appears) -------------------------
+function showGraph(expr){
+  let m = byId("gmodal");
+  if(!m){
+    m = document.createElement("div"); m.id = "gmodal";
+    m.innerHTML = `<div class="gm-bar">graph — <b></b>
+      <button onclick="closeGraph()" style="margin-left:auto">close</button></div>
+      <iframe></iframe>`;
+    document.body.appendChild(m);
+  }
+  m.querySelector("b").textContent = expr;
+  m.querySelector("iframe").src = "/viewer?expr=" + encodeURIComponent(expr);
+  m.hidden = false;
+}
+function closeGraph(){ const m = byId("gmodal"); if(m) m.hidden = true; }
+window.closeGraph = closeGraph;
+// Esc always escapes a blocking overlay -- close the graph, else the card.
+document.addEventListener("keydown", e=>{
+  if(e.key !== "Escape") return;
+  const m = byId("gmodal");
+  if(m && !m.hidden) closeGraph();
+  else if(!byId("card").hidden) closeCard();
 });
 
-function renderTable(d){
-  if(d.error){ el("tbl").innerHTML = '<div class="muted">'+d.error+'</div>'; return; }
-  const cols = d.columns, rows = d.rows.slice(0,200);
-  el("tbl").innerHTML =
-    "<table><thead><tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr></thead><tbody>"+
-    rows.map(r=>"<tr>"+cols.map(c=>`<td>${r[c]==null?"·":r[c]}</td>`).join("")+"</tr>").join("")+
-    "</tbody></table>"+(d.rows.length>200?`<div class="muted">… ${d.rows.length-200} more</div>`:"");
+// -- the live expression bar (the teacher) + coverage captions --------------
+const DIM_GAP = {
+  type:     "organizing by Type — no slice expression yet (prim type isn't a seed predicate)",
+  material: "organizing by Material — GUI-only, no slice expression yet (needs reverse-follow)",
+};
+function syncExpr(){
+  const dim = byId("organize-by").value;
+  if(!CURRENT_EXPR) byId("exprgap").textContent = DIM_GAP[dim] || "";
 }
-function loadTable(cols){
-  const p = "/data"+(cols?("?columns=path,"+encodeURIComponent(cols)):"");
-  get(p,"data.json").then(renderTable);
+function applyExpr(expr){
+  expr = (expr||"").trim();
+  byId("exprgap").textContent = "";
+  if(!expr){ FILTER_SET = null; byId("sliceout").textContent = "";
+             setSlice("", 0); syncExpr(); render(); return; }
+  byId("exprgap").textContent = "querying…";
+  post("/query",{expression:expr}).then(q=>{
+    if(q.error){ byId("exprgap").textContent = q.error; return; }   // teach the parse error
+    FILTER_SET = new Set(q.members);
+    byId("exprgap").textContent = ""; byId("sliceout").textContent = "";
+    setSlice(expr, q.members.length); render();
+  });
 }
-loadTable();
-el("cbtn").onclick = ()=>loadTable(el("cols").value.trim());
+byId("expr").addEventListener("change", ()=> applyExpr(byId("expr").value));
+byId("exprclear").onclick = ()=>{ byId("expr").value = ""; applyExpr(""); };
 
-el("qbtn").onclick = ()=>{
-  const expr = el("q").value.trim(); if(!expr) return;
-  el("qout").textContent = "querying…";
-  post("/query",{expression:expr}).then(r=>{
-    el("qout").innerHTML = r.error ? ('<span class="muted">'+r.error+'</span>')
-      : `<b>${r.members.length}</b> prims match\n`+r.members.slice(0,40).join("\n")+
-        (r.members.length>40?`\n… ${r.members.length-40} more`:"");
-  });
-};
-el("pbtn").onclick = ()=>{
-  const expr = el("q").value.trim(); if(!expr) return;
-  el("qout").textContent = "pulling…";
-  post("/pull",{expression:expr}).then(r=>{
-    el("qout").innerHTML = r.error ? ('<span class="muted">'+r.error+'</span>')
-      : `surgical slice: <b>${r.members}</b> members, <b>${r.prims}</b> composed prims\ncertified digest: ${(r.digest||"").slice(0,16)}…`;
-  });
-};
+// -- the slice bar: lock / graph / export whatever is narrowed ---------------
+function setSlice(expr, count){
+  CURRENT_EXPR = (expr || "").trim();
+  const on = !!CURRENT_EXPR;
+  byId("slicebar").hidden = !on;
+  byId("exprclear").hidden = !on;
+  if(on) byId("slicecount").textContent =
+    count + (count === 1 ? " prim · " : " prims · ") + CURRENT_EXPR;
+}
+// clicking a prim writes its weft-ask into the box and points the slice bar at
+// it (lock/graph that one prim) -- the box mirrors where you are, without
+// re-filtering the table (that's what typing does).
+function selectPrim(p){
+  SELECTED = p;
+  byId("expr").value = "path:" + p;
+  byId("exprgap").textContent = "";
+  setSlice("path:" + p, 1);
+  openCard(p);
+}
+byId("slock").onclick = ()=>{ if(!CURRENT_EXPR) return;
+  byId("sliceout").textContent = "locking…";
+  post("/pull",{expression:CURRENT_EXPR}).then(r=> byId("sliceout").textContent =
+    r.error || ("certified digest " + (r.digest||"").slice(0,16) + "…  (" + r.members + " members)")); };
+byId("sgraph").onclick = ()=>{ if(CURRENT_EXPR) showGraph(CURRENT_EXPR); };
+byId("sexport").onclick = ()=> byId("sliceout").textContent =
+  "static bundle:  weft loom <stage> --export <dir>";
+
+byId("organize-by").onchange = ()=>{ syncExpr(); render(); };
+byId("sortby").onchange = render;
+syncExpr();
+loadRows();
 </script>
 </body>
 </html>
