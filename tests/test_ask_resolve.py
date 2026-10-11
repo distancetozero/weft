@@ -243,3 +243,66 @@ def "external"
     assert ("/parent/child", "custom:pairedWith", "/external/target") in edges, (
         "_reverse_index must see an edge authored on a composed-but-"
         "unloaded source prim")
+
+
+MAT_SCENE = """#usda 1.0
+(
+    defaultPrim = "root"
+)
+
+def Xform "root"
+{
+    def Scope "mtl"
+    {
+        def Material "glass"
+        {
+        }
+        def Material "steel"
+        {
+        }
+    }
+
+    def Mesh "a" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding:full = </root/mtl/glass>
+    }
+
+    def Mesh "b" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding:full = </root/mtl/steel>
+    }
+}
+"""
+
+
+def test_material_selector_by_name(tmp_path):
+    from pxr import Usd
+    p = tmp_path / "m.usda"
+    p.write_text(MAT_SCENE)
+    st = Usd.Stage.Open(str(p), Usd.Stage.LoadAll)
+    (r,) = resolve_seeds(st, ["material:glass"])
+    assert r.paths == ["/root/a"] and r.mode == "material"
+
+
+def test_material_selector_by_exact_path_and_glob(tmp_path):
+    from pxr import Usd
+    p = tmp_path / "m.usda"
+    p.write_text(MAT_SCENE)
+    st = Usd.Stage.Open(str(p), Usd.Stage.LoadAll)
+    (r,) = resolve_seeds(st, ["material:/root/mtl/steel"])
+    assert r.paths == ["/root/b"]
+    (g,) = resolve_seeds(st, ["material:gl*"])
+    assert g.paths == ["/root/a"]
+
+
+def test_material_selector_no_match_is_noted(tmp_path):
+    from pxr import Usd
+    p = tmp_path / "m.usda"
+    p.write_text(MAT_SCENE)
+    st = Usd.Stage.Open(str(p), Usd.Stage.LoadAll)
+    (r,) = resolve_seeds(st, ["material:nope"])
+    assert r.paths == [] and "no prim bound" in r.note
