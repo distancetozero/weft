@@ -79,6 +79,8 @@ def parse_seed(text: str) -> Seed:
         except ValueError:
             raise ValueError("near: wants SEED,RADIUS with a numeric radius")
         return Seed("spatial", "near", body, t)
+    if t.startswith("material:"):
+        return Seed("material", "", t[len("material:"):], t)
     if t.startswith("path:"):
         return Seed("path", "", t[len("path:"):], t)
     if t.startswith("name:"):
@@ -206,6 +208,35 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
                     r.note = "occurrence id matches %d prims — ambiguous: %s" % (len(r.paths), ", ".join(r.paths))
                 else:
                     r.note = "type identity: %d placements" % len(r.paths)
+        elif s.plane == "material":
+            # prims bound to a material matching the value, by full OR preview
+            # purpose. Value is an exact material path (/root/mtl/glass) or an
+            # fnmatch on the material's leaf name (glass, glass*). Expensive:
+            # bindings sit behind payloads, so an unloaded stage matches little.
+            r.mode = "material"
+            from pxr import UsdShade
+            val = s.value
+
+            def _mat_hit(prim):
+                api = UsdShade.MaterialBindingAPI(prim)
+                for purpose in (UsdShade.Tokens.full, UsdShade.Tokens.preview):
+                    try:
+                        mat, _rel = api.ComputeBoundMaterial(purpose)
+                    except Exception:
+                        continue
+                    if not (mat and mat.GetPrim() and mat.GetPrim().IsValid()):
+                        continue
+                    mp = mat.GetPath().pathString
+                    if (mp == val) if val.startswith("/") \
+                            else fnmatch.fnmatchcase(mp.rsplit("/", 1)[-1], val):
+                        return True
+                return False
+
+            r.paths = sorted(p.GetPath().pathString for p in prims_list()
+                             if _mat_hit(p))
+            if not r.paths:
+                r.note = ("no prim bound to a material matching %r "
+                          "(bindings may be behind unloaded payloads -- load first)" % val)
         elif s.plane == "path":
             r.mode = "path"
             if any(c in s.value for c in "*?["):
