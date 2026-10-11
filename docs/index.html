@@ -102,14 +102,14 @@
 <header>
   <h1>weft</h1>
   <p class="tag">Pull the thread, not the world.</p>
-  <p class="sub">weft answers the questions your USD can't:
-  <b>Who depends on this? What breaks if I republish it?
-  Give me just the translucent things — and tell me what I'm missing.</b></p>
-  <p class="sub">You stand at any point — a name, an identity, an attribute — and pull
-  only the threads you care about. A thread is any relationship: a material binding,
-  a mount contract, <code>electrical:feeds</code>, or a kind your team defines.
-  Hierarchy is just one thread on the spool. The same premise runs wherever scenes
-  outgrow their files — film, games, manufacturing, AEC, robotics.</p>
+  <p class="sub">weft is a <b>read-only way to see a USD stage as data</b> — open a
+  scene you didn't build, slice it without loading the world, and get told when the
+  slices you care about move.</p>
+  <p class="sub">Stand at any point — a name, an identity, an attribute, a type, a
+  place — and pull only the threads you care about. A thread is any relationship: a
+  material binding, <code>electrical:feeds</code>, or a kind your team defines;
+  hierarchy is just one thread on the spool. It reads any USD file as it ships, and
+  it's looking for its first outside user.</p>
   <nav>
     <a href="https://github.com/distancetozero/weft">github</a>
     <a href="https://github.com/distancetozero/weft/blob/main/examples/alab/README.md">the ALab run</a>
@@ -161,104 +161,71 @@ weft loom your_scene.usda</code></pre>
 <p>A read-only workbench in your browser — the fastest way to understand a scene
 you didn't build. Click a prim for its card (data and relationships, materials
 resolved the inheritance-aware way). The expression bar is a live mirror: click a
-row or type <code>where:bbox_volume&gt;1e6</code> and it writes the weft-ask for
-you, so the slice language teaches itself. Any filter is a surgical, certifiable
-slice; it opens on the unloaded skeleton in well under a second and loads only
-what a dimension actually needs.</p>
+row or type <code>where:bbox_volume&gt;1e6</code> and it writes the weft query for
+you, so the slice language teaches itself. Any filter is a surgical slice; it opens
+on the unloaded skeleton in well under a second and loads only what a dimension
+actually needs.</p>
 <p><b>Keep a set, and weft tells you when it moves.</b> Keep "everything bound to
 glass" and come back later: the set reads <i>holds</i> or <i>moved</i>, and shows
 exactly what <b>arrived, changed, or departed</b> — ignoring renames, because it
 tracks identity, not bytes. The digest machinery is plumbing underneath; what you
 read is a calm freshness state.</p>
 
-<h2>Addresses, not paths</h2>
+<h2>Address by anything, load nothing</h2>
 <pre><code>weft pull id:hero-car                    <span class="cmt"># identity — survives restructures</span>
-weft pull id:occ:weld-47                 <span class="cmt"># one placement, restructure-proof</span>
-weft pull role:propSocket                <span class="cmt"># by contract role</span>
+weft pull type:Mesh                      <span class="cmt"># by schema type</span>
+weft pull material:glass                 <span class="cmt"># everything bound to a material</span>
 weft pull 'where:finish=translucent'     <span class="cmt"># by attribute</span>
-weft pull 'near:id:rack-R42,5'           <span class="cmt"># within 5 units of a thing, by name</span>
-weft pull b01 --follow up:electrical:feeds*8   <span class="cmt"># trace upstream, 8 hops</span>
-weft pull path:/root/shelf01/b_0004      <span class="cmt"># location — the fallback, not the default</span>
-weft who 'name:glass' --context shot.usda      <span class="cmt"># what depends on this prim?</span></code></pre>
+weft pull who:name:glass                 <span class="cmt"># the reverse — what points at the glass prims</span>
+weft pull 'near:id:rack-R42,5'           <span class="cmt"># within 5 units of a thing</span>
+weft pull path:/root/shelf01/b_0004      <span class="cmt"># location — the fallback, not the default</span></code></pre>
 
-<h2>Where the attributes come from</h2>
-<p>Nothing above is hand-annotated. Every attribute weft reads has one of four
-provenances, and the provenance is recorded with the value:</p>
-<ul class="rules">
-  <li><b>Derived from data already there.</b> <code>finish</code> comes from authored
-  <code>UsdPreviewSurface</code> opacity; mount frames from the assembly's own
-  translates; <code>provides</code> sets from the department sublayers. The extractor
-  derived all 601 contract surfaces on ALab from the files as shipped.</li>
-  <li><b>Derived by a stated rule, recorded beside the result.</b> A consumer's
-  tolerance is 10% of its own authored extent — and that rule is stamped on the
-  interface next to the number, so derivation is never mistaken for measurement.</li>
-  <li><b>Policy, marked as policy.</b> The provider's default envelope carries
-  <code>source = "policy:extractor-default"</code> — visibly an assumption, never
-  disguised as a promise.</li>
-  <li><b>Declared by you.</b> Team relationship kinds, edge extractors for your
-  soft-reference conventions, identity keys — your existing GUIDs or part numbers
-  become <code>id:</code> addresses.</li>
-</ul>
-<p>And unauthored data yields no attribute, ever: only 8 of ALab's 158 look files
-author opacity, so 150 props got <i>no</i> <code>finish</code> — an invented
-"opaque" would be a claim nobody made. Receipts count the complement
-("matched 212; 340 don't author this — not evaluated"), so sparse data degrades to
-declared ignorance, not confident nonsense. With no extraction at all,
-<code>name:</code>, <code>path:</code>, and the stock USD kinds still work bare on
-any file — the richer planes bootstrap from your data; they're not a precondition.</p>
+<h2>Where the data comes from</h2>
+<p>Nothing weft shows is hand-annotated. It reads what USD already encodes —
+hierarchy, collections, material bindings resolved per purpose and inheritance —
+and records each value's provenance beside it: derived from authored data, or
+declared by you (team relationship kinds, identity keys that turn your existing
+GUIDs into <code>id:</code> addresses). Unauthored data yields no value, ever:
+only 8 of ALab's 158 look files author opacity, so 150 props get <i>no</i>
+<code>finish</code> — an invented "opaque" would be a claim nobody made. Sparse
+data degrades to declared ignorance, not confident nonsense. With no setup at
+all, <code>name:</code>, <code>path:</code>, <code>type:</code> and the stock USD
+kinds work bare on any file.</p>
 
-<h2>Three rules keep pulls trustworthy</h2>
+<h2>How a pull stays honest</h2>
 <ul class="rules">
-  <li><b>What you didn't pull is declared, never silently absent.</b>
-  Every boundary is counted by kind, and omissions carry a class: <i>inert</i>
-  (a grey material) or <i>meaning-changing</i> (a physics joint that would
-  silently re-anchor to the world).</li>
-  <li><b>Keep a set, and know when it moves.</b> A pull records its seeds, follow
-  rules, and cost; a <i>kept set</i> re-checks against the current stage and reports
-  what arrived, changed, or departed — renames don't count, because it tracks
-  identity, not bytes. The layer hashes that make it verifiable are plumbing
-  underneath; what you read is <i>holds</i> or <i>moved</i>.</li>
-  <li><b>Compatibility is measured, not asserted.</b> A republish is checked
-  against every consumer's own declared tolerance, not just the provider's promise —
-  and a refusal names each broken consumer with what it tolerates.</li>
+  <li><b>What you didn't pull is declared, never silently absent.</b> Every
+  boundary is counted by kind, and omissions carry a class: <i>inert</i> (a grey
+  material) or <i>meaning-changing</i> (a joint that would re-anchor to the
+  world).</li>
+  <li><b>Keep a set, and know when it moves.</b> A <i>kept set</i> re-checks
+  against the current stage and reports what arrived, changed, or departed —
+  renames don't count, because it tracks identity, not bytes. The layer hashes
+  that make it verifiable are plumbing underneath; what you read is <i>holds</i>
+  or <i>moved</i>.</li>
 </ul>
 
-<h2>What a refusal looks like</h2>
-<p>A shelf is raised 0.7&thinsp;cm — inside the provider's own 1&thinsp;cm promise,
-so the provider's self-check passes. The consumers are measured anyway:</p>
-<pre><code>== MEASURED, NOT ASSERTED: shelf01 raised 0.7 cm -- inside the provider's 1 cm promise
-   provider self-check (what it asserted): 0 violations
-   consumer re-evaluation (what was measured): 164 consumers checked, 19 broken
-   REFUSED by consumers: 19 props would break, though the provider kept its promise
-     chemistry_bottle01         position moved 0.65, consumer tolerates 0.5913
-     chemistry_test_tube02      position moved 0.65, consumer tolerates 0.2225
-     decor_thumb_tack01         position moved 0.65, consumer tolerates 0.0823
-     ... and 16 more
-   @approved still at v002</code></pre>
-<p>The channel never moved. Both refused revisions still exist in the ledger and can
-be inspected. The tolerances weren't invented — each is derived from the prop's own
-authored extent by a stated, recorded rule.</p>
-
-<h2>Measured</h2>
+<h2>A few numbers</h2>
+<p>From real runs on ALab, not projections:</p>
 <div class="measure">
-  <div><div class="n">2 of 165</div><div class="d">assets pulled when one bottle is seeded with <code>--follow Mount</code>; the other 163 threads declared at the boundary.</div></div>
-  <div><div class="n">19 refusals</div><div class="d">a 0.7&thinsp;cm republish sits inside the provider's 1&thinsp;cm promise — and is refused by 19 consumers whose own tolerances are tighter, each named.</div></div>
-  <div><div class="n">~126 ms</div><div class="d">to make the whole production scene addressable without loading it.</div></div>
-  <div><div class="n">4,296 layers</div><div class="d">walked into a dependency graph in 1.75&thinsp;s — 23&thinsp;ms incremental — including edges no stock USD API reports.</div></div>
-  <div><div class="n">26 = 26</div><div class="d">the translucent pull reproduces a hand-built reference mask exactly — every placement, asserted in the acceptance suite, not observed once.</div></div>
-  <div><div class="n">25&times;</div><div class="d">storage dedup at 64&thinsp;KiB content-addressed chunks; revisions are nearly free after the first.</div></div>
+  <div><div class="n">2 of 165</div><div class="d">assets pulled when one bottle is seeded with <code>--follow Mount</code> — the other 163 declared at the boundary, not silently dropped.</div></div>
+  <div><div class="n">~126 ms</div><div class="d">to make the whole production scene addressable without loading it; querying it as a table loads zero geometry.</div></div>
+  <div><div class="n">26 = 26</div><div class="d">the translucent pull reproduces a hand-built reference mask exactly — every placement, asserted in the suite.</div></div>
 </div>
 
 <h2>Still USD, all the way down</h2>
 <p>Everything composes and renders through unmodified stock USD — the images above
 came from the <code>usdrecord</code> binary that ships with macOS. Masks, payloads,
-<code>LoadNone</code>: USD's own machinery, fed by weft's answers. Every persistent
-artifact is real USDA; contracts are codeless applied schemas; nothing is ever
-re-rooted or rewritten. Deferral, never extraction.</p>
-<p>For teams that want ground truth and not just queries, the engine adds a
-content-addressed store, immutable revisions, channels, and the measured promotion
-gate — offline, serverless, <code>git init</code>-shaped. Runs on any USD file with
-no server and no schema changes.</p>
+<code>LoadNone</code>: USD's own machinery, fed by weft's answers. Every artifact
+weft writes is real USDA; nothing is re-rooted or rewritten. Deferral, never
+extraction.</p>
+<p>There is also an <b>experimental versioning engine</b> underneath the read-only
+tools — a content-addressed store, immutable revisions, channels, and a promotion
+gate that re-evaluates a change against each downstream consumer's own tolerance
+before it lands (on ALab, a 0.7&thinsp;cm nudge inside the provider's 1&thinsp;cm
+promise is still refused by the 19 consumers whose tolerances are tighter). It has
+been exercised but not used in anger; treat it as a research direction, not a
+product. The read-only workbench is the front door.</p>
 
 <h2>Try it</h2>
 <pre><code>pip install "weft-usd[usd]"                    <span class="cmt"># on PyPI</span>
