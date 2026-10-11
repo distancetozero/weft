@@ -678,7 +678,123 @@ def cmd_who(args) -> int:
     return 0
 
 
+def _open_kept_stage(path):
+    """(stage, None) or (None, why) -- never raises."""
+    try:
+        from pxr import Usd
+    except ImportError:
+        return None, "usd-core is required (pip install usd-core)"
+    if not path or not os.path.exists(path):
+        return None, "cannot open stage: %s" % path
+    try:
+        return Usd.Stage.Open(path, Usd.Stage.LoadAll), None
+    except Exception as e:
+        return None, "cannot open stage: %s (%s)" % (path, str(e).strip().splitlines()[0] if str(e).strip() else "error")
+
+
+def cmd_keep(args) -> int:
+    """Keep a set: capture an expression's members so check can tell you when it moves."""
+    from . import kept as _kept
+    if not args.stage:
+        print("keep: which stage? weft keep \"<expression>\" --as <name> <stage>",
+              file=sys.stderr)
+        return 1
+    stage, why = _open_kept_stage(args.stage)
+    if stage is None:
+        print("keep: %s" % why, file=sys.stderr)
+        return 1
+    try:
+        rec = _kept.capture(stage, args.stage, args.expression, args.name)
+        rec["context"] = os.path.abspath(args.stage)
+        _kept.save(rec, _kept.kept_dir())
+    except Exception as e:
+        print("keep: %s" % e, file=sys.stderr)
+        return 1
+    n = len(rec["members"])
+    print("kept '%s' — %d thing%s" % (args.name, n, "" if n == 1 else "s"))
+    return 0
+
+
+def _print_check(name, rep) -> bool:
+    """Print the plain report; True when the set moved (renames alone don't)."""
+    if rep.get("error"):
+        print("%s  can't check: %s" % (name, rep["error"]))
+        return True
+    c = rep["counts"]
+    if rep["holds"]:
+        print("%s  holds%s" % (name, ("  (%d renamed, ignored)" % c["renamed"]) if c["renamed"] else ""))
+        return False
+    parts = []
+    if c["arrived"]:
+        parts.append("+%d arrived" % c["arrived"])
+    if c["changed"]:
+        parts.append("%d changed" % c["changed"])
+    if c["gone"]:
+        parts.append("%d gone" % c["gone"])
+    if c["renamed"]:
+        parts.append("%d renamed (ignored)" % c["renamed"])
+    print("%s  moved · %s" % (name, " · ".join(parts)))
+    for a in rep["arrived"]:
+        print("  + arrived  %s" % a["path"])
+    for ch in rep["changed"]:
+        print("  ! changed  %s  %s → %s"
+              % (ch["path"], ch["old"].get("material") or ch["old"].get("type"),
+                 ch["new"].get("material") or ch["new"].get("type")))
+    for g in rep["gone"]:
+        print("  − gone     %s" % g["path"])
+    for r in rep["renamed"]:
+        print("    renamed  %s → %s  · ignored" % (r["old_path"], r["new_path"]))
+    return True
+
+
+def _cmd_check_kept(args) -> int:
+    from . import kept as _kept
+    d = _kept.kept_dir()
+    names = [args.asset] if args.asset else _kept.list_kept(d)
+    if not names:
+        print("nothing kept yet — weft keep \"<expression>\" --as <name> <stage>")
+        return 0
+    moved = False
+    for name in names:
+        try:
+            rec = _kept.load(name, d)
+        except Exception as e:
+            print("%s  can't check: %s" % (name, e))
+            moved = True
+            continue
+        ctx = args.rev or rec.get("context")
+        stage, why = _open_kept_stage(ctx)
+        if stage is None:
+            print("%s  can't check: %s" % (name, why))
+            moved = True
+            continue
+        moved = _print_check(rec.get("name", name), _kept.check(rec, stage, ctx)) or moved
+    return 1 if moved else 0
+
+
+def cmd_forget(args) -> int:
+    from . import kept as _kept
+    if _kept.forget(args.name, _kept.kept_dir()):
+        print("forgot '%s'" % args.name)
+        return 0
+    print("forget: no kept set named '%s'" % args.name, file=sys.stderr)
+    return 1
+
+
 def cmd_check(args) -> int:
+    """`weft check [<kept set>] [<stage>]` re-checks kept sets; the older
+    `weft check <asset> <rev>` (would promoting break anything?) still works."""
+    from . import kept as _kept
+    if args.asset is None or args.asset in _kept.list_kept(_kept.kept_dir()):
+        return _cmd_check_kept(args)
+    if args.rev is None:
+        print("check: no kept set named '%s' (and a revision check needs "
+              "<asset> <rev>)" % args.asset, file=sys.stderr)
+        return 1
+    return _cmd_check_promotion(args)
+
+
+def _cmd_check_promotion(args) -> int:
     """What would promoting this revision break?"""
     repo = Repo.find()
     violations = repo.check_promotion(args.asset, args.rev, args.to)
@@ -968,7 +1084,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="weft",
         description="weft: see a USD stage as data -- derive relationships, "
-                    "query surgically, certify slices. Pull the thread, not the world.")
+                    "query surgically. Keep a set (weft keep), and weft check "
+                    "tells you when it moves. Pull the thread, not the world.")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("init", help="create a repository here")
@@ -1052,9 +1169,21 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--channel", default="approved")
     s.set_defaults(fn=cmd_bind)
 
-    s = sub.add_parser("check", help="would promoting this revision break anything?")
-    s.add_argument("asset")
-    s.add_argument("rev")
+    s = sub.add_parser("keep", help="keep a set; check tells you when it moves")
+    s.add_argument("expression", help='a box expression, e.g. "where:finish=glass"')
+    s.add_argument("--as", dest="name", required=True, help="name for the kept set")
+    s.add_argument("stage", nargs="?")
+    s.set_defaults(fn=cmd_keep)
+
+    s = sub.add_parser("forget", help="stop keeping a set")
+    s.add_argument("name")
+    s.set_defaults(fn=cmd_forget)
+
+    s = sub.add_parser("check", help="has a kept set moved? (or: would promoting "
+                                     "<asset> <rev> break anything?)")
+    s.add_argument("asset", nargs="?", help="kept set name (omit to check them all)")
+    s.add_argument("rev", nargs="?", help="stage to check against (or a revision, "
+                                          "for the promotion check)")
     s.add_argument("--to", default="approved")
     s.set_defaults(fn=cmd_check)
 

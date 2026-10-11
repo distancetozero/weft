@@ -113,3 +113,41 @@ def test_storage_roundtrip(tmp_path):
     assert kept.list_kept(d) == []
 
 
+
+
+def test_cli_keep_check_forget(tmp_path, monkeypatch, capsys):
+    from weft import cli
+    ctx = _write(tmp_path, _scene())
+    ctx2 = _write(tmp_path, _scene(a_mat="steel"), "s2.usda")
+    monkeypatch.chdir(tmp_path)
+    assert cli.main(["keep", EXPR, "--as", "hero", ctx]) == 0
+    assert os.path.exists(tmp_path / ".weft" / "kept" / "hero.weft")
+    assert "kept 'hero'" in capsys.readouterr().out
+    assert cli.main(["check", "hero", ctx]) == 0
+    assert "holds" in capsys.readouterr().out
+    assert cli.main(["check", "hero", ctx2]) != 0
+    out = capsys.readouterr().out
+    assert "moved" in out and "1 changed" in out
+    assert cli.main(["check"]) == 0                      # all sets, recorded stage
+    assert cli.main(["forget", "hero"]) == 0
+    assert not os.path.exists(tmp_path / ".weft" / "kept" / "hero.weft")
+    assert cli.main(["forget", "hero"]) != 0             # honest, no traceback
+
+
+def test_cli_keep_bad_expression_is_honest(tmp_path, monkeypatch, capsys):
+    from weft import cli
+    ctx = _write(tmp_path, _scene())
+    monkeypatch.chdir(tmp_path)
+    assert cli.main(["keep", "where:~~", "--as", "x", ctx]) != 0
+    assert not os.path.exists(tmp_path / ".weft" / "kept" / "x.weft")
+
+
+def test_cli_rename_alone_does_not_fail(tmp_path, monkeypatch, capsys):
+    from weft import cli
+    ctx = _write(tmp_path, _scene())
+    ctx2 = _write(tmp_path, _scene(a_name="a_renamed"), "s2.usda")
+    monkeypatch.chdir(tmp_path)
+    cli.main(["keep", EXPR, "--as", "hero", ctx])
+    capsys.readouterr()
+    assert cli.main(["check", "hero", ctx2]) == 0
+    assert "holds" in capsys.readouterr().out
