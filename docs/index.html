@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>weft</title>
-<meta name="description" content="weft — pull threads through OpenUSD, not worlds. Identity-first addressing, measured compatibility, declared boundaries.">
+<meta name="description" content="weft — see a USD stage as data. A read-only browser workbench (the Loom) over OpenUSD: pivot any dimension, slice surgically, keep a set and know when it moves.">
 <meta property="og:title" content="weft">
-<meta property="og:description" content="Pull the thread, not the world. A resolution layer for OpenUSD: identity-first addressing, measured compatibility, declared boundaries.">
+<meta property="og:description" content="Pull the thread, not the world. A read-only browser workbench (the Loom) that sees a USD stage as data — pivot any dimension, slice surgically, keep a set and know when it moves.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://distancetozero.github.io/weft/">
 <meta property="og:image" content="https://distancetozero.github.io/weft/assets/moment3_translucent.png">
@@ -148,6 +148,29 @@
   </figure>
 </div>
 
+<h2>See the whole stage — the Loom</h2>
+<pre><code>pip install "weft-usd[usd]"
+weft loom your_scene.usda</code></pre>
+<figure>
+  <div class="plate"><img src="assets/loom.jpg" alt="The Loom: Animal Logic's ALab organized as a data table by prim type, meshes sorted by bounding-box size" width="1543" height="784"></div>
+  <figcaption>The stage as a <b>pivot table over USD</b>. Here ALab's 47,401 prims
+  are re-indexed by <i>type</i> and sorted by size — one of many dimensions.
+  Hierarchy is just the default index; <i>organize by</i> payload, purpose, bbox,
+  bound material, or any attribute.</figcaption>
+</figure>
+<p>A read-only workbench in your browser — the fastest way to understand a scene
+you didn't build. Click a prim for its card (data and relationships, materials
+resolved the inheritance-aware way). The expression bar is a live mirror: click a
+row or type <code>where:bbox_volume&gt;1e6</code> and it writes the weft-ask for
+you, so the slice language teaches itself. Any filter is a surgical, certifiable
+slice; it opens on the unloaded skeleton in well under a second and loads only
+what a dimension actually needs.</p>
+<p><b>Keep a set, and weft tells you when it moves.</b> Keep "everything bound to
+glass" and come back later: the set reads <i>holds</i> or <i>moved</i>, and shows
+exactly what <b>arrived, changed, or departed</b> — ignoring renames, because it
+tracks identity, not bytes. The digest machinery is plumbing underneath; what you
+read is a calm freshness state.</p>
+
 <h2>Addresses, not paths</h2>
 <pre><code>weft pull id:hero-car                    <span class="cmt"># identity — survives restructures</span>
 weft pull id:occ:weld-47                 <span class="cmt"># one placement, restructure-proof</span>
@@ -190,8 +213,11 @@ any file — the richer planes bootstrap from your data; they're not a precondit
   Every boundary is counted by kind, and omissions carry a class: <i>inert</i>
   (a grey material) or <i>meaning-changing</i> (a physics joint that would
   silently re-anchor to the world).</li>
-  <li><b>Every answer carries a receipt.</b> Seeds, follow rules, cost, layer
-  hashes, a digest — a pull is verifiable by recompute-and-compare, on any machine.</li>
+  <li><b>Keep a set, and know when it moves.</b> A pull records its seeds, follow
+  rules, and cost; a <i>kept set</i> re-checks against the current stage and reports
+  what arrived, changed, or departed — renames don't count, because it tracks
+  identity, not bytes. The layer hashes that make it verifiable are plumbing
+  underneath; what you read is <i>holds</i> or <i>moved</i>.</li>
   <li><b>Compatibility is measured, not asserted.</b> A republish is checked
   against every consumer's own declared tolerance, not just the provider's promise —
   and a refusal names each broken consumer with what it tolerates.</li>
@@ -235,15 +261,16 @@ gate — offline, serverless, <code>git init</code>-shaped. Runs on any USD file
 no server and no schema changes.</p>
 
 <h2>Try it</h2>
-<pre><code>git clone https://github.com/distancetozero/weft
-cd weft &amp;&amp; pip install -e '.[usd]'      <span class="cmt"># PyPI package (weft-usd) coming</span>
+<pre><code>pip install "weft-usd[usd]"                    <span class="cmt"># on PyPI</span>
+weft loom your_scene.usda                      <span class="cmt"># the workbench, in your browser</span>
 weft pull 'where:finish=translucent' --context your_scene.usda --mask-out pull.mask
 usdrecord --mask "$(tr '\n' ',' &lt; pull.mask)" your_scene.usda out.png</code></pre>
 <p><b>Status:</b> a working research prototype — validated against real production
-USD, adversarially reviewed, and honest about what it hasn't proven: it has no
-outside users yet, and it's looking for its first. If you have a scene that
-outgrew its files, <a href="https://github.com/distancetozero/weft/issues">come
-poke holes in it</a>.</p>
+USD, adversarially reviewed, now <a href="https://pypi.org/project/weft-usd/">on
+PyPI</a>, and honest about what it hasn't proven: it has no outside users yet, and
+it's looking for its first. If you have a scene that outgrew its files,
+<a href="https://github.com/distancetozero/weft/issues">come poke holes in
+it</a>.</p>
 
 <footer>
   <p>Scene: <a href="https://dpel.aswf.io/alab/">ALab</a>, © Animal Logic, via the
