@@ -81,6 +81,8 @@ def parse_seed(text: str) -> Seed:
         return Seed("spatial", "near", body, t)
     if t.startswith("material:"):
         return Seed("material", "", t[len("material:"):], t)
+    if t.startswith("type:"):
+        return Seed("type", "", t[len("type:"):], t)
     if t.startswith("path:"):
         return Seed("path", "", t[len("path:"):], t)
     if t.startswith("name:"):
@@ -237,6 +239,13 @@ def resolve_seeds(stage, seed_texts, identity_keys=DEFAULT_IDENTITY_KEYS):
             if not r.paths:
                 r.note = ("no prim bound to a material matching %r "
                           "(bindings may be behind unloaded payloads -- load first)" % val)
+        elif s.plane == "type":
+            # prims whose schema type name fnmatches the value (Mesh, *Light)
+            r.mode = "type"
+            r.paths = sorted(p.GetPath().pathString for p in prims_list()
+                             if fnmatch.fnmatchcase(p.GetTypeName(), s.value))
+            if not r.paths:
+                r.note = "no prim of type %r in the composed world" % s.value
         elif s.plane == "path":
             r.mode = "path"
             if any(c in s.value for c in "*?["):
