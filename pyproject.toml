@@ -1,6 +1,6 @@
 [project]
 name = "weft-usd"
-version = "0.1.0"
+version = "0.1.1"
 description = "weft: see a USD stage as data -- a read-only browser workbench over OpenUSD. Pivot any dimension, slice surgically, keep a set and know when it moves."
 readme = "README.md"
 requires-python = ">=3.9"
