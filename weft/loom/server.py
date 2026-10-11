@@ -65,6 +65,19 @@ def _close_dangling(g: dict) -> dict:
     return g
 
 
+def _drop_collections(g: dict) -> dict:
+    """Drop usd:collection edges and the collection nodes they hang off, so the
+    material/hierarchy graph of a big slice can render. Collections like
+    lightLink/shadowLink dominate ALab and bust the edge cap; their membership
+    isn't usually what you opened the graph to see."""
+    nodes = [n for n in g.get("nodes", []) if n.get("type") != "collection"]
+    edges = [e for e in g.get("edges", []) if "collection" not in e.get("kind", "")]
+    kinds = [k for k in g.get("kinds", []) if "collection" not in k]
+    out = dict(g)
+    out["nodes"], out["edges"], out["kinds"] = nodes, edges, kinds
+    return out
+
+
 def _too_large_page(nodes: int, edges: int) -> str:
     return _message_page(
         "<p><b>%d relationships</b> across %d nodes — too large to graph whole.</p>"
@@ -122,11 +135,16 @@ class LoomState:
                     "edges": len(g["edges"]), "kinds": g["kinds"]}
         return g
 
-    def slice_graph(self, expression: str) -> dict:
+    def slice_graph(self, expression: str, hide_collections: bool = False) -> dict:
         """The graph of just the SLICE an expression names: pull it, OpenMasked
         to that population, build_graph on the masked stage. Small and
         renderable even when the whole-scene graph is not -- this is how you
-        explore a big scene: focus, then see. Cached pull under the hood."""
+        explore a big scene: focus, then see. Cached pull under the hood.
+
+        hide_collections drops usd:collection edges (lightLink/shadowLink, which
+        dominate ALab and bust the cap) so a big container's material/hierarchy
+        graph can render -- the collection membership isn't usually what you came
+        to see."""
         from pxr import Usd
         from .. import compose as _compose, pull as _pull, threadgraph
         e = _compose.parse_expression(expression)
@@ -138,6 +156,8 @@ class LoomState:
         masked = Usd.Stage.OpenMasked(self.context, Usd.StagePopulationMask(paths))
         masked.Load()
         g = threadgraph.build_graph(masked)
+        if hide_collections:
+            g = _drop_collections(g)
         return _close_dangling(g)
 
     def data(self, columns: Optional[List[str]] = None,
@@ -254,13 +274,16 @@ class LoomState:
 
     # -- page assembly --------------------------------------------------------
 
-    def viewer_html(self, expr: Optional[str] = None) -> str:
+    def viewer_html(self, expr: Optional[str] = None,
+                    hide_collections: bool = False) -> str:
         if expr:
-            g = self.slice_graph(expr)
+            g = self.slice_graph(expr, hide_collections=hide_collections)
             if g.get("empty"):
                 return _message_page("nothing matched <b>%s</b>" % _esc(expr))
         else:
             g = self.graph()
+            if hide_collections:
+                g = _drop_collections(g)
         if len(g["edges"]) > GRAPH_EDGE_CAP:
             return _too_large_page(len(g["nodes"]), len(g["edges"]))
         tpl = open(_VIEWER).read()
@@ -388,7 +411,8 @@ def _make_handler(state: LoomState):
                 if path == "/":
                     self._send(200, state.app_html(), "text/html; charset=utf-8")
                 elif path == "/viewer":
-                    self._send(200, state.viewer_html(q.get("expr")),
+                    self._send(200, state.viewer_html(
+                        q.get("expr"), hide_collections=q.get("hc") == "1"),
                                "text/html; charset=utf-8")
                 elif path == "/profile":
                     self._json(state.profile())

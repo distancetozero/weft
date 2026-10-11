@@ -334,6 +334,7 @@ function render(){
 
 const BASE_COLS = ["path", "type", "has_payload", "bbox_volume"];
 let COLS = new Set(BASE_COLS);
+let LOADED = false;              // has the stage's payloads been loaded?
 function fetchRows(cols, load){
   const q = "columns=" + cols.join(",") + (load ? "&load=1" : "");
   return (S ? fetch("data.json") : fetch("/data?"+q)).then(r=>r.json());
@@ -342,6 +343,7 @@ function ensureCols(extra, load){
   (extra||[]).forEach(c=>COLS.add(c));
   return fetchRows([...COLS], load).then(d=>{
     ROWS = d.rows || [];
+    if(load) LOADED = true;
     byId("rowhint").textContent = ROWS.length + " prims";
     indexRows();
   });
@@ -396,17 +398,26 @@ function closeCard(){
 window.closeCard = closeCard;
 
 // -- the graph, summoned (the only place it appears) -------------------------
+let GRAPH_EXPR = "";
+function graphSrc(){
+  const hc = (byId("gm-hc") && byId("gm-hc").checked) ? "&hc=1" : "";
+  return "/viewer?expr=" + encodeURIComponent(GRAPH_EXPR) + hc;
+}
 function showGraph(expr){
+  GRAPH_EXPR = expr;
   let m = byId("gmodal");
   if(!m){
     m = document.createElement("div"); m.id = "gmodal";
     m.innerHTML = `<div class="gm-bar">graph — <b></b>
+      <label style="margin-left:14px;color:var(--muted);font-size:11px">
+        <input type="checkbox" id="gm-hc" checked> hide collections</label>
       <button onclick="closeGraph()" style="margin-left:auto">close</button></div>
       <iframe></iframe>`;
     document.body.appendChild(m);
+    byId("gm-hc").onchange = ()=>{ m.querySelector("iframe").src = graphSrc(); };
   }
   m.querySelector("b").textContent = expr;
-  m.querySelector("iframe").src = "/viewer?expr=" + encodeURIComponent(expr);
+  m.querySelector("iframe").src = graphSrc();
   m.hidden = false;
 }
 function closeGraph(){ const m = byId("gmodal"); if(m) m.hidden = true; }
@@ -433,6 +444,17 @@ function applyExpr(expr){
   byId("exprgap").textContent = "";
   if(!expr){ FILTER_SET = null; byId("sliceout").textContent = "";
              setSlice("", 0); syncExpr(); render(); return; }
+  // material: resolves against bound materials, which sit behind payloads --
+  // offer to load first rather than quietly returning nothing.
+  if(!S && /(^|\s)material:/.test(expr) && !LOADED){
+    byId("exprgap").innerHTML =
+      'material: needs the scene loaded (bindings sit behind payloads) — '
+      + '<a href="#" id="exprload">load &amp; run</a>';
+    byId("exprload").onclick = e=>{ e.preventDefault();
+      byId("exprgap").textContent = "loading payloads…";
+      ensureCols([], true).then(()=>applyExpr(expr)); };
+    return;
+  }
   byId("exprgap").textContent = "querying…";
   post("/query",{expression:expr}).then(q=>{
     if(q.error){ byId("exprgap").textContent = q.error; return; }   // teach the parse error
