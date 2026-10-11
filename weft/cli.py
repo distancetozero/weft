@@ -558,6 +558,27 @@ def cmd_data(args) -> int:
     return 0
 
 
+def usdview_plugin_dir():
+    """Directory holding plugInfo.json + the weftViewer package, or None.
+    Installed: weft/usdview_plugin next to this file; source/editable:
+    extras/usdview in the repo. No pxr import."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for d in (os.path.join(here, "usdview_plugin"),
+              os.path.join(os.path.dirname(here), "extras", "usdview")):
+        if os.path.isfile(os.path.join(d, "plugInfo.json")):
+            return d
+    return None
+
+
+def cmd_usdview_plugin_path(args) -> int:
+    d = usdview_plugin_dir()
+    if d is None:
+        print("usdview-plugin-path: plugin files not found", file=sys.stderr)
+        return 1
+    print(d)
+    return 0
+
+
 def cmd_loom(args) -> int:
     """The Loom: a read-only "USD as data" web surface -- profile, relationship
     graph, table, query/slice. Not an authoring tool, not a renderer."""
@@ -1290,6 +1311,10 @@ def build_parser() -> argparse.ArgumentParser:
                    help="reuse a cached pull when this expression was composed "
                         "before and the context is unchanged (see `weft pull --cache`)")
     s.set_defaults(fn=cmd_compose)
+
+    s = sub.add_parser("usdview-plugin-path",
+                       help="print the dir to add to PXR_PLUGINPATH_NAME and PYTHONPATH")
+    s.set_defaults(fn=cmd_usdview_plugin_path)
 
     s = sub.add_parser("loom",
                        help="see a stranger's USD as data (read-only web app)")

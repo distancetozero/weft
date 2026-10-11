@@ -135,12 +135,14 @@ resolutions, members, and boundary, with buttons to copy the member mask or
 save a full manifest.
 
 ```
-$ export PXR_PLUGINPATH_NAME=/path/to/weft/extras/usdview:$PXR_PLUGINPATH_NAME
-$ export PYTHONPATH=/path/to/weft/extras/usdview:/path/to/weft:$PYTHONPATH
+$ export PXR_PLUGINPATH_NAME=$(weft usdview-plugin-path):$PXR_PLUGINPATH_NAME
+$ export PYTHONPATH=$(weft usdview-plugin-path):$PYTHONPATH
 $ usdview shot.usda
 ```
 
-Both `PXR_PLUGINPATH_NAME` (so libplug finds `extras/usdview/plugInfo.json`)
+`weft usdview-plugin-path` prints the installed plugin directory (the wheel
+ships it; from a source checkout it is `extras/usdview`). Both
+`PXR_PLUGINPATH_NAME` (so libplug finds `plugInfo.json`)
 and `PYTHONPATH` (so `import weftViewer` — its declared module name —
 resolves) need `extras/usdview` itself, since the plugin's `__init__.py`
 lives one level inside it, in `extras/usdview/weftViewer/`; `PYTHONPATH`
