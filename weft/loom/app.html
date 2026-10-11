@@ -47,6 +47,31 @@
   #slicebar #slicecount{color:var(--ink);font:12px ui-monospace,monospace}
   #slicebar .out{margin:0;color:var(--accent)}
 
+  #keptstrip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+             padding:7px 14px;border-bottom:1px solid var(--line);background:#1b1711}
+  #keptstrip .klabel{color:var(--muted);font:10px ui-sans-serif;
+                     text-transform:uppercase;letter-spacing:.8px}
+  .kchip{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+         border:1px solid var(--line);border-radius:20px;padding:3px 11px;
+         font:11px ui-monospace,monospace;color:var(--ink)}
+  .kchip:hover{border-color:var(--accent)}
+  .kdot{width:8px;height:8px;border-radius:50%}
+  .kdot.holds{background:#6bbf73}
+  .kdot.moved{background:#e0a33a}
+  .kchip .kcount{color:#e0a33a}
+
+  /* in-table diff marks */
+  .trow.mv-gone{opacity:.45}
+  .mv{flex:none;width:150px;text-align:right;font:11px ui-monospace,monospace}
+  .mv.arrived{color:#6bbf73}
+  .mv.changed{color:#e0a33a}
+  .mv.gone{color:var(--muted)}
+  .mv.renamed{color:var(--muted)}
+  #diffhead{display:flex;align-items:center;gap:10px;padding:7px 13px;
+            border-bottom:1px solid var(--line);background:var(--panel);
+            font:12px ui-monospace,monospace;color:var(--ink)}
+  #diffhead .dmoved{color:#e0a33a}
+
   #pivot{flex:1;overflow:auto;font:12px ui-monospace,monospace}
   .trow{display:flex;align-items:center;gap:8px;padding:2px 10px;cursor:pointer;
         border-bottom:1px solid #241f18;white-space:nowrap}
@@ -96,6 +121,7 @@
   <span class="ctx" id="ctx">—</span>
   <div class="chips" id="chips"></div>
 </header>
+<div id="keptstrip" hidden></div>
 <main id="main">
   <section id="work">
     <div class="bar">
@@ -126,7 +152,9 @@
     <div id="pivot"><div class="muted" style="padding:14px">loading the stage…</div></div>
     <div id="slicebar" hidden>
       <span id="slicecount"></span>
-      <button id="slock">lock this slice</button>
+      <button id="skeep">keep this set</button>
+      <input id="keepname" hidden placeholder="name this set">
+      <button id="keepok" hidden>keep</button>
       <button id="sgraph">view as graph</button>
       <button id="sexport">export</button>
       <span class="out" id="sliceout"></span>
@@ -355,7 +383,7 @@ function openCard(p){
     byId("cg").onclick = ()=> showGraph("path:"+p);
     byId("cp").onclick = ()=>{ byId("cardout").textContent = "pulling…";
       post("/pull",{expression:"path:"+p}).then(r=> byId("cardout").textContent =
-        r.error || ("certified digest "+(r.digest||"").slice(0,16)+"…")); };
+        r.error || ("pulled · "+r.prims+" prims ("+r.members+" member"+(r.members===1?"":"s")+")")); };
     byId("cc").onclick = ()=>{ try{ navigator.clipboard.writeText(p);
       byId("cardout").textContent = "copied"; }catch(e){} };
   }).catch(e=> c.innerHTML = head+'<div class="muted">'+esc(e)+'</div>');
@@ -435,18 +463,89 @@ function selectPrim(p){
   setSlice("path:" + p, 1);
   openCard(p);
 }
-byId("slock").onclick = ()=>{ if(!CURRENT_EXPR) return;
-  byId("sliceout").textContent = "locking…";
-  post("/pull",{expression:CURRENT_EXPR}).then(r=> byId("sliceout").textContent =
-    r.error || ("certified digest " + (r.digest||"").slice(0,16) + "…  (" + r.members + " members)")); };
 byId("sgraph").onclick = ()=>{ if(CURRENT_EXPR) showGraph(CURRENT_EXPR); };
 byId("sexport").onclick = ()=> byId("sliceout").textContent =
   "static bundle:  weft loom <stage> --export <dir>";
 
+// -- keep a set + the kept strip (calm by default) --------------------------
+const slug = s => (s||"set").toLowerCase().replace(/[^a-z0-9]+/g,"-")
+  .replace(/^-+|-+$/g,"").slice(0,48) || "set";
+function keepReset(){ byId("skeep").hidden=false; byId("keepname").hidden=true; byId("keepok").hidden=true; }
+byId("skeep").onclick = ()=>{ if(!CURRENT_EXPR) return;
+  byId("keepname").value = slug(CURRENT_EXPR);
+  byId("skeep").hidden=true; byId("keepname").hidden=false; byId("keepok").hidden=false;
+  byId("keepname").focus(); };
+byId("keepok").onclick = ()=>{ const name = byId("keepname").value.trim(); if(!name) return;
+  byId("sliceout").textContent = "keeping…";
+  post("/keep",{name, expression:CURRENT_EXPR}).then(r=>{
+    byId("sliceout").textContent = r.error || ("kept '"+name+"'");
+    keepReset(); loadKept(); }); };
+byId("keepname").addEventListener("keydown", e=>{ if(e.key==="Enter") byId("keepok").click(); });
+
+function loadKept(){
+  if(S) return;
+  fetch("/kept").then(r=>r.json()).then(list=>{
+    list = Array.isArray(list) ? list : [];
+    const strip = byId("keptstrip");
+    strip.hidden = list.length===0;
+    strip.innerHTML = '<span class="klabel">kept</span>' + list.map(k=>{
+      const moved = k.state==="moved", c = k.counts||{};
+      const n = moved ? ((c.arrived||0)+(c.changed||0)+(c.gone||0)) : 0;
+      return `<span class="kchip" data-name="${esc(k.name)}" data-expr="${esc(k.expression)}" data-moved="${moved?1:0}" title="${esc(k.expression)}">
+        <span class="kdot ${moved?"moved":"holds"}"></span>${esc(k.name)}${moved?` <span class="kcount">· ${n}</span>`:""}</span>`;
+    }).join("");
+    strip.querySelectorAll(".kchip").forEach(el=> el.onclick = ()=>{
+      byId("expr").value = el.dataset.expr;
+      if(el.dataset.moved==="1"){                 // moved -> show the diff, real count in the bar
+        post("/query",{expression:el.dataset.expr}).then(q=>
+          setSlice(el.dataset.expr, (q.members||[]).length));
+        showKeptDiff(el.dataset.name);
+      } else applyExpr(el.dataset.expr);          // holds -> just load the slice, no marks
+    });
+  }).catch(()=>{});
+}
+
+// -- the in-table diff: what moved ------------------------------------------
+function showKeptDiff(name){
+  fetch("/check?name="+encodeURIComponent(name)).then(r=>r.json()).then(d=>{
+    if(d.error){ byId("sliceout").textContent = d.error; return; }
+    renderDiff(name, d);
+  }).catch(e=> byId("sliceout").textContent = String(e));
+}
+function renderDiff(name, d){
+  const byPath = {}; ROWS.forEach(r=> byPath[r.path]=r);
+  const rowFor = p => byPath[p] || {path:p, type:"", bbox_volume:null};
+  const leaf = m => m ? (m.material ? m.material.split("/").pop() : m.type) : "";
+  const marks = [];
+  (d.arrived||[]).forEach(a=> marks.push({row:rowFor(a.path), cls:"arrived", txt:"+ arrived"}));
+  (d.changed||[]).forEach(c=> marks.push({row:rowFor(c.path), cls:"changed",
+      txt:"! "+leaf(c.old)+" → "+leaf(c.new)}));
+  (d.gone||[]).forEach(g=> marks.push({row:rowFor(g.path), cls:"gone", txt:"− gone", ghost:true}));
+  (d.renamed||[]).forEach(r=> marks.push({row:rowFor(r.new_path), cls:"renamed",
+      txt:"renamed · ignored"}));
+  const cc = d.counts||{}; const n = (cc.arrived||0)+(cc.changed||0)+(cc.gone||0);
+  const head = `<div id="diffhead"><b>${esc(name)}</b> · <span class="dmoved">moved · ${n} change${n===1?"":"s"}</span>
+    <button id="recheck">re-check</button><button id="accept">accept</button></div>`;
+  const rows = marks.map(m=>{ const r=m.row;
+    return `<div class="trow${m.ghost?" mv-gone":""}" data-p="${esc(r.path)}">
+      <span class="tw">·</span><span class="tn">${esc(r.path)}</span>
+      <span class="tt">${esc(r.type)}</span>
+      <span class="mv ${m.cls}">${esc(m.txt)}</span></div>`;
+  }).join("") || '<div class="muted" style="padding:14px">holds — nothing moved</div>';
+  byId("pivot").innerHTML = head + rows;
+  byId("recheck").onclick = ()=> showKeptDiff(name);
+  byId("accept").onclick = ()=> post("/keep",{name, expression:byId("expr").value})
+      .then(()=>{ loadKept(); byId("sliceout").textContent = "accepted — "+name+" holds"; render(); });
+  byId("pivot").querySelectorAll(".trow").forEach(el=> el.onclick = ()=>{
+    if(el.dataset.p) selectPrim(el.dataset.p); });
+}
+
 byId("organize-by").onchange = ()=>{ syncExpr(); render(); };
 byId("sortby").onchange = render;
+keepReset();
 syncExpr();
 loadRows();
+loadKept();
 </script>
 </body>
 </html>

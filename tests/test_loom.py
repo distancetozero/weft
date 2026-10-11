@@ -197,7 +197,7 @@ def test_slice_bar_present(ctx):
     try:
         html = urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=10).read()
         assert b'id="slicebar"' in html
-        assert b"lock this slice" in html
+        assert b"keep this set" in html          # the slice bar keeps, not locks
     finally:
         httpd.shutdown()
 
@@ -233,3 +233,59 @@ def test_material_metric(ctx):
     stage = Usd.Stage.Open(ctx, Usd.Stage.LoadAll)
     tbl = _data.project(stage, ["/root/bench/a"], columns=["material"])
     assert tbl.rows()[0]["material"] == "/root/bench/mtl/glass"
+
+
+def test_loom_kept_endpoints(ctx, tmp_path, monkeypatch):
+    from weft.loom import LoomState
+    monkeypatch.chdir(tmp_path)                 # .weft/ lands here
+    st = LoomState(ctx, load=True)
+    assert "error" in st.keep("bad", "where:~~")          # honest, not a raise
+    rec = st.keep("as", "name:a")
+    assert rec["name"] == "as" and rec["count"] == 1
+    ks = st.kept()
+    assert [k["name"] for k in ks] == ["as"]
+    assert ks[0]["state"] == "holds" and ks[0]["expression"] == "name:a"
+    d = st.check_one("as")
+    assert d["holds"] is True and d["expression"] == "name:a"
+    assert "error" in st.check_one("nope")
+    assert "error" in st.forget("nope")
+    st.forget("as")
+    assert st.kept() == []
+
+
+def test_http_kept_routes(ctx, tmp_path, monkeypatch):
+    from weft.loom import serve
+    monkeypatch.chdir(tmp_path)
+    httpd = serve(ctx, port=0, load=True, open_browser=False)
+    port = httpd.server_address[1]
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    base = "http://127.0.0.1:%d" % port
+
+    def post(path, obj):
+        req = urllib.request.Request(base + path, data=json.dumps(obj).encode(),
+                                     headers={"Content-Type": "application/json"})
+        return json.loads(urllib.request.urlopen(req, timeout=10).read())
+    try:
+        assert post("/keep", {"name": "as", "expression": "name:a"})["count"] == 1
+        ks = json.loads(urllib.request.urlopen(base + "/kept", timeout=10).read())
+        assert ks[0]["name"] == "as" and ks[0]["state"] == "holds"
+        d = json.loads(urllib.request.urlopen(base + "/check?name=as", timeout=10).read())
+        assert d["holds"] is True
+        assert post("/forget", {"name": "as"}).get("forgot") == "as"
+    finally:
+        httpd.shutdown()
+
+
+def test_kept_ui_present(ctx):
+    from weft.loom import serve
+    httpd = serve(ctx, port=0, load=True, open_browser=False)
+    port = httpd.server_address[1]
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        html = urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=10).read()
+        assert b"keep this set" in html
+        assert b'id="keptstrip"' in html
+        assert b"re-check" in html
+        assert b"certified" not in html and b"digest" not in html   # vocabulary scrub
+    finally:
+        httpd.shutdown()
