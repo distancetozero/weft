@@ -101,3 +101,15 @@ def test_bad_expression_does_not_raise(tmp_path):
     ctx = _write(tmp_path, _scene())
     rep = kept.check({"name": "x", "expression": "where:~~", "members": []}, _stage(ctx), ctx)
     assert rep["holds"] is False and rep.get("error")
+
+
+def test_storage_roundtrip(tmp_path):
+    d = str(tmp_path / ".weft" / "kept")
+    rec = {"name": "glass set", "expression": "where:material=x", "created": "t", "members": []}
+    kept.save(rec, d)
+    assert kept.list_kept(d) == ["glass-set"]
+    assert kept.load("glass-set", d)["expression"] == "where:material=x"
+    kept.forget("glass-set", d)
+    assert kept.list_kept(d) == []
+
+
