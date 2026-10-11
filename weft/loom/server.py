@@ -264,6 +264,68 @@ class LoomState:
     def app_html(self) -> str:
         return open(os.path.join(_HERE, "app.html")).read()
 
+    # -- kept sets (keep a set; tell me when it moves) -------------------------
+
+    def _kept_dir(self) -> str:
+        from .. import kept as _kept
+        if not hasattr(self, "_kd"):
+            self._kd = _kept.kept_dir(os.path.dirname(os.path.abspath(self.context)))
+        return self._kd
+
+    def keep(self, name: str, expression: str) -> dict:
+        from .. import kept as _kept
+        try:
+            name = (name or "").strip()
+            if not name:
+                return {"error": "a kept set needs a name"}
+            rec = _kept.capture(self.stage, self.context, expression, name)
+            rec["context"] = os.path.abspath(self.context)
+            _kept.save(rec, self._kept_dir())
+            return {"name": name, "expression": expression,
+                    "count": len(rec["members"])}
+        except Exception as e:
+            return {"error": str(e)}
+
+    def _check(self, name: str) -> dict:
+        from .. import kept as _kept
+        try:
+            rec = _kept.load(name, self._kept_dir())
+        except Exception:
+            return {"error": "no kept set named '%s'" % name}
+        rep = _kept.check(rec, self.stage, self.context)
+        rep["name"] = rec.get("name", name)
+        rep["expression"] = rec.get("expression", "")
+        rep["created"] = rec.get("created", "")
+        return rep
+
+    def kept(self) -> list:
+        from .. import kept as _kept
+        out = []
+        try:
+            names = _kept.list_kept(self._kept_dir())
+        except Exception:
+            return out
+        for n in names:
+            rep = self._check(n)
+            if rep.get("error"):
+                # a set that can't be checked (bad expression, unreadable file)
+                out.append({"name": n, "expression": rep.get("expression", ""),
+                            "state": "unknown", "counts": {}, "error": rep["error"]})
+                continue
+            out.append({"name": rep["name"], "expression": rep["expression"],
+                        "state": "holds" if rep["holds"] else "moved",
+                        "counts": rep["counts"]})
+        return out
+
+    def check_one(self, name: str) -> dict:
+        return self._check(name)
+
+    def forget(self, name: str) -> dict:
+        from .. import kept as _kept
+        if _kept.forget(name, self._kept_dir()):
+            return {"forgot": name}
+        return {"error": "no kept set named '%s'" % name}
+
 
 # -- static export (no server; shareable) ------------------------------------
 
@@ -334,6 +396,11 @@ def _make_handler(state: LoomState):
                     cols = q["columns"].split(",") if q.get("columns") else None
                     self._json(state.data(cols, q.get("select"),
                                           load=q.get("load") == "1"))
+                elif path == "/kept":
+                    self._json(state.kept())
+                elif path == "/check":
+                    d = state.check_one(q.get("name", ""))
+                    self._json(d, 400 if "error" in d and "holds" not in d else 200)
                 else:
                     self._json({"error": "not found"}, 404)
             except Exception as e:  # never 500 the whole server on one bad call
@@ -348,6 +415,12 @@ def _make_handler(state: LoomState):
                     self._json(state.query(body["expression"]))
                 elif path == "/pull":
                     self._json(state.pull(body["expression"], body.get("out")))
+                elif path == "/keep":
+                    r = state.keep(body.get("name", ""), body.get("expression", ""))
+                    self._json(r, 400 if "error" in r else 200)
+                elif path == "/forget":
+                    r = state.forget(body.get("name", ""))
+                    self._json(r, 400 if "error" in r else 200)
                 else:
                     self._json({"error": "not found"}, 404)
             except Exception as e:
