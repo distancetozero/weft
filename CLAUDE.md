@@ -56,16 +56,16 @@ python -m venv /tmp/weft-bare && /tmp/weft-bare/bin/pip install -q pytest && /tm
    tag, never runs `twine upload` / publishes to PyPI, never creates a GitHub
    release without it. Its stopping point is "PR open, awaiting your merge".
 4. **Work in a worktree on a branch; reach `main` only through a merged PR.**
-   Start with `./scripts/start-issue.sh <issue-number|short-name>`, never bare
+   Start with `./scripts/start-issue.sh <bead-id|short-name>`, never bare
    `git worktree add` (it skips the hooks). At the start of a session in a
    worktree, check `git config core.hooksPath` ends in `.githooks`; if not, set
    it to the main checkout's `.githooks` before any commit. `.githooks/`
    refuses commits and pushes to `main` that aren't PR merges (reverts
    allowed locally); don't bypass it with `--no-verify`. An urgent fix is
    a small PR.
-5. **Restate the acceptance criterion before closing an issue:**
+5. **Restate the acceptance criterion before closing a bead:**
    "Acceptance: <what done means>. Met: <yes/no + evidence>." If you can't
-   state it in one sentence, the issue isn't scoped well enough to close.
+   state it in one sentence, the bead isn't scoped well enough to close.
 6. **Public repo.** Nothing private goes in: no secrets or tokens, no local
    absolute paths, no internal notes about other projects, no customer data.
    Production USD you test against is referenced by public URL (for example
@@ -76,11 +76,27 @@ python -m venv /tmp/weft-bare && /tmp/weft-bare/bin/pip install -q pytest && /tm
 8. **A plain rule before machinery.** When the maintainer wants a behaviour to
    stop, the first move is a rule here, not new tooling. Add enforcement only
    after a rule has demonstrably failed.
+9. **Beads first.** Create a bead before writing code for anything larger
+   than a one-line fix, even when a skill says to use a todo list or
+   markdown checkboxes; close it when done (rule 5). Run one `bd` command at
+   a time (parallel calls deadlock on the Dolt lock).
 
-## Issues
+## Work tracking: beads, with GitHub Issues as intake
 
-GitHub Issues (`gh issue list`). Create the issue before writing code for any
-change larger than a one-line fix, and reference it in the PR (`Fixes #N`).
+- **Beads (`bd`) is the work tracker.** Issues look like `weft-8mn`. `bd ready`
+  lists unblocked work; `bd show <id>`, `bd create`, `bd update <id> --claim`,
+  `bd close <id> --reason=...`. The database lives in the main checkout's
+  `.beads/` (run `bd` from there; it finds it from a worktree too); only the
+  config and the `issues.jsonl` export are committed, through PRs like any
+  other change. Reference the bead in the PR description.
+- **GitHub Issues is the public front door.** Users file issues there. When
+  one is real (it reproduces, or two people hit it), create a bead whose
+  description links the issue URL, and reply on the issue with what happens
+  next. Close the issue when the bead's PR merges (`Fixes #N` in the PR).
+- **Where things go:** work in beads, knowledge in agent memory
+  (`~/.claude/projects/<this repo>/memory/` and `.claude/agent-memory/`),
+  rules in this file. Do not use `bd remember`; the session hook below says
+  so, because `bd prime` suggests otherwise.
 
 ## Ending a session
 
@@ -92,7 +108,7 @@ git push -u origin <branch>
 gh pr create --base main
 ```
 
-Then report: what changed, test results, anything left open (as an issue).
+Then report: what changed, test results, anything left open (as a bead).
 
 ## Learned rules
 

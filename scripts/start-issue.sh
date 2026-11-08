@@ -1,6 +1,6 @@
 #!/bin/bash
-# Usage: ./scripts/start-issue.sh <github-issue-number | short-name>
-# Examples: ./scripts/start-issue.sh 43
+# Usage: ./scripts/start-issue.sh <bead-id | short-name>
+# Examples: ./scripts/start-issue.sh weft-8mn     (claims the bead)
 #           ./scripts/start-issue.sh kept-set-diff
 #
 # Creates a git worktree on a fresh branch from origin/main and wires it to
@@ -13,17 +13,19 @@
 
 set -e
 
-ARG="${1:?Usage: start-issue.sh <github-issue-number | short-name>}"
+ARG="${1:?Usage: start-issue.sh <bead-id | short-name>}"
 # The main checkout, even when run from inside another worktree: its
 # .githooks outlives any worktree.
 REPO_ROOT="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
 REPO_NAME="$(basename "$REPO_ROOT")"
 
-# A number is a GitHub issue: use its title for the branch name.
-if [[ "$ARG" =~ ^[0-9]+$ ]]; then
-  TITLE="$(gh issue view "$ARG" --json title --jq .title)"
-  [ -n "$TITLE" ] || { echo "Error: could not read issue #$ARG"; exit 1; }
-  NAME="$ARG-$TITLE"
+# A bead id: use its title for the branch name and claim it.
+if [[ "$ARG" =~ ^weft-[a-z0-9.]+$ ]]; then
+  TITLE="$(cd "$REPO_ROOT" && bd show "$ARG" --json | python3 -c 'import json,sys; a=json.load(sys.stdin); print(a[0]["title"] if a else "")')"
+  [ -n "$TITLE" ] || { echo "Error: could not find bead $ARG"; exit 1; }
+  NAME="$TITLE"
+  (cd "$REPO_ROOT" && bd update "$ARG" --claim >/dev/null)
+  echo "✓ Claimed: $ARG ($TITLE)"
 else
   NAME="$ARG"
 fi
@@ -48,5 +50,5 @@ echo "✓ Branch: $BRANCH"
 git -C "$WORKTREE_PATH" config core.hooksPath "$REPO_ROOT/.githooks"
 echo "✓ Hooks: core.hooksPath = $REPO_ROOT/.githooks"
 
-[[ "$ARG" =~ ^[0-9]+$ ]] && echo "Issue: #$ARG $TITLE"
+[[ "$ARG" =~ ^weft- ]] && echo "When done: bd close $ARG (after restating acceptance, CLAUDE.md rule 5)"
 echo "Next: cd \"$WORKTREE_PATH\" && ./.superset/setup.sh   (Superset runs it for you)"

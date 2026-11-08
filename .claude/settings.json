@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": ".claude/hooks/bd-prime.sh" } ] }
+    ],
+    "PreCompact": [
+      { "hooks": [ { "type": "command", "command": ".claude/hooks/bd-prime.sh" } ] }
+    ]
+  }
+}
