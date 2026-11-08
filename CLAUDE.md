@@ -86,9 +86,10 @@ python -m venv /tmp/weft-bare && /tmp/weft-bare/bin/pip install -q pytest && /tm
 - **Beads (`bd`) is the work tracker.** Issues look like `weft-8mn`. `bd ready`
   lists unblocked work; `bd show <id>`, `bd create`, `bd update <id> --claim`,
   `bd close <id> --reason=...`. The database lives in the main checkout's
-  `.beads/` (run `bd` from there; it finds it from a worktree too); only the
-  config and the `issues.jsonl` export are committed, through PRs like any
-  other change. Reference the bead in the PR description.
+  `.beads/`. **Always `cd` to the main checkout before `bd`:** run inside a
+  worktree, `bd` creates a second, empty database there. Only the config and
+  the `issues.jsonl` export are committed, through PRs like any other change.
+  Reference the bead in the PR description.
 - **GitHub Issues is the public front door.** Users file issues there. When
   one is real (it reproduces, or two people hit it), create a bead whose
   description links the issue URL, and reply on the issue with what happens
