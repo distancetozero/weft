@@ -1,0 +1,73 @@
+#!/bin/bash
+# Pre-commit hook: refuses direct commits to main (CLAUDE.md rule 4).
+#
+# What gets refused:
+#   - A normal commit while HEAD is `main`
+#
+# What gets allowed:
+#   - Any commit on a feature branch (not main)
+#   - A merge commit to main whose subject says "Merge pull request #"
+#     (what `gh pr merge` produces, pulled locally)
+#   - A revert
+#
+# There is no [hotfix] escape: a pre-commit hook runs before the new
+# commit message exists, so it cannot read it. An urgent fix is a small PR.
+#
+# To bypass for an emergency: use `git commit --no-verify` (manual flag, not
+# a programmable env var: keeps the agent from setting it silently).
+#
+#
+# Install: `git config core.hooksPath .githooks` (scripts/start-issue.sh does this for worktrees).
+
+set -e
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch" != "main" ]; then
+  exit 0
+fi
+
+GIT_DIR=$(git rev-parse --git-dir)
+
+# Rebase exemption: `git rebase` (interactive or otherwise) replays each
+# commit and fires pre-commit per replayed commit. Legitimate operation,
+# especially `git pull --rebase` to fast-forward main after a PR merge.
+if [ -d "$GIT_DIR/rebase-merge" ] || [ -d "$GIT_DIR/rebase-apply" ]; then
+  exit 0
+fi
+
+# Merge commits get checked by their merge message
+if [ -f "$GIT_DIR/MERGE_MSG" ]; then
+  if head -1 "$GIT_DIR/MERGE_MSG" | grep -qiE "Merge pull request #"; then
+    exit 0
+  fi
+  echo ""
+  echo "❌ Refusing local merge to main: merge through a PR."
+  echo ""
+  echo "   For feature work, merge via PR:"
+  echo "     git push origin <feature-branch>"
+  echo "     gh pr create --base main --head <feature-branch>"
+  echo "     gh pr merge --merge"
+  echo "     git pull --rebase   # locally fast-forward main"
+  echo ""
+  echo "   See CLAUDE.md rule 4."
+  exit 1
+fi
+
+# Reverts always allowed
+[ -f "$GIT_DIR/REVERT_HEAD" ] && exit 0
+
+# Default: refuse
+echo ""
+echo "❌ Refusing direct commit to main."
+echo ""
+echo "   Per CLAUDE.md rule 4:"
+echo "   feature work commits to a feature branch, then PRs to main."
+echo ""
+echo "   For feature work:"
+echo "     git checkout -b feat/<name>"
+echo "     git add ... && git commit ..."
+echo "     git push -u origin feat/<name>"
+echo "     gh pr create"
+echo ""
+echo "   Emergency: use \`git commit --no-verify\` (manual flag only)."
+echo ""
+exit 1

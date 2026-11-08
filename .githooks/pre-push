@@ -1,0 +1,73 @@
+#!/bin/bash
+# Pre-push hook: refuses pushes to main containing commits that aren't
+# PR merges.
+#
+# Stdin: per-ref, "<local_ref> <local_sha> <remote_ref> <remote_sha>".
+#
+# Allows:
+#   - Pushes to any branch other than main
+#   - First push (remote_sha = 0000...)
+#   - PR-merge commits ("Merge pull request #...")
+#
+# To bypass for an emergency: use `git push --no-verify` (manual flag,
+# not a programmable env var: keeps the agent from setting it silently).
+
+set -e
+
+while read local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" != "refs/heads/main" ]; then
+    continue
+  fi
+
+  # First push to main: allow (creating the ref)
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+
+  # Ensure the remote ref is locally available so rev-list works on the range
+  # even if the user hasn't fetched recently.
+  git fetch origin main --quiet 2>/dev/null || true
+
+  # Walk only first-parent commits on main being pushed. Normal PR-merge
+  # workflow: one merge commit at the tip whose subject is "Merge pull request
+  # #...". Walking all commits would also touch the feature-branch's commits
+  # underneath the merge: none have PR-merge subjects, so they would
+  # all spuriously fail and break legitimate PR pushes.
+  range="${remote_sha}..${local_sha}"
+  bad_commits=""
+  for sha in $(git rev-list --first-parent "$range"); do
+    parents=$(git log -1 --pretty=%P "$sha")
+    n_parents=$(echo "$parents" | wc -w | tr -d ' ')
+    full_msg=$(git log -1 --pretty=%B "$sha")
+
+    if [ "$n_parents" -ge 2 ]; then
+      # Merge commit: accept only a PR merge
+      if echo "$full_msg" | head -1 | grep -qiE "Merge pull request #"; then
+        continue
+      fi
+      bad_commits="$bad_commits $sha"
+    else
+      bad_commits="$bad_commits $sha"
+    fi
+  done
+
+  if [ -n "$bad_commits" ]; then
+    echo ""
+    echo "❌ Refusing push to main: commits that are not PR merges."
+    echo ""
+    echo "   Offending commits:"
+    for sha in $bad_commits; do
+      printf "     "
+      git log -1 --pretty='%h %s' "$sha"
+    done
+    echo ""
+    echo "   Per CLAUDE.md rule 4:"
+    echo "   commits reach main only through PR merges (gh pr merge)."
+    echo ""
+    echo "   Emergency: use \`git push --no-verify\` (manual flag only)."
+    echo ""
+    exit 1
+  fi
+done
+
+exit 0
