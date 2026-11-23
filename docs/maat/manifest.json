@@ -28,6 +28,14 @@
       "rendered_sha": "7bb960e7ea0f798850539c64271ab063f72dda0e2796673a984329a3352666f1",
       "template_sha": "0da5fc9cd686aaed3078a583eed1aa2f8c926ba43dc6af74568925a55125cfca"
     },
+    ".githooks/pre-commit": {
+      "rendered_sha": "8ca0c8ee306aec455f3efab31062da01c02918f967b20c7b2554d9bbf2b2e609",
+      "template_sha": "b9bd2d10711f0b94d36ae5d123c407e79d2b449b86d67455dbb23de89676e799"
+    },
+    ".githooks/pre-push": {
+      "rendered_sha": "fe28a98528e4c27780c6c96ef54ab71cdcc8a44b5ab88262fa90166f305f1729",
+      "template_sha": "4677a145e828c3558c4357531469fe9bd2939c326274cc5e65584b8ee6073d6c"
+    },
     ".github/PULL_REQUEST_TEMPLATE.md": {
       "rendered_sha": "ceaf064198ae39942208224792dfcd6a867dcc281b4939f64597ae39da3982ca",
       "template_sha": "924879d489a2c6d6ef7c25c1ac351a57c16d5b5babb5b427121f2ead4098d6e1"

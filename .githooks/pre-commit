@@ -1,5 +1,6 @@
 #!/bin/bash
-# Pre-commit hook: refuses direct commits to main (CLAUDE.md rule 4).
+# maat 0.1.0 b9bd2d10711f
+# Pre-commit hook: refuses direct commits to main (AGENTS.md rule 2).
 #
 # What gets refused:
 #   - A normal commit while HEAD is `main`
@@ -34,6 +35,10 @@ if [ -d "$GIT_DIR/rebase-merge" ] || [ -d "$GIT_DIR/rebase-apply" ]; then
   exit 0
 fi
 
+# Reverts always allowed. Checked before MERGE_MSG: git writes both for a
+# revert that stops before committing (--no-commit, or after a conflict).
+[ -f "$GIT_DIR/REVERT_HEAD" ] && exit 0
+
 # Merge commits get checked by their merge message
 if [ -f "$GIT_DIR/MERGE_MSG" ]; then
   if head -1 "$GIT_DIR/MERGE_MSG" | grep -qiE "Merge pull request #"; then
@@ -48,18 +53,15 @@ if [ -f "$GIT_DIR/MERGE_MSG" ]; then
   echo "     gh pr merge --merge"
   echo "     git pull --rebase   # locally fast-forward main"
   echo ""
-  echo "   See CLAUDE.md rule 4."
+  echo "   See AGENTS.md rule 2."
   exit 1
 fi
-
-# Reverts always allowed
-[ -f "$GIT_DIR/REVERT_HEAD" ] && exit 0
 
 # Default: refuse
 echo ""
 echo "❌ Refusing direct commit to main."
 echo ""
-echo "   Per CLAUDE.md rule 4:"
+echo "   Per AGENTS.md rule 2:"
 echo "   feature work commits to a feature branch, then PRs to main."
 echo ""
 echo "   For feature work:"
