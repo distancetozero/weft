@@ -1,7 +1,9 @@
-<!-- {{stamp}} -->
 # Contributing to {{project_name}}
 
 {{project_name}} is {{project_purpose}}.
+
+<!-- maat:start -->
+<!-- {{stamp}} -->
 
 ## Setup
 
@@ -49,6 +51,7 @@ Agents follow [AGENTS.md](AGENTS.md); humans are welcome to read it too.
 - Say in the PR what you checked and what you skipped.
 - Nothing secret or machine-specific in the repo: no keys, tokens, absolute
   local paths or device ids.
+<!-- maat:end -->
 
 ## License
 

@@ -101,11 +101,11 @@ Render maat's version to a scratch directory and compare:
 diff -u <path> <scratch>/<path>
 ```
 
-In `AGENTS.md` and `CLAUDE.md`, the part above `<!-- maat:end -->` is
-maat's and is replaced; everything below it is kept. Show one file's diff
-at a time and ask: take maat's version, or keep the hand edit? On "take
-maat's", run `"${CLAUDE_PLUGIN_ROOT}/bin/maat-render" write docs/maat/charter.yaml --repo . --only <path>`;
-on "keep", leave it.
+In `AGENTS.md` and `CLAUDE.md`, the part above `<!-- maat:end -->` is maat's and is replaced;
+everything below it is kept. In `CONTRIBUTING.md` (Issues tracker) maat owns only the block between
+`<!-- maat:start -->` and `<!-- maat:end -->`, and everything outside it is kept. Show one file's diff
+at a time and ask: take maat's version, or keep the hand edit? On "take maat's", run
+`"${CLAUDE_PLUGIN_ROOT}/bin/maat-render" write docs/maat/charter.yaml --repo . --only <path>`; on "keep", leave it.
 
 ## Step 6: offer the steps that need a yes
 

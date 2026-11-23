@@ -44,8 +44,7 @@ untouched; it only drops any other retired file from the manifest. Offer to
 delete each of those, after checking that nothing still refers to it
 (settings, scripts, docs).
 
-Also pass on any `carried over:` lines and the warning that "edits above
-<!-- maat:end --> will be replaced; edits below it are kept".
+Also pass on any `carried over:` lines and the warning that "edits above <!-- maat:end --> will be replaced; edits below it are kept".
 
 ## Step 2: write the safe piles
 
@@ -68,8 +67,9 @@ diff -u <path> <scratch>/<path>
 `render --out` leaves out the copy. For a path under `.maat/`, compare with the
 newer maat's own file: `diff -u .maat/lib/maat/lint.py "<newer maat>/lib/maat/lint.py"`.
 
-For `AGENTS.md` and `CLAUDE.md`, the part above `<!-- maat:end -->` is
-maat's and is replaced; everything below it is kept. Compare only that part.
+For `AGENTS.md` and `CLAUDE.md`, the part above `<!-- maat:end -->` is maat's and is replaced;
+everything below it is kept. Compare only that part. In `CONTRIBUTING.md` (Issues tracker) maat
+owns only the block between `<!-- maat:start -->` and `<!-- maat:end -->`, and everything outside it is kept.
 
 Show the diff for one file at a time and ask: take maat's version, or keep
 the hand edit? On "take maat's", run:

@@ -25,8 +25,8 @@
       "template_sha": "f662b7f0c264ad8710e6a3cde8dec4585591695c82f391d09a8f165c1d7542ee"
     },
     ".claude/skills/maat-update/SKILL.md": {
-      "rendered_sha": "7bb960e7ea0f798850539c64271ab063f72dda0e2796673a984329a3352666f1",
-      "template_sha": "0da5fc9cd686aaed3078a583eed1aa2f8c926ba43dc6af74568925a55125cfca"
+      "rendered_sha": "d2dbe7e45537e3034896343523ad03eee9339ed566cdd016f0aaaaa5d8916667",
+      "template_sha": "2e174e653315c315d92dc963865045d35dff94ddd1baefdb55a8db3935ba62df"
     },
     ".githooks/pre-commit": {
       "rendered_sha": "8ca0c8ee306aec455f3efab31062da01c02918f967b20c7b2554d9bbf2b2e609",
@@ -73,8 +73,8 @@
       "template_sha": "5b879ffee9e55f3d88f2a31aabb9c2c49f272430793fbcc51440d6fc4abcc425"
     },
     ".maat/bin/maat-render": {
-      "rendered_sha": "0ea61e19f78386756790fb7c9c1df06003e5fbb98b0bc5a063593b4cd4e710da",
-      "template_sha": "0ea61e19f78386756790fb7c9c1df06003e5fbb98b0bc5a063593b4cd4e710da"
+      "rendered_sha": "06a355752792cbaaf8ff7549fc57db94b85666f4e715716dd5d595729fbe9251",
+      "template_sha": "06a355752792cbaaf8ff7549fc57db94b85666f4e715716dd5d595729fbe9251"
     },
     ".maat/lib/maat/__init__.py": {
       "rendered_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -101,12 +101,12 @@
       "template_sha": "1d0513900880cf29f463d47ecf4275affec875148d92e931e984cdadaa8e7029"
     },
     ".maat/lib/maat/render.py": {
-      "rendered_sha": "57497248bd7117da57cb43bf7fc376d755237fe9a1f8be73bbf77a236db3a0d1",
-      "template_sha": "57497248bd7117da57cb43bf7fc376d755237fe9a1f8be73bbf77a236db3a0d1"
+      "rendered_sha": "a6ea438989573bcbb2ac31aa9b7469da6721f5237e9b6695f5389bfcf43b1303",
+      "template_sha": "a6ea438989573bcbb2ac31aa9b7469da6721f5237e9b6695f5389bfcf43b1303"
     },
     ".maat/lib/maat/rules_file.py": {
-      "rendered_sha": "72445aa9ecee166d8d0ad88998b13b5c058b37b2587a0e8128fc7a04940e6c2d",
-      "template_sha": "72445aa9ecee166d8d0ad88998b13b5c058b37b2587a0e8128fc7a04940e6c2d"
+      "rendered_sha": "7df625d93619d160c7a4f4a69e0f23dd59db97fc7d024ec649b19c406b6c4984",
+      "template_sha": "7df625d93619d160c7a4f4a69e0f23dd59db97fc7d024ec649b19c406b6c4984"
     },
     ".maat/lib/maat/ruleset.py": {
       "rendered_sha": "4b2cfe4d406bd69c9fcb76da4cd5bd06ad0caf6bf15f2fc09b4e15a281dc2e1e",
@@ -129,16 +129,16 @@
       "template_sha": "f662b7f0c264ad8710e6a3cde8dec4585591695c82f391d09a8f165c1d7542ee"
     },
     ".maat/skills/maat-setup/SKILL.md": {
-      "rendered_sha": "62fc7f112f33b5fe3e1062890bd7558d1c9ab41a986a3fbfea0731352e096ce7",
-      "template_sha": "62fc7f112f33b5fe3e1062890bd7558d1c9ab41a986a3fbfea0731352e096ce7"
+      "rendered_sha": "349acfe11aa419a68627af188223fc5b2cac7d967431fc7ed256e3307a38d692",
+      "template_sha": "349acfe11aa419a68627af188223fc5b2cac7d967431fc7ed256e3307a38d692"
     },
     ".maat/skills/maat-setup/questions.md": {
       "rendered_sha": "172d4205f8c8807a3e7b93cf879bb531dda801cd21201af07e70aa967309556f",
       "template_sha": "172d4205f8c8807a3e7b93cf879bb531dda801cd21201af07e70aa967309556f"
     },
     ".maat/skills/maat-update/SKILL.md": {
-      "rendered_sha": "0da5fc9cd686aaed3078a583eed1aa2f8c926ba43dc6af74568925a55125cfca",
-      "template_sha": "0da5fc9cd686aaed3078a583eed1aa2f8c926ba43dc6af74568925a55125cfca"
+      "rendered_sha": "2e174e653315c315d92dc963865045d35dff94ddd1baefdb55a8db3935ba62df",
+      "template_sha": "2e174e653315c315d92dc963865045d35dff94ddd1baefdb55a8db3935ba62df"
     },
     ".maat/templates/AGENTS.md": {
       "rendered_sha": "b27f75f8f6d2e8fc7a5a7c32f7f66532fefc1e7de21f50e09fdb2ecb3f483da2",
@@ -193,8 +193,8 @@
       "template_sha": "72bf233d1b2046bb108b69d044e7b81733db44e7d423e179b2b57c10544734a4"
     },
     ".maat/templates/github-issues/CONTRIBUTING.md": {
-      "rendered_sha": "8e075237339761ac7126d917306b5838fa9b74644f64494c0c029d4e71bc2b47",
-      "template_sha": "8e075237339761ac7126d917306b5838fa9b74644f64494c0c029d4e71bc2b47"
+      "rendered_sha": "dc9e3e145d53a007b19aeb1aa4fc2596e39f608ea83e11a19b643e252b5e0620",
+      "template_sha": "dc9e3e145d53a007b19aeb1aa4fc2596e39f608ea83e11a19b643e252b5e0620"
     },
     ".maat/templates/github-issues/PULL_REQUEST_TEMPLATE.md": {
       "rendered_sha": "924879d489a2c6d6ef7c25c1ac351a57c16d5b5babb5b427121f2ead4098d6e1",
@@ -233,6 +233,11 @@
       "rendered_sha": "8c6f61c9d20d9ab8738ef18317f2364211fa21027b49c645a0cda3f6245e520b",
       "section_sha": "5ce6edbb08cabb5bcda09ad743be73b7f6bc8568b8b5321f08f893553a1e28dd",
       "template_sha": "72bf233d1b2046bb108b69d044e7b81733db44e7d423e179b2b57c10544734a4"
+    },
+    "CONTRIBUTING.md": {
+      "rendered_sha": "e194b9e331d440d4377dd860053cc578b325a3e658bfba49a57ba393028d5f41",
+      "section_sha": "82ee1fb609ceeb3ba4906530bed80b53a157c9ac43d972e76203db8132326c30",
+      "template_sha": "dc9e3e145d53a007b19aeb1aa4fc2596e39f608ea83e11a19b643e252b5e0620"
     },
     "docs/maat/incidents.md": {
       "rendered_sha": "453d7301f6cc4d093d4168444d68eed85c846faa5bfc2b1bf2e2141e99d4a653",

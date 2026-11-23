@@ -31,14 +31,18 @@ def plan_or_write(args, c, version: str) -> int:
             print("maat-render: this maat is %s, older than the copy in .maat/ (%s); run the "
                   "update from the newer maat or from .maat/bin/" % (mine, have), file=sys.stderr)
             return 1
-    files, shas, covered = render.render_with_covered(c, Path(args.templates), version, repo,
-                                                     source=ROOT)
-    copied = render.copy_files(c, ROOT)
-    for path, text in copied.items():
-        files[path] = text
-        shas[path] = render.sha_text(text)
-    manifest = render.Manifest.load(repo / render.MANIFEST_PATH)
-    piles = render.plan(files, repo, manifest)
+    try:
+        files, shas, covered = render.render_with_covered(c, Path(args.templates), version,
+                                                         repo, source=ROOT)
+        copied = render.copy_files(c, ROOT)
+        for path, text in copied.items():
+            files[path] = text
+            shas[path] = render.sha_text(text)
+        manifest = render.Manifest.load(repo / render.MANIFEST_PATH)
+        piles = render.plan(files, repo, manifest)
+    except ValueError as e:
+        print("maat-render: %s" % e, file=sys.stderr)
+        return 1
     edited = []
     if ROOT.resolve() == (repo / render.COPY_DIR).resolve():
         # Run from the copy, a hand edit to it is also the source: compare with the manifest.
@@ -66,6 +70,20 @@ def plan_or_write(args, c, version: str) -> int:
                     elif rules_file.HEADING in text:
                         print("  edits above the carried section will be replaced; "
                               "edits below it are kept")
+                elif (name == "hand_changed" and path in render.BLOCK_PATHS
+                      and render.has_block(files[path])):
+                    # Only a render with a block keeps the rest of the file; a beads render
+                    # or a file that is not UTF-8 gets no hint.
+                    try:
+                        text = (repo / path).read_bytes().decode("utf-8")
+                    except UnicodeDecodeError:
+                        continue
+                    if render.has_block(text):
+                        print("  edits between %s and %s will be replaced; the rest is kept"
+                              % (rules_file.START, rules_file.MARKER))
+                    elif manifest.files.get(path, {}).get("section_sha"):
+                        print("  the block between %s and %s is missing and will be added "
+                              "after the existing text" % (rules_file.START, rules_file.MARKER))
         return 0
     if edited:
         print("maat-render: the copy in .maat/ was edited by hand (%s); restore it by running "
