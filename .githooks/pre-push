@@ -1,4 +1,5 @@
 #!/bin/bash
+# maat 0.1.0 4677a145e828
 # Pre-push hook: refuses pushes to main containing commits that aren't
 # PR merges.
 #
@@ -19,6 +20,12 @@ while read local_ref local_sha remote_ref remote_sha; do
     continue
   fi
 
+  # Deleting main on the remote: refuse
+  if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+    echo "❌ Refusing push: deletes main on the remote (AGENTS.md rule 2)."
+    exit 1
+  fi
+
   # First push to main: allow (creating the ref)
   if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
     continue
@@ -34,8 +41,13 @@ while read local_ref local_sha remote_ref remote_sha; do
   # underneath the merge: none have PR-merge subjects, so they would
   # all spuriously fail and break legitimate PR pushes.
   range="${remote_sha}..${local_sha}"
+  # Fail closed: an empty list from a failed rev-list must not pass the push.
+  if ! commits=$(git rev-list --first-parent "$range"); then
+    echo "❌ Refusing push to main: cannot list the commits in $range (AGENTS.md rule 2)."
+    exit 1
+  fi
   bad_commits=""
-  for sha in $(git rev-list --first-parent "$range"); do
+  for sha in $commits; do
     parents=$(git log -1 --pretty=%P "$sha")
     n_parents=$(echo "$parents" | wc -w | tr -d ' ')
     full_msg=$(git log -1 --pretty=%B "$sha")
@@ -61,7 +73,7 @@ while read local_ref local_sha remote_ref remote_sha; do
       git log -1 --pretty='%h %s' "$sha"
     done
     echo ""
-    echo "   Per CLAUDE.md rule 4:"
+    echo "   Per AGENTS.md rule 2:"
     echo "   commits reach main only through PR merges (gh pr merge)."
     echo ""
     echo "   Emergency: use \`git push --no-verify\` (manual flag only)."
