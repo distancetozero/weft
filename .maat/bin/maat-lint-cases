@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""maat-lint-cases [--cases DIR] [--rules AGENTS.md] [--charter FILE] [--model-since D] [--today D]"""
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.dont_write_bytecode = True  # a tool run from .maat/ must not leave bytecode in the repository
+sys.path.insert(0, str(ROOT))
+
+from lib.maat import cases, charter, cli  # noqa: E402
+
+
+def main(argv: list) -> int:
+    ap = argparse.ArgumentParser(prog="maat-lint-cases")
+    ap.add_argument("--cases", default="docs/maat/cases")
+    ap.add_argument("--rules", default="AGENTS.md")
+    ap.add_argument("--charter", default="docs/maat/charter.yaml")
+    cli.add_dates(ap)
+    args = ap.parse_args(argv)
+    if not Path(args.cases).is_dir():
+        return 0
+    try:
+        rules = Path(args.rules).read_text(encoding="utf-8")
+        maintainers = charter.load(args.charter).people.maintainers
+    except (OSError, charter.CharterError) as e:
+        print("maat-lint-cases: %s" % e, file=sys.stderr)
+        return 2
+    malformed = []
+    loaded = cases.load_all(args.cases, on_error=malformed.append)
+    for e in malformed:
+        print("error %s" % e)
+    findings = cases.lint(loaded, rules, maintainers, today=args.today,
+                          model_since=cli.model_since(args, ROOT))
+    for f in findings:
+        print("%s %s: %s" % (f.level, args.cases, f.message))
+    return 1 if malformed or any(f.level == "error" for f in findings) else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,243 @@
+{
+  "files": {
+    ".claude/hooks/hooks-path.sh": {
+      "rendered_sha": "7267fa108e2755f91f296350aebc044a974be102cbd03e07a3140f748820c25b",
+      "template_sha": "028983a1c6030787f7ade0fdfa46c6113cba30c3ca369f35c6e2232ecda77edf"
+    },
+    ".claude/rules/README.md": {
+      "rendered_sha": "3862df33ea46b7bdb94f9d409a7bda15e355994098b115ef0316e25325437eab",
+      "template_sha": "80fb5956871d0850eb9a2c110a76f046cc543580b67026656f6ad4050e41a5a2"
+    },
+    ".claude/settings.json": {
+      "rendered_sha": "ad334e39c72b1ef8346d582080e4bc163a214ca56a5e3a304fadab0353b887eb",
+      "template_sha": "ad334e39c72b1ef8346d582080e4bc163a214ca56a5e3a304fadab0353b887eb"
+    },
+    ".claude/skills/maat-lessons/SKILL.md": {
+      "rendered_sha": "91bd31cc1178e94db0d1b816908de3b644ca960bf5c53c0c69995f0723f1dc1d",
+      "template_sha": "e32473070125ac014b50e10de04e4731f3d7c833b2ffd7880487f96f3a627800"
+    },
+    ".claude/skills/maat-lessons/server-lock.md": {
+      "rendered_sha": "389921956b4d8ab9b4810ecd08b92ad24ae7a1378fb76b431e8013461b3e9007",
+      "template_sha": "61670d4589f2fec1f8cc5d997f967e7c15d9da0130eb868519db890eb6aba2dc"
+    },
+    ".claude/skills/maat-method/SKILL.md": {
+      "rendered_sha": "5ee3664d3557cb505e0c48ffd2bf8e0f960d837cc24af3054b9ca5df5bc77c47",
+      "template_sha": "f662b7f0c264ad8710e6a3cde8dec4585591695c82f391d09a8f165c1d7542ee"
+    },
+    ".claude/skills/maat-update/SKILL.md": {
+      "rendered_sha": "7bb960e7ea0f798850539c64271ab063f72dda0e2796673a984329a3352666f1",
+      "template_sha": "0da5fc9cd686aaed3078a583eed1aa2f8c926ba43dc6af74568925a55125cfca"
+    },
+    ".github/PULL_REQUEST_TEMPLATE.md": {
+      "rendered_sha": "ceaf064198ae39942208224792dfcd6a867dcc281b4939f64597ae39da3982ca",
+      "template_sha": "924879d489a2c6d6ef7c25c1ac351a57c16d5b5babb5b427121f2ead4098d6e1"
+    },
+    ".maat/.claude-plugin/plugin.json": {
+      "rendered_sha": "92ae1cec4092d752811ff08af46b06c185a7846e82d260b2164504589d479e0a",
+      "template_sha": "92ae1cec4092d752811ff08af46b06c185a7846e82d260b2164504589d479e0a"
+    },
+    ".maat/.gitignore": {
+      "rendered_sha": "4f43505dae1b28967d804723499944bd609430dc20806371459c23fea3539c19",
+      "template_sha": "80cc34c75d63abb7bdae49038d8d4ca2c98aa035b6d18e7404548a8a5846bf3a"
+    },
+    ".maat/README.md": {
+      "rendered_sha": "86b1b6c37a0f9df34111ea771d7152175499e9c88df5473d5b51e21d8a0a641a",
+      "template_sha": "fb04ca67dc9a82ee392b5e2b200f3025b5261b7d3e6752be05ced5c6ac4856c4"
+    },
+    ".maat/bin/maat-audit": {
+      "rendered_sha": "18146eab6b49bea704380a80e56c1204e5cbd2d7b1dc45e01321cf72779b3370",
+      "template_sha": "18146eab6b49bea704380a80e56c1204e5cbd2d7b1dc45e01321cf72779b3370"
+    },
+    ".maat/bin/maat-cases": {
+      "rendered_sha": "70a386221182367db5fc0ffb4d2d9f84de503ab521c7cce062f33fe525d319aa",
+      "template_sha": "70a386221182367db5fc0ffb4d2d9f84de503ab521c7cce062f33fe525d319aa"
+    },
+    ".maat/bin/maat-challenge-packet": {
+      "rendered_sha": "dbf1538eb177c62d911eddacc3c119916288a4d2c233578830af85b6956fb5b3",
+      "template_sha": "dbf1538eb177c62d911eddacc3c119916288a4d2c233578830af85b6956fb5b3"
+    },
+    ".maat/bin/maat-lint-cases": {
+      "rendered_sha": "7a000f76afa0e95d7d14edf7f32dd68526178ff64868679d1ff7a5d5730472dc",
+      "template_sha": "7a000f76afa0e95d7d14edf7f32dd68526178ff64868679d1ff7a5d5730472dc"
+    },
+    ".maat/bin/maat-lint-rules": {
+      "rendered_sha": "5b879ffee9e55f3d88f2a31aabb9c2c49f272430793fbcc51440d6fc4abcc425",
+      "template_sha": "5b879ffee9e55f3d88f2a31aabb9c2c49f272430793fbcc51440d6fc4abcc425"
+    },
+    ".maat/bin/maat-render": {
+      "rendered_sha": "0ea61e19f78386756790fb7c9c1df06003e5fbb98b0bc5a063593b4cd4e710da",
+      "template_sha": "0ea61e19f78386756790fb7c9c1df06003e5fbb98b0bc5a063593b4cd4e710da"
+    },
+    ".maat/lib/maat/__init__.py": {
+      "rendered_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "template_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    ".maat/lib/maat/cases.py": {
+      "rendered_sha": "eb4919b6915237a30d2631f27e3200fd288d7e14ffefeeb2206291e205c045f5",
+      "template_sha": "eb4919b6915237a30d2631f27e3200fd288d7e14ffefeeb2206291e205c045f5"
+    },
+    ".maat/lib/maat/charter.py": {
+      "rendered_sha": "fe4bb2b1f0b8fe55fd9ef0ba5c4edf65f9e11d84439294a51924744ce12e3889",
+      "template_sha": "fe4bb2b1f0b8fe55fd9ef0ba5c4edf65f9e11d84439294a51924744ce12e3889"
+    },
+    ".maat/lib/maat/cli.py": {
+      "rendered_sha": "7e3da369a274f2be9bc4fc9f8bc328890d024071fa41c03c80f77ce98734791f",
+      "template_sha": "7e3da369a274f2be9bc4fc9f8bc328890d024071fa41c03c80f77ce98734791f"
+    },
+    ".maat/lib/maat/lint.py": {
+      "rendered_sha": "3a61b4eb607956ccaf6d29aade53b045542694c1cf5ec9313bea8cacf72a3b2a",
+      "template_sha": "3a61b4eb607956ccaf6d29aade53b045542694c1cf5ec9313bea8cacf72a3b2a"
+    },
+    ".maat/lib/maat/packet.py": {
+      "rendered_sha": "1d0513900880cf29f463d47ecf4275affec875148d92e931e984cdadaa8e7029",
+      "template_sha": "1d0513900880cf29f463d47ecf4275affec875148d92e931e984cdadaa8e7029"
+    },
+    ".maat/lib/maat/render.py": {
+      "rendered_sha": "57497248bd7117da57cb43bf7fc376d755237fe9a1f8be73bbf77a236db3a0d1",
+      "template_sha": "57497248bd7117da57cb43bf7fc376d755237fe9a1f8be73bbf77a236db3a0d1"
+    },
+    ".maat/lib/maat/rules_file.py": {
+      "rendered_sha": "72445aa9ecee166d8d0ad88998b13b5c058b37b2587a0e8128fc7a04940e6c2d",
+      "template_sha": "72445aa9ecee166d8d0ad88998b13b5c058b37b2587a0e8128fc7a04940e6c2d"
+    },
+    ".maat/lib/maat/ruleset.py": {
+      "rendered_sha": "4b2cfe4d406bd69c9fcb76da4cd5bd06ad0caf6bf15f2fc09b4e15a281dc2e1e",
+      "template_sha": "4b2cfe4d406bd69c9fcb76da4cd5bd06ad0caf6bf15f2fc09b4e15a281dc2e1e"
+    },
+    ".maat/skills/maat-challenge/SKILL.md": {
+      "rendered_sha": "1e95320eb1ead90dd63bde756d4fb1bc32a88934f0c764ff0e9beb5ffce9e842",
+      "template_sha": "1e95320eb1ead90dd63bde756d4fb1bc32a88934f0c764ff0e9beb5ffce9e842"
+    },
+    ".maat/skills/maat-lessons/SKILL.md": {
+      "rendered_sha": "e32473070125ac014b50e10de04e4731f3d7c833b2ffd7880487f96f3a627800",
+      "template_sha": "e32473070125ac014b50e10de04e4731f3d7c833b2ffd7880487f96f3a627800"
+    },
+    ".maat/skills/maat-lessons/server-lock.md": {
+      "rendered_sha": "61670d4589f2fec1f8cc5d997f967e7c15d9da0130eb868519db890eb6aba2dc",
+      "template_sha": "61670d4589f2fec1f8cc5d997f967e7c15d9da0130eb868519db890eb6aba2dc"
+    },
+    ".maat/skills/maat-method/SKILL.md": {
+      "rendered_sha": "f662b7f0c264ad8710e6a3cde8dec4585591695c82f391d09a8f165c1d7542ee",
+      "template_sha": "f662b7f0c264ad8710e6a3cde8dec4585591695c82f391d09a8f165c1d7542ee"
+    },
+    ".maat/skills/maat-setup/SKILL.md": {
+      "rendered_sha": "62fc7f112f33b5fe3e1062890bd7558d1c9ab41a986a3fbfea0731352e096ce7",
+      "template_sha": "62fc7f112f33b5fe3e1062890bd7558d1c9ab41a986a3fbfea0731352e096ce7"
+    },
+    ".maat/skills/maat-setup/questions.md": {
+      "rendered_sha": "172d4205f8c8807a3e7b93cf879bb531dda801cd21201af07e70aa967309556f",
+      "template_sha": "172d4205f8c8807a3e7b93cf879bb531dda801cd21201af07e70aa967309556f"
+    },
+    ".maat/skills/maat-update/SKILL.md": {
+      "rendered_sha": "0da5fc9cd686aaed3078a583eed1aa2f8c926ba43dc6af74568925a55125cfca",
+      "template_sha": "0da5fc9cd686aaed3078a583eed1aa2f8c926ba43dc6af74568925a55125cfca"
+    },
+    ".maat/templates/AGENTS.md": {
+      "rendered_sha": "b27f75f8f6d2e8fc7a5a7c32f7f66532fefc1e7de21f50e09fdb2ecb3f483da2",
+      "template_sha": "b27f75f8f6d2e8fc7a5a7c32f7f66532fefc1e7de21f50e09fdb2ecb3f483da2"
+    },
+    ".maat/templates/CLAUDE.md": {
+      "rendered_sha": "1a7a852dc9aaf9cead7878794bf72cc48d4701a15e39e026abdfb2f30f2062db",
+      "template_sha": "1a7a852dc9aaf9cead7878794bf72cc48d4701a15e39e026abdfb2f30f2062db"
+    },
+    ".maat/templates/CONTRIBUTING.md": {
+      "rendered_sha": "50e4a8b521391c6d919ea2c5677cd30fda2f19a0d0ed85123c6505aae8a17c30",
+      "template_sha": "50e4a8b521391c6d919ea2c5677cd30fda2f19a0d0ed85123c6505aae8a17c30"
+    },
+    ".maat/templates/PULL_REQUEST_TEMPLATE.md": {
+      "rendered_sha": "cf8b3854052058ea0b363022c64de2d31b9e5e9cb94fe2999814f7116841c2de",
+      "template_sha": "cf8b3854052058ea0b363022c64de2d31b9e5e9cb94fe2999814f7116841c2de"
+    },
+    ".maat/templates/claude/hooks/bd-prime.sh": {
+      "rendered_sha": "91e160232a3effa46460b0bb489cf559d417aeb88d56e2e471c65ee4875d7190",
+      "template_sha": "91e160232a3effa46460b0bb489cf559d417aeb88d56e2e471c65ee4875d7190"
+    },
+    ".maat/templates/claude/rules/README.md": {
+      "rendered_sha": "80fb5956871d0850eb9a2c110a76f046cc543580b67026656f6ad4050e41a5a2",
+      "template_sha": "80fb5956871d0850eb9a2c110a76f046cc543580b67026656f6ad4050e41a5a2"
+    },
+    ".maat/templates/claude/settings.json": {
+      "rendered_sha": "fb4eea9dd4429ced9d83666ffa7c1c76f6910279295684819501ac13b7d48ba6",
+      "template_sha": "fb4eea9dd4429ced9d83666ffa7c1c76f6910279295684819501ac13b7d48ba6"
+    },
+    ".maat/templates/docs/maat/incidents.md": {
+      "rendered_sha": "6b2a503c125433ce4c72ca9068ebe1996c59b5a0042a6fc06de5723095bac155",
+      "template_sha": "6b2a503c125433ce4c72ca9068ebe1996c59b5a0042a6fc06de5723095bac155"
+    },
+    ".maat/templates/docs/superpowers/README.md": {
+      "rendered_sha": "91d2adb1e62e492a9c961123bfe2914458428656ef6f509b604a6e6d44b4004b",
+      "template_sha": "91d2adb1e62e492a9c961123bfe2914458428656ef6f509b604a6e6d44b4004b"
+    },
+    ".maat/templates/githooks/pre-commit": {
+      "rendered_sha": "b9bd2d10711f0b94d36ae5d123c407e79d2b449b86d67455dbb23de89676e799",
+      "template_sha": "b9bd2d10711f0b94d36ae5d123c407e79d2b449b86d67455dbb23de89676e799"
+    },
+    ".maat/templates/githooks/pre-push": {
+      "rendered_sha": "4677a145e828c3558c4357531469fe9bd2939c326274cc5e65584b8ee6073d6c",
+      "template_sha": "4677a145e828c3558c4357531469fe9bd2939c326274cc5e65584b8ee6073d6c"
+    },
+    ".maat/templates/github-issues/AGENTS.md": {
+      "rendered_sha": "34517df5ea4f9a2571bea894673a577656c2289dc73ff89ec293182e41fe9380",
+      "template_sha": "34517df5ea4f9a2571bea894673a577656c2289dc73ff89ec293182e41fe9380"
+    },
+    ".maat/templates/github-issues/CLAUDE.md": {
+      "rendered_sha": "72bf233d1b2046bb108b69d044e7b81733db44e7d423e179b2b57c10544734a4",
+      "template_sha": "72bf233d1b2046bb108b69d044e7b81733db44e7d423e179b2b57c10544734a4"
+    },
+    ".maat/templates/github-issues/CONTRIBUTING.md": {
+      "rendered_sha": "8e075237339761ac7126d917306b5838fa9b74644f64494c0c029d4e71bc2b47",
+      "template_sha": "8e075237339761ac7126d917306b5838fa9b74644f64494c0c029d4e71bc2b47"
+    },
+    ".maat/templates/github-issues/PULL_REQUEST_TEMPLATE.md": {
+      "rendered_sha": "924879d489a2c6d6ef7c25c1ac351a57c16d5b5babb5b427121f2ead4098d6e1",
+      "template_sha": "924879d489a2c6d6ef7c25c1ac351a57c16d5b5babb5b427121f2ead4098d6e1"
+    },
+    ".maat/templates/github-issues/claude/hooks/hooks-path.sh": {
+      "rendered_sha": "028983a1c6030787f7ade0fdfa46c6113cba30c3ca369f35c6e2232ecda77edf",
+      "template_sha": "028983a1c6030787f7ade0fdfa46c6113cba30c3ca369f35c6e2232ecda77edf"
+    },
+    ".maat/templates/github-issues/claude/settings.json": {
+      "rendered_sha": "ad334e39c72b1ef8346d582080e4bc163a214ca56a5e3a304fadab0353b887eb",
+      "template_sha": "ad334e39c72b1ef8346d582080e4bc163a214ca56a5e3a304fadab0353b887eb"
+    },
+    ".maat/templates/github-issues/maat-README.md": {
+      "rendered_sha": "fb04ca67dc9a82ee392b5e2b200f3025b5261b7d3e6752be05ced5c6ac4856c4",
+      "template_sha": "fb04ca67dc9a82ee392b5e2b200f3025b5261b7d3e6752be05ced5c6ac4856c4"
+    },
+    ".maat/templates/github-issues/maat-gitignore": {
+      "rendered_sha": "80cc34c75d63abb7bdae49038d8d4ca2c98aa035b6d18e7404548a8a5846bf3a",
+      "template_sha": "80cc34c75d63abb7bdae49038d8d4ca2c98aa035b6d18e7404548a8a5846bf3a"
+    },
+    ".maat/templates/github-issues/scripts/start-issue.sh": {
+      "rendered_sha": "4e96c3cabbfbeffed8365e1f9eff85bf6b70c9b71280e71c68c6ca12edcbbef5",
+      "template_sha": "4e96c3cabbfbeffed8365e1f9eff85bf6b70c9b71280e71c68c6ca12edcbbef5"
+    },
+    ".maat/templates/scripts/start-issue.sh": {
+      "rendered_sha": "45bae200fd3551780734dd89a4fe120b69d660715b03b4326ebff95b0bd7dfda",
+      "template_sha": "45bae200fd3551780734dd89a4fe120b69d660715b03b4326ebff95b0bd7dfda"
+    },
+    "AGENTS.md": {
+      "rendered_sha": "4b52b9bf1b3b259aeeb06511b390fbc447485587edd5027404286c0e16069dcf",
+      "section_sha": "2f6f0b9834d2014860c003b2e9528ac4677662d2657578a9f825ec9af6cc2473",
+      "template_sha": "34517df5ea4f9a2571bea894673a577656c2289dc73ff89ec293182e41fe9380"
+    },
+    "CLAUDE.md": {
+      "rendered_sha": "8c6f61c9d20d9ab8738ef18317f2364211fa21027b49c645a0cda3f6245e520b",
+      "section_sha": "5ce6edbb08cabb5bcda09ad743be73b7f6bc8568b8b5321f08f893553a1e28dd",
+      "template_sha": "72bf233d1b2046bb108b69d044e7b81733db44e7d423e179b2b57c10544734a4"
+    },
+    "docs/maat/incidents.md": {
+      "rendered_sha": "453d7301f6cc4d093d4168444d68eed85c846faa5bfc2b1bf2e2141e99d4a653",
+      "template_sha": "6b2a503c125433ce4c72ca9068ebe1996c59b5a0042a6fc06de5723095bac155"
+    },
+    "docs/superpowers/README.md": {
+      "rendered_sha": "7f779d0fcd0718523e5c2d2f3a9ce1c9367bd0508e87e0b70cb5bd40e7543725",
+      "template_sha": "91d2adb1e62e492a9c961123bfe2914458428656ef6f509b604a6e6d44b4004b"
+    },
+    "scripts/start-issue.sh": {
+      "rendered_sha": "87b3d648168486dcc34a462f612f451b00572276ccafcec7b647a74ec9b3a3b7",
+      "template_sha": "4e96c3cabbfbeffed8365e1f9eff85bf6b70c9b71280e71c68c6ca12edcbbef5"
+    }
+  },
+  "maat_version": "0.1.0"
+}

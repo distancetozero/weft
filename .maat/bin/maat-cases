@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""maat-cases --headnotes | --rule N | --sha N  [--cases DIR] [--rules AGENTS.md] [--model-since D] [--today D]
+
+Readers of the casebook. Only cases that are good today are shown: a case
+stored as good whose rule has changed is left out.
+"""
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.dont_write_bytecode = True  # a tool run from .maat/ must not leave bytecode in the repository
+sys.path.insert(0, str(ROOT))
+
+from lib.maat import cases, cli, lint  # noqa: E402
+
+INSTRUCTION = ("Good cases. Before a judgement call under a rule, read its cases with "
+               "`maat-cases --rule N`; cite any you rely on under `## Cases` in the PR "
+               "and set its `last_applied`.")
+
+
+def main(argv: list) -> int:
+    ap = argparse.ArgumentParser(prog="maat-cases")
+    mode = ap.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--headnotes", action="store_true")
+    mode.add_argument("--rule", type=int, metavar="N")
+    mode.add_argument("--sha", type=int, metavar="N")
+    ap.add_argument("--cases", default="docs/maat/cases")
+    ap.add_argument("--rules", default="AGENTS.md")
+    cli.add_dates(ap)
+    args = ap.parse_args(argv)
+    if args.sha is None and not Path(args.cases).is_dir():
+        return 0
+    try:
+        rules = Path(args.rules).read_text(encoding="utf-8")
+    except OSError as e:
+        print("maat-cases: %s" % e, file=sys.stderr)
+        return 2
+    if args.sha is not None:
+        sha = lint.rule_sha(rules, args.sha)
+        if sha is None:
+            print("maat-cases: no rule %d in %s" % (args.sha, args.rules), file=sys.stderr)
+            return 1
+        print(sha)
+        return 0
+    unreadable = []
+    loaded = cases.load_all(args.cases, on_error=unreadable.append)
+    good = cases.good_cases(loaded, rules, today=args.today, model_since=cli.model_since(args, ROOT))
+    # Said on stdout, so a session that reads only the hook's output still learns of it.
+    note = ("%d case file(s) could not be read and are left out; run `maat-lint-cases`."
+            % len(unreadable)) if unreadable else None
+    if args.headnotes:
+        if good:
+            print(INSTRUCTION)
+            for c in sorted(good, key=lambda c: (c.rule, c.ruled_on, c.case)):
+                print("rule %d: %s (%s)" % (c.rule, c.headnote, c.case))
+        if note:
+            print(note)
+        return 0
+    if note:
+        print(note + "\n")
+    for c in good:
+        if c.rule == args.rule:
+            sys.stdout.write(Path(c.path).read_text(encoding="utf-8").rstrip("\n") + "\n\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

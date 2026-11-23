@@ -1,0 +1,6 @@
+{
+  "name": "maat",
+  "version": "0.1.0",
+  "description": "The Kilroy method as an installable workflow: a charter-driven setup for guards, rules and work tracking.",
+  "author": { "name": "distancetozero" }
+}

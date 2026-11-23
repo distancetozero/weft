@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+"""maat-challenge-packet (--acceptance TEXT | --acceptance-file F) [--contract]
+       [--base main] [--evidence-file F] [--repo .] [--model-since D] [--today D]
+
+Prints the packet for Anubis (challenger; opposing counsel). With --contract
+it holds only the acceptance, the good cases and the escapes, because no
+work exists yet.
+"""
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.dont_write_bytecode = True  # a tool run from .maat/ must not leave bytecode in the repository
+sys.path.insert(0, str(ROOT))
+
+from lib.maat import cli, packet  # noqa: E402
+
+
+def main(argv: list) -> int:
+    ap = argparse.ArgumentParser(prog="maat-challenge-packet")
+    ap.add_argument("--acceptance")
+    ap.add_argument("--acceptance-file")
+    ap.add_argument("--contract", action="store_true")
+    ap.add_argument("--base", default="main")
+    ap.add_argument("--evidence-file")
+    ap.add_argument("--repo", default=".")
+    cli.add_dates(ap)
+    args = ap.parse_args(argv)
+    try:
+        acceptance = args.acceptance
+        if args.acceptance_file:
+            acceptance = Path(args.acceptance_file).read_text(encoding="utf-8")
+        if not acceptance or not acceptance.strip():
+            print("maat-challenge-packet: an acceptance sentence is required "
+                  "(--acceptance or --acceptance-file)", file=sys.stderr)
+            return 2
+        evidence = Path(args.evidence_file).read_text(encoding="utf-8") if args.evidence_file else ""
+        sys.stdout.write(packet.build(acceptance=acceptance, repo=args.repo, base=args.base,
+                                      evidence=evidence, contract=args.contract, today=args.today,
+                                      model_since=cli.model_since(args, ROOT)))
+    except (OSError, packet.PacketError) as e:
+        print("maat-challenge-packet: %s" % e, file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

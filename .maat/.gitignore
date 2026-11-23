@@ -1,0 +1,6 @@
+# maat 0.1.0 80cc34c75d63
+# This folder is a copy of maat: track all of it, whatever the root .gitignore
+# says about lib/ or bin/, but never bytecode.
+!*
+__pycache__/
+*.py[cod]

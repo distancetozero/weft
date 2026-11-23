@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""maat-lint-rules <AGENTS.md> [--budget N] [--model-since YYYY-MM-DD]"""
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.dont_write_bytecode = True  # a tool run from .maat/ must not leave bytecode in the repository
+sys.path.insert(0, str(ROOT))
+
+from lib.maat import lint  # noqa: E402
+
+
+def main(argv: list) -> int:
+    ap = argparse.ArgumentParser(prog="maat-lint-rules")
+    ap.add_argument("file")
+    ap.add_argument("--budget", type=int, default=12)
+    ap.add_argument("--model-since", metavar="YYYY-MM-DD")
+    args = ap.parse_args(argv)
+    try:
+        text = Path(args.file).read_text(encoding="utf-8")
+    except OSError as e:
+        print("maat-lint-rules: %s" % e, file=sys.stderr)
+        return 2
+    findings = lint.lint(text, budget=args.budget, model_since=args.model_since)
+    for f in findings:
+        print("%s %s:%d: %s" % (f.level, args.file, f.line, f.message))
+    return 1 if any(f.level == "error" for f in findings) else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
