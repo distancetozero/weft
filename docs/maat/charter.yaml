@@ -1,0 +1,20 @@
+maat: 1
+project:
+  name: weft
+  purpose: a read-only workbench over OpenUSD
+  repo: distancetozero/weft
+  visibility: public
+work:
+  tracker: github-issues
+  protected_branch: main
+  worktree_root: ~/.superset/worktrees/weft   # or ../weft-worktrees
+  setup_command: ./.superset/setup.sh
+ci:
+  required_checks: ["full (numpy + usd-core)", "bare (no optional dependencies)"]
+people:
+  maintainers: [ashrafghoniem]       # may authorize merge, release, publish
+  agents: []                         # the cast, by name and one-line role; informational in v1
+guards:
+  server_lock: false                 # triggers: second maintainer, or a recorded lapse
+rules:
+  project: ["**Read the spec before a non-trivial change, and update it in the same PR** when behaviour the spec describes changes. Where measurement disagreed with a design, the spec records the correction; don't undo it.", "**Rung 1 runs with nothing installed.** No new required dependency. Anything needing `pxr` or `numpy` imports lazily and its tests use `pytest.importorskip`. A malformed input degrades; it never crashes the viewer path.", "**Public repo.** No customer data, and production USD you test against is referenced by public URL (for example ALab), never committed."]
