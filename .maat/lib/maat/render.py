@@ -53,6 +53,9 @@ def template_file(templates_dir: Path, c: Charter, tpl: str) -> Path:
 
 CARRIED_PATHS = ("AGENTS.md", "CLAUDE.md")
 
+# On the Issues tracker maat owns only the block between START and MARKER in these files.
+BLOCK_PATHS = ("CONTRIBUTING.md",)
+
 PLACEHOLDER = re.compile(r"\{\{([a-z_]+)\}\}")
 
 
@@ -167,6 +170,7 @@ def render_with_covered(c: Charter, templates_dir: Path, version: str,
     # A repo whose only rules file is CLAUDE.md: its rules belong below the
     # maat section of AGENTS.md, the canonical file; CLAUDE.md is rendered thin.
     lone_claude = lone_claude_md(repo_root) if repo_root is not None else None
+    manifest: Optional[Manifest] = None
     for tpl, published in template_paths(c).items():
         raw = template_file(templates_dir, c, tpl).read_bytes()
         values = dict(base, stamp=stamp(version, raw))
@@ -185,6 +189,13 @@ def render_with_covered(c: Charter, templates_dir: Path, version: str,
                 elif rules_file.HEADING in current or not _is_maat_file(
                         Path(repo_root), published, current):
                     text, covered_lines[published] = rules_file.merge_existing(text, current)
+        elif (repo_root is not None and published in BLOCK_PATHS
+              and c.work.tracker == "github-issues" and (Path(repo_root) / published).is_file()):
+            current = _utf8((Path(repo_root) / published).read_bytes())
+            if current is not None:  # not UTF-8: render as for no file; plan leaves it alone
+                if manifest is None:
+                    manifest = Manifest.load(Path(repo_root) / MANIFEST_PATH)
+                text = _block_render(published, text, current, manifest.files.get(published))
         out[published] = text
         shas[published] = hashlib.sha256(raw).hexdigest()
     if source is not None:
@@ -192,6 +203,42 @@ def render_with_covered(c: Charter, templates_dir: Path, version: str,
         out.update(skills)
         shas.update(skill_shas)
     return out, shas, covered_lines
+
+
+def _utf8(data: bytes) -> Optional[str]:
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
+
+def has_block(text: str) -> bool:
+    """True when text holds a well-formed block; False without one or with stray markers."""
+    try:
+        return rules_file.split_block(text) is not None
+    except rules_file.BlockError:
+        return False
+
+
+def _split_block(path: str, text: str) -> Optional[Tuple[str, str, str]]:
+    try:
+        return rules_file.split_block(text)
+    except rules_file.BlockError as e:
+        raise ValueError("%s: %s" % (path, e))
+
+
+def _block_render(path: str, rendered: str, current: str,
+                  entry: Optional[Dict[str, str]]) -> str:
+    """A BLOCK_PATHS file rendered against the repository's copy of it."""
+    if not current.strip():
+        return rendered  # an empty file is treated as no file
+    if _split_block(path, current) is not None:
+        return rules_file.replace_block(current, rendered)
+    if entry is None or entry.get("section_sha"):
+        # The repository's own file, or maat's whose block was deleted by hand:
+        # keep every line and put the block after them.
+        return rules_file.append_block(current, rendered)
+    return rendered  # an old whole-file render by maat
 
 
 def lone_claude_md(repo_root: Path) -> Optional[str]:
@@ -350,6 +397,27 @@ def section_sha(text: str) -> Optional[str]:
     return None if parts is None else sha_text(_normalise(parts[0]))
 
 
+def block_sha(text: str) -> Optional[str]:
+    """sha of the maat-owned block, version-normalised; None without one."""
+    parts = rules_file.split_block(text)
+    return None if parts is None else sha_text(_normalise(parts[1]))
+
+
+def _plan_block(path: str, rendered: str, current: str,
+                entry: Optional[Dict[str, str]]) -> str:
+    """The pile for a BLOCK_PATHS file that is not byte for byte what maat last wrote."""
+    if current == rendered:
+        return "unchanged"
+    if entry is not None and entry.get("section_sha"):
+        if entry["section_sha"] == block_sha(current):
+            # Edited outside the block only, which the render keeps.
+            return "maat_changed" if block_sha(rendered) != entry["section_sha"] else "unchanged"
+    elif entry is None and (rendered == rules_file.append_block(current, rendered)
+                            or not current.strip()):
+        return "new"
+    return "hand_changed"
+
+
 def _is_first_merge(rendered: str, current: str) -> bool:
     """True when rendered is the maat section plus current, kept verbatim."""
     tail = rules_file.HEADING + "\n\n" + current.rstrip("\n") + "\n"
@@ -369,8 +437,22 @@ def plan(rendered: Dict[str, str], repo_root: Path, manifest: Manifest) -> Piles
         if not dest.is_file():
             piles.new.append(path)
             continue
-        current = dest.read_bytes().decode("utf-8", errors="replace")
+        data = dest.read_bytes()
+        current = data.decode("utf-8", errors="replace")
         entry = manifest.files.get(path)
+        if path in BLOCK_PATHS and current != rendered[path] and (
+                _utf8(data) is None
+                or (_split_block(path, rendered[path]) is None
+                    and (has_block(current) or (entry or {}).get("section_sha")))):
+            # Not UTF-8, or a render without a block (a switch back to beads) over a file
+            # holding maat's block: the rest of the file is the repository's, never maat's.
+            piles.hand_changed.append(path)
+            continue
+        if (path in BLOCK_PATHS and _split_block(path, rendered[path]) is not None
+                and (entry is None or sha_text(current) != entry["rendered_sha"])):
+            _split_block(path, current)
+            getattr(piles, _plan_block(path, rendered[path], current, entry)).append(path)
+            continue
         if entry is None or sha_text(current) != entry["rendered_sha"]:
             # Untracked or edited since maat wrote it: only an exact match is safe.
             if current == rendered[path]:
@@ -412,7 +494,12 @@ def write(rendered: Dict[str, str], repo_root: Path, manifest: Manifest, *,
             "template_sha": (template_shas or {}).get(path, ""),
             "rendered_sha": sha_text(rendered[path]),
         }
-        sec = section_sha(rendered[path]) if path in CARRIED_PATHS else None
+        if path in CARRIED_PATHS:
+            sec = section_sha(rendered[path])
+        elif path in BLOCK_PATHS:
+            sec = block_sha(rendered[path])
+        else:
+            sec = None
         if sec is not None:
             manifest.files[path]["section_sha"] = sec
     removed = []
