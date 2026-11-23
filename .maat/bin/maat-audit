@@ -23,17 +23,20 @@ class GhError(Exception):
 def gh_json(args: list):
     p = subprocess.run(["gh", "api"] + args, capture_output=True, text=True)
     if p.returncode != 0:
-        raise GhError("gh api %s failed: %s" % (" ".join(args), p.stderr.strip()))
+        detail = (p.stderr.strip().splitlines() or [""])[0]   # one line: the reason, not a dump
+        raise GhError("gh api %s failed: %s" % (" ".join(args), detail))
     return json.loads(p.stdout)
 
 
 def gh_unavailable() -> str:
-    if shutil.which("gh") is None:
-        return "gh is not on PATH"
-    p = subprocess.run(["gh", "auth", "status"], capture_output=True, text=True)
-    if p.returncode != 0:
-        return "gh auth status failed"
-    return ""
+    """Only what cannot be told from a call: whether gh exists.
+
+    Whether GitHub answers is learnt from the calls the audit makes. A
+    separate probe (`gh auth status`, `gh api user`) refuses sessions that
+    can make those calls: a cloud session fails the first, and a token
+    scoped to the repository fails the second.
+    """
+    return "" if shutil.which("gh") is not None else "gh is not on PATH"
 
 
 def find_live(repo: str, name: str):
@@ -58,8 +61,8 @@ def apply(c) -> int:
     try:
         rid, _ = find_live(repo, exp["name"])
     except GhError as e:
-        print("maat-audit: %s" % e, file=sys.stderr)
-        return 1
+        print("gh unavailable: %s" % e)
+        return 2
     if rid is None:
         rs_cmd = ["gh", "api", "-X", "POST", "repos/%s/rulesets" % repo, "--input", "-"]
     else:
