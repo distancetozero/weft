@@ -12,7 +12,7 @@ work:
 ci:
   required_checks: ["full (numpy + usd-core)", "bare (no optional dependencies)"]
 people:
-  maintainers: [ashrafghoniem]       # may authorize merge, release, publish
+  maintainers: [distancetozero]      # may authorize merge, release, publish
   agents: []                         # the cast, by name and one-line role; informational in v1
 guards:
   server_lock: false                 # triggers: second maintainer, or a recorded lapse

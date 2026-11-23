@@ -225,8 +225,8 @@
       "template_sha": "45bae200fd3551780734dd89a4fe120b69d660715b03b4326ebff95b0bd7dfda"
     },
     "AGENTS.md": {
-      "rendered_sha": "4b52b9bf1b3b259aeeb06511b390fbc447485587edd5027404286c0e16069dcf",
-      "section_sha": "2f6f0b9834d2014860c003b2e9528ac4677662d2657578a9f825ec9af6cc2473",
+      "rendered_sha": "2565b2cca1ffd3f3fa30cfbd94f5646419f779901d9221b1367ab45df336718c",
+      "section_sha": "430ea3ed7344c008ec30644ea09c9fcc184bf89011a7813007a39bbdaab2438d",
       "template_sha": "34517df5ea4f9a2571bea894673a577656c2289dc73ff89ec293182e41fe9380"
     },
     "CLAUDE.md": {
@@ -235,8 +235,8 @@
       "template_sha": "72bf233d1b2046bb108b69d044e7b81733db44e7d423e179b2b57c10544734a4"
     },
     "CONTRIBUTING.md": {
-      "rendered_sha": "e194b9e331d440d4377dd860053cc578b325a3e658bfba49a57ba393028d5f41",
-      "section_sha": "82ee1fb609ceeb3ba4906530bed80b53a157c9ac43d972e76203db8132326c30",
+      "rendered_sha": "9cff61307f10e9f3ecd1ffaa4ae0ed157f4a5e096a7106be6c76322a7d3459be",
+      "section_sha": "07d74dfba35fcf5b48c3400022e045857689dd11c56df62839ed58fb58972b09",
       "template_sha": "dc9e3e145d53a007b19aeb1aa4fc2596e39f608ea83e11a19b643e252b5e0620"
     },
     "docs/maat/incidents.md": {
