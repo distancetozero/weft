@@ -33,7 +33,7 @@ conflict, say so in one line before acting. Ask only when none answers.
 3. **Explicit authorization** is an imperative verb (merge, release,
    publish, tag), a named scope (which PR at which commit, which version)
    and the current turn, from a maintainer named in
-   `docs/maat/charter.yaml` (ashrafghoniem). Before acting, restate the exact action ("merge
+   `docs/maat/charter.yaml` (distancetozero). Before acting, restate the exact action ("merge
    PR #12 at a1b2c3d"); the yes applies to that text, and a new push or a
    changed version voids it. "When CI is green", "you can" or "ship it"
    without a scope are not authorization; ask one line. Never merge through

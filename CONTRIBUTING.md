@@ -75,7 +75,7 @@ Every change goes through four beats:
 2. **Branch.** Work in a worktree on its own branch, never on `main`.
 3. **PR.** Open a pull request against `main`; CI must pass
    (full (numpy + usd-core), bare (no optional dependencies)).
-4. **Merge.** A maintainer (ashrafghoniem) merges. Agents stop at
+4. **Merge.** A maintainer (distancetozero) merges. Agents stop at
    "PR open, awaiting your merge".
 
 The human owns the change: the person who directed the agent is the author
